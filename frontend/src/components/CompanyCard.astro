@@ -1,0 +1,55 @@
+---
+interface Props {
+  name: string;
+  description: string;
+  category: string;
+  pricing: 'free' | 'freemium' | 'paid';
+  url: string;
+  slug: string;
+}
+
+const { name, description, category, pricing, url, slug } = Astro.props;
+
+const pricingLabel: Record<Props['pricing'], string> = {
+  free: 'Bezpłatne',
+  freemium: 'Freemium',
+  paid: 'Płatne',
+};
+
+const pricingColor: Record<Props['pricing'], string> = {
+  free: 'bg-green-100 text-green-700',
+  freemium: 'bg-blue-100 text-blue-700',
+  paid: 'bg-orange-100 text-orange-700',
+};
+---
+
+<article class="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-start justify-between gap-2">
+    <h2 class="text-lg font-semibold text-gray-900">{name}</h2>
+    <span class={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${pricingColor[pricing]}`}>
+      {pricingLabel[pricing]}
+    </span>
+  </div>
+
+  <p class="line-clamp-3 text-sm text-gray-600">{description}</p>
+
+  <div class="mt-auto flex items-center justify-between pt-1">
+    <span class="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{category}</span>
+    <div class="flex gap-3 text-sm">
+      <a
+        href={`/narzedzia/${slug}`}
+        class="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+      >
+        Szczegóły
+      </a>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-gray-400 hover:text-gray-600 hover:underline"
+      >
+        Strona →
+      </a>
+    </div>
+  </div>
+</article>
