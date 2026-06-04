@@ -1,0 +1,14 @@
+# Ignore NiFi flow exports that may contain secrets
+nifi-flows/
+
+# Environment files
+.env
+.env.local
+
+# Node modules and build output
+node_modules/
+dist/
+
+# OS and editor files
+.DS_Store
+.idea/
