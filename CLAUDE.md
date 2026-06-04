@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-**aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market. The project is in early development (no source code exists yet as of June 2026; domain is live on Cyberfolks).
+**aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market. Domain is live on Cyberfolks; frontend development started June 2026.
 
 ## Planned tech stack
 
@@ -106,9 +106,24 @@ Format: JSON { description, category, tags, segment }
 - SQL keywords: `UPPER_CASE`
 - Git commit prefixes: `feat:`, `fix:`, `docs:`, `refactor:`
 
+## Current status (June 2026)
+
+Frontend is scaffolded and builds successfully (`npm run build` inside `frontend/`).
+
+**Built so far:**
+
+- `frontend/` — Astro 6 + Tailwind CSS v4 (`@tailwindcss/vite` plugin, no config file needed)
+- `frontend/src/layouts/Layout.astro` — HTML boilerplate, SEO meta tags, full Open Graph + Twitter Card, canonical URL from `Astro.site`, named `<slot name="head">` for per-page additions
+- `frontend/src/components/CompanyCard.astro` — company card with name, description, category, pricing badge (free/freemium/paid), internal and external links
+- `frontend/src/data/companies.ts` — typed `Company` interface + hardcoded array of 3 entries; shared by all pages. **Replace with PostgreSQL queries once backend is ready.**
+- `frontend/src/pages/index.astro` — homepage: hero section, responsive 3-column card grid
+- `frontend/src/pages/narzedzia/[slug].astro` — static detail page via `getStaticPaths`; renders company name, description, category, tags, pricing, external CTA; injects `schema.org SoftwareApplication` JSON-LD via `<Fragment slot="head">`
+
+**Not yet built:** `backend/`, DB migrations, NiFi flows, `/kategoria/[slug]` page, admin panel.
+
 ## Environment variables
 
-See `.env.example` (to be created):
+See `.env.example`:
 
 ```
 DATABASE_URL=postgresql://user:password@localhost:5432/aifirmy

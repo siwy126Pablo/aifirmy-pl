@@ -24,6 +24,31 @@
 
 ---
 
+## [v0.1] — 2026-06-04 (tydzień 1)
+
+### Zrobione
+- ✅ Zainicjowana struktura repozytorium (`frontend/`, `backend/`, `nifi-flows/`, `db/migrations/`, `docs/`)
+- ✅ Zainstalowany Tailwind CSS v4 z pluginem `@tailwindcss/vite` (Astro 6)
+- ✅ `astro.config.mjs` — dodany plugin Tailwind i `site: 'https://aifirmy.pl'`
+- ✅ `src/layouts/Layout.astro` — boilerplate HTML, meta SEO, Open Graph, Twitter Card, canonical URL, named slot `head`
+- ✅ `src/components/CompanyCard.astro` — karta firmy z nazwą, opisem, kategorią, tagiem cenowym, linkami
+- ✅ `src/data/companies.ts` — wspólne źródło danych (interface `Company`, 3 wpisy, helper `getCompanyBySlug`)
+- ✅ `src/pages/index.astro` — strona główna: hero, grid 3 kart firm
+- ✅ `src/pages/narzedzia/[slug].astro` — strona detalu firmy, `getStaticPaths`, schema.org `SoftwareApplication`
+- ✅ `.env.example` z wymaganymi zmiennymi środowiskowymi
+
+### Odkrycia / problemy
+- Tailwind v4 nie wymaga `tailwind.config.js` — tylko `@import "tailwindcss"` w CSS i plugin Vite
+- Schema.org w Astro wymaga `<Fragment slot="head">` z `set:html` zamiast zwykłego `<script>`
+- Dane firm na razie hardcoded w `src/data/companies.ts` — gotowe do podmiany na fetch z PostgreSQL
+
+### Następny tydzień
+- Strona `/kategoria/[slug]` — lista firm per kategoria
+- Podłączenie PostgreSQL i zamiana hardcoded danych na zapytania do bazy
+- Decyzja ADR-005: Node.js vs Python dla backend API
+
+---
+
 ## Szablon tygodnia
 
 ```

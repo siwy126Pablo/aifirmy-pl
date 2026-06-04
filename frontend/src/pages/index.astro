@@ -1,36 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import CompanyCard from '../components/CompanyCard.astro';
-
-const companies = [
-  {
-    slug: 'cursor',
-    name: 'Cursor',
-    description:
-      'Edytor kodu oparty na AI, który rozumie kontekst całego projektu. Pozwala pisać, refaktoryzować i debugować kod przez rozmowę z modelem GPT-4 lub Claude bezpośrednio w edytorze.',
-    category: 'Narzędzia deweloperskie',
-    pricing: 'freemium' as const,
-    url: 'https://cursor.com',
-  },
-  {
-    slug: 'perplexity',
-    name: 'Perplexity AI',
-    description:
-      'Wyszukiwarka konwersacyjna korzystająca z dużych modeli językowych. Odpowiada na pytania w czasie rzeczywistym, cytując źródła — alternatywa dla tradycyjnych wyszukiwarek.',
-    category: 'Wyszukiwarki AI',
-    pricing: 'freemium' as const,
-    url: 'https://perplexity.ai',
-  },
-  {
-    slug: 'eleven-labs',
-    name: 'ElevenLabs',
-    description:
-      'Platforma do syntezy i klonowania głosu z użyciem AI. Generuje realistyczną mowę w wielu językach — popularna w produkcji podcastów, audiobooków i narracji wideo.',
-    category: 'Audio i głos',
-    pricing: 'freemium' as const,
-    url: 'https://elevenlabs.io',
-  },
-];
+import { companies } from '../data/companies';
 ---
 
 <Layout
