@@ -92,14 +92,66 @@ Zmiana hostingu na Hetzner/OVH możliwa gdy ruch uzasadni koszt. Cloudflare daje
 
 ---
 
-## ADR-006 — Panel admin: do podjęcia
-**Data:** —
-**Status:** ⏳ Otwarta
+## ADR-006 — Panel admin: Supabase Studio
+**Data:** czerwiec 2026
+**Status:** ✅ Przyjęta
+
+**Kontekst:**
+Potrzebny panel do moderacji wpisów (approve/reject) i zarządzania danymi katalogu.
 
 **Opcje:**
-- Supabase — BaaS, szybki start, wbudowany auth
-- Directus — headless CMS, bardziej kontrolowany
+- Supabase Studio — wbudowany, zero konfiguracji
+- Directus — headless CMS, więcej kontroli
 - Custom admin — pełna kontrola, więcej pracy
+
+**Decyzja:** Supabase Studio
+
+**Uzasadnienie:**
+Baza i tak trafiła na Supabase (ADR-007). Studio jest dostępne od razu, bez dodatkowego deploymentu. Dla solo developera i ~20 wpisów dziennie do moderacji — wystarczy w pełni.
+
+---
+
+## ADR-007 — Baza danych: Supabase free (PostgreSQL)
+**Data:** czerwiec 2026
+**Status:** ✅ Przyjęta
+
+**Kontekst:**
+Pakiet Cyberfolks (cyber_IN_unlimited) oferuje tylko MariaDB. Schemat bazy wymaga `JSONB`, `text[]`, `GIN` index i full-text search po polsku — funkcji niedostępnych w MariaDB.
+
+**Opcje:**
+- MariaDB na Cyberfolks — dostępna, ale niekompatybilna ze schematem
+- Supabase free — PostgreSQL, 500 MB, 5 GB transfer, panel Studio
+- Railway / Neon — alternatywy, mniej narzędzi
+
+**Decyzja:** Supabase free (region: eu-central-1, Frankfurt)
+
+**Uzasadnienie:**
+Pełne PostgreSQL z wszystkimi potrzebnymi funkcjami. Darmowy plan wystarczy na start (500 MB >> potrzeby katalogu 100–1000 wpisów). Studio zastępuje panel admina. Jedyne ryzyko: pauzowanie po tygodniu nieaktywności — rozwiązane GitHub Actions cron (repo: `aifirmy-ping`).
+
+---
+
+## ADR-008 — NiFi: lokalnie na Windows zamiast Oracle Cloud
+**Data:** czerwiec 2026
+**Status:** ✅ Przyjęta
+
+**Kontekst:**
+Pierwotny plan zakładał NiFi na Oracle Cloud (VCN: vcn-n8n, eu-frankfurt-1). W praktyce łatwiej wystartować lokalnie.
+
+**Opcje:**
+- Oracle Cloud VCN — docelowe, ale wymaga konfiguracji sieci i SSL
+- Lokalnie Windows — szybki start, NiFi 2.9.0 + Java 25
+
+**Decyzja:** NiFi 2.9.0 lokalnie na Windows (tymczasowo)
+
+**Uzasadnienie:**
+Szybszy start bez konfiguracji infrastruktury. Migracja na Oracle Cloud możliwa gdy flow będzie stabilny — eksport JSON z NiFi pozwala przenieść flow bez przepisywania.
+
+**Szczegóły konfiguracji:**
+- NiFi: `C:\nifi`, port 8443
+- JDBC driver: `C:\nifi\lib\postgresql-42.x.x.jar`
+- Połączenie Supabase: Session Pooler, `aws-1-eu-central-1.pooler.supabase.com:5432`
+- User: `postgres.szassqzvivdgvpkciyif`
+- Źródło danych: Hacker News API (Product Hunt zablokowany przez Cloudflare — 403)
 
 ---
 

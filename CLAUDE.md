@@ -8,16 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Planned tech stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Astro + Tailwind CSS |
-| Backend/API | Node.js (Express/Fastify) **or** Python (FastAPI) — ADR-005 pending |
-| Database | PostgreSQL |
-| Cache | Redis |
-| ETL/Scraping | Apache NiFi (self-hosted on Oracle Cloud, eu-frankfurt-1) |
-| AI descriptions | OpenAI API (GPT-4o) |
-| Admin panel | Directus **or** Supabase — ADR-006 pending |
-| Hosting | Cyberfolks + Cloudflare (CDN, DDoS, SSL Full strict) |
+| Layer | Technology | Notes |
+|---|---|---|
+| Frontend | Astro + Tailwind CSS | |
+| Backend/API | Node.js (Express/Fastify) **or** Python (FastAPI) — ADR-005 pending | |
+| Database | PostgreSQL — **Supabase free** (eu-central-1, Frankfurt) | Cyberfolks has MariaDB only — incompatible with schema |
+| Cache | Redis | |
+| ETL/Scraping | Apache NiFi 2.9.0 — **self-hosted locally on Windows** | Oracle Cloud dropped — ADR-003 updated |
+| AI descriptions | OpenAI API (GPT-4o) | |
+| Admin panel | **Supabase Studio** — ADR-006 resolved | Built-in table editor, no custom admin needed |
+| Hosting | Cyberfolks (frontend) + Cloudflare (CDN, DDoS, SSL Full strict) | |
 
 ## Repository structure (planned)
 
@@ -42,44 +42,84 @@ aifirmy-pl/
 
 - **ADR-001:** Frontend is Astro — chosen for minimal client-side JS, best Core Web Vitals and SEO for a content catalog.
 - **ADR-002:** Docs-as-code — documentation lives in `/docs` as Markdown committed alongside code. Notion is for planning/goals only, not technical docs.
-- **ADR-003:** ETL is Apache NiFi — self-hosted on existing Oracle Cloud infra. NiFi flows are exported as JSON and version-controlled in `/nifi-flows/`.
-- **ADR-004:** Hosting is Cyberfolks + Cloudflare — Cloudflare must be configured before launch (not after).
+- **ADR-003:** ETL is Apache NiFi 2.9.0 — **self-hosted locally on Windows**, not Oracle Cloud. NiFi flows are exported as JSON and version-controlled in `/nifi-flows/`.
+- **ADR-004:** Hosting is Cyberfolks (frontend) + Cloudflare — Cloudflare must be configured before launch (not after).
+- **ADR-006:** Admin panel is **Supabase Studio** — resolved. Cyberfolks has MariaDB only (incompatible), so Supabase free tier (PostgreSQL, eu-central-1 Frankfurt) is used for both database and admin panel.
+- **ADR-007:** Database is **Supabase free (PostgreSQL)** — Cyberfolks package (cyber_IN_unlimited) provides MariaDB only, which lacks `JSONB`, `text[]`, `GIN` index, and Polish full-text search. Supabase free: 500 MB, 50k users/mo, 5 GB transfer. Project keep-alive via GitHub Actions cron (repo: `aifirmy-ping`, pings every 5 days).
+- **ADR-008:** NiFi runs **locally on Windows** (NiFi 2.9.0, Java 25, JDBC driver in `C:\nifi\lib`). Supabase connection via Session Pooler: `aws-1-eu-central-1.pooler.supabase.com:5432`, user `postgres.[project-id]`. Product Hunt blocked (Cloudflare 403) — replaced with **Hacker News API** as primary scraping source.
 
 ## Open architectural decisions
 
 - **ADR-005:** Backend language — Node.js vs Python (FastAPI). Evaluate based on AI/scraping library ecosystem.
-- **ADR-006:** Admin panel — Supabase (fast start, built-in auth) vs Directus (headless CMS, more control) vs custom.
 
 ## Data model
 
-Core `companies` table:
+Six tables. Core table is `tools` (replaces the old `companies` concept):
 
 ```sql
-CREATE TABLE companies (
-  id          SERIAL PRIMARY KEY,
-  name        VARCHAR(255) NOT NULL,
-  slug        VARCHAR(255) UNIQUE NOT NULL,
-  description TEXT,                          -- AI-generated
-  url         VARCHAR(500),
-  category_id INT REFERENCES categories(id),
-  tags        TEXT[],
-  pricing     VARCHAR(50),                   -- free/freemium/paid/enterprise
-  tier        VARCHAR(20) DEFAULT 'free',    -- free/premium (monetization)
-  status      VARCHAR(20) DEFAULT 'pending', -- pending/approved/rejected
-  added_at    TIMESTAMP DEFAULT NOW(),
-  updated_at  TIMESTAMP DEFAULT NOW()
+-- tools: main catalog entry
+CREATE TABLE tools (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug             TEXT        NOT NULL UNIQUE,
+  name             TEXT        NOT NULL,
+  tagline_pl       TEXT,
+  description_pl   TEXT,                          -- AI-generated
+  logo_url         TEXT,
+  website_url      TEXT        NOT NULL,
+  category_id      UUID        REFERENCES categories(id),
+  pricing_model    TEXT        CHECK (pricing_model IN ('free','freemium','paid','open_source')),
+  price_from_pln   NUMERIC(10,2),
+  price_note       TEXT,
+  rodo_compliant   BOOLEAN     NOT NULL DEFAULT false,
+  dpa_available    BOOLEAN     DEFAULT false,
+  eu_data_hosting  BOOLEAN     DEFAULT false,
+  ai_act_risk      TEXT        CHECK (ai_act_risk IN ('minimal','limited','high','unacceptable')),
+  ai_act_notes     TEXT,
+  target_size      TEXT[],                        -- ['smb','mid','enterprise']
+  has_pl_ui        BOOLEAN     DEFAULT false,
+  has_pl_support   BOOLEAN     DEFAULT false,
+  integrations     TEXT[],
+  status           TEXT        NOT NULL DEFAULT 'pending'
+                               CHECK (status IN ('pending','approved','rejected','premium')),
+  source           TEXT        DEFAULT 'manual',
+  source_url       TEXT,
+  view_count       INTEGER     NOT NULL DEFAULT 0,
+  click_count      INTEGER     NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Other tables: categories, tags, tool_tags (M:N), premium_listings, scrape_queue
+-- Full schema in db/migrations/001_initial.sql
 ```
+
+**Unique differentiators:** `rodo_compliant`, `dpa_available`, `eu_data_hosting`, `ai_act_risk` — no Polish AI catalog tags these fields.
 
 ## ETL pipeline (NiFi)
 
-Sources: Product Hunt, GitHub Trending, Indie Hackers, RSS feeds. Runs via cron 1× daily.
+NiFi 2.9.0 running locally on Windows. Primary source: **Hacker News API** (Product Hunt blocked by Cloudflare). Runs via cron 1× daily.
 
+Current flow on canvas (Week 3, in progress):
 ```
-GetHTTP → ExtractText → UpdateRecord (normalize) → CheckDuplicate (hash URL+name)
-  → OpenAI API (description + tags) → PostgreSQL INSERT status=pending
-  → Moderation panel (approve/reject) → Frontend (status=approved)
+GenerateFlowFile (60s timer)
+  → InvokeHTTP (GET https://hacker-news.firebaseio.com/v0/topstories.json)
+  → EvaluateJsonPath (extract fields)
+  → PutDatabaseRecord (INSERT into scrape_queue, Supabase via JDBC Session Pooler)
 ```
+
+Planned full pipeline:
+```
+GenerateFlowFile
+  → InvokeHTTP (topstories list)
+  → SplitJson (one flowfile per ID)
+  → InvokeHTTP (GET /v0/item/{id}.json — item details)
+  → InvokeHTTP (POST OpenAI API — generate PL description)
+  → PutDatabaseRecord (INSERT scrape_queue status=ai_done)
+  → Moderation in Supabase Studio (approve/reject)
+  → Frontend (status=approved)
+```
+
+NiFi JDBC connection: `jdbc:postgresql://aws-1-eu-central-1.pooler.supabase.com:5432/postgres`, user `postgres.szassqzvivdgvpkciyif`.
 
 ## AI prompt for company descriptions
 
@@ -126,12 +166,40 @@ Frontend is scaffolded and builds successfully (`npm run build` inside `frontend
 See `.env.example`:
 
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/aifirmy
+# Supabase (PostgreSQL)
+DATABASE_URL=postgresql://postgres.[project-id]:[password]@aws-1-eu-central-1.pooler.supabase.com:5432/postgres
+
+# AI
 OPENAI_API_KEY=sk-...
+
+# Cache (future)
 REDIS_URL=redis://localhost:6379
+
+# App
 NODE_ENV=development
 PORT=3000
 ```
+
+## Current status (June 2026)
+
+**Week 1 ✅** — Strategy, niche, 9 categories, list of 100 tools.
+
+**Week 2 ✅** — Database live on Supabase:
+- 6 tables created: `tools`, `categories`, `tags`, `tool_tags`, `premium_listings`, `scrape_queue`
+- Seed data: 9 categories, 10 tags, 3 approved tools (Make, n8n, Rossum)
+- Full-text search index (`GIN`, `to_tsvector('simple', ...)`)
+- `updated_at` trigger on `tools`
+- Keep-alive: GitHub Actions cron in repo `aifirmy-ping` (pings Supabase every 5 days)
+
+**Week 3 🔄 In progress** — NiFi pipeline:
+- NiFi 2.9.0 installed locally on Windows, running
+- JDBC driver installed (`C:\nifi\lib\postgresql-42.x.x.jar`)
+- DBCPConnectionPool connected to Supabase ✅
+- Basic flow on canvas: `GenerateFlowFile → InvokeHTTP → EvaluateJsonPath → PutDatabaseRecord`
+- Product Hunt blocked (403) → switched to Hacker News API ✅
+- **TODO:** SplitJson, second InvokeHTTP for item details, OpenAI integration, field mapping to `scrape_queue`
+
+**Not yet built:** `backend/`, `/kategoria/[slug]` page, Stripe/PayU, Cloudflare config.
 
 ## Documentation rules
 

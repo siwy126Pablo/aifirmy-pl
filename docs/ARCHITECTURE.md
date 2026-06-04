@@ -9,13 +9,13 @@ Nisza: narzędzia AI, SaaS, kursy, startupy (PL/EU/global).
 | Warstwa | Technologia | Uzasadnienie |
 |---|---|---|
 | **Frontend** | Astro + Tailwind | Najlepszy SSR/SSG dla SEO, lekki, szybki |
-| **Backend / API** | Node.js lub Python (FastAPI) | Do wyboru w trakcie developmentu |
-| **Baza danych** | PostgreSQL | Relacyjna, sprawdzona, dobra dla katalogów |
+| **Backend / API** | Node.js lub Python (FastAPI) | Do wyboru w trakcie developmentu (ADR-005 otwarta) |
+| **Baza danych** | PostgreSQL — **Supabase free** (eu-central-1, Frankfurt) | Cyberfolks ma tylko MariaDB — niekompatybilna ze schematem (ADR-007) |
 | **Cache** | Redis | Szybkie serwowanie listy wpisów |
-| **ETL / Scraping** | Apache NiFi | Kompetencja zawodowa Pabla, self-hosted |
+| **ETL / Scraping** | Apache NiFi 2.9.0 — **lokalnie na Windows** | Kompetencja zawodowa, Oracle Cloud dropped (ADR-008) |
 | **AI opisy** | OpenAI API (GPT-4o) | Generowanie opisów, kategorii, tagów |
-| **CMS / Admin** | Directus lub Supabase | Moderacja wpisów (approve/reject) |
-| **Hosting** | Cyberfolks (aktualny) + Cloudflare | Domena aktywna, CDN + ochrona |
+| **CMS / Admin** | **Supabase Studio** | Wbudowany panel, zero konfiguracji (ADR-006) |
+| **Hosting** | Cyberfolks (frontend) + Cloudflare | Domena aktywna, CDN + ochrona (ADR-004) |
 | **Wersjonowanie** | GitHub (repo: aifirmy-pl) | |
 
 ## Struktura repozytorium
@@ -40,37 +40,61 @@ aifirmy-pl/
     └── decisions/     ← ADR (Architecture Decision Records)
 ```
 
-## Model danych — tabela companies
+## Model danych — tabela tools (główna)
 ```sql
-CREATE TABLE companies (
-  id          SERIAL PRIMARY KEY,
-  name        VARCHAR(255) NOT NULL,
-  slug        VARCHAR(255) UNIQUE NOT NULL,
-  description TEXT,                        -- AI-generated
-  url         VARCHAR(500),
-  category_id INT REFERENCES categories(id),
-  tags        TEXT[],
-  pricing     VARCHAR(50),                 -- free/freemium/paid/enterprise
-  tier        VARCHAR(20) DEFAULT 'free',  -- free/premium
-  status      VARCHAR(20) DEFAULT 'pending', -- pending/approved/rejected
-  added_at    TIMESTAMP DEFAULT NOW(),
-  updated_at  TIMESTAMP DEFAULT NOW()
+CREATE TABLE tools (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug             TEXT        NOT NULL UNIQUE,
+  name             TEXT        NOT NULL,
+  tagline_pl       TEXT,
+  description_pl   TEXT,                          -- AI-generated
+  logo_url         TEXT,
+  website_url      TEXT        NOT NULL,
+  category_id      UUID        REFERENCES categories(id),
+  pricing_model    TEXT        CHECK (pricing_model IN ('free','freemium','paid','open_source')),
+  price_from_pln   NUMERIC(10,2),
+  price_note       TEXT,
+  rodo_compliant   BOOLEAN     NOT NULL DEFAULT false,
+  dpa_available    BOOLEAN     DEFAULT false,
+  eu_data_hosting  BOOLEAN     DEFAULT false,
+  ai_act_risk      TEXT        CHECK (ai_act_risk IN ('minimal','limited','high','unacceptable')),
+  ai_act_notes     TEXT,
+  target_size      TEXT[],                        -- ['smb','mid','enterprise']
+  has_pl_ui        BOOLEAN     DEFAULT false,
+  has_pl_support   BOOLEAN     DEFAULT false,
+  integrations     TEXT[],
+  status           TEXT        NOT NULL DEFAULT 'pending'
+                               CHECK (status IN ('pending','approved','rejected','premium')),
+  source           TEXT        DEFAULT 'manual',
+  source_url       TEXT,
+  view_count       INTEGER     NOT NULL DEFAULT 0,
+  click_count      INTEGER     NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Pozostałe tabele: categories, tags, tool_tags (M:N), premium_listings, scrape_queue
+-- Pełny schemat: db/migrations/001_initial.sql
 ```
+**Unikalny wyróżnik:** `rodo_compliant`, `dpa_available`, `eu_data_hosting`, `ai_act_risk` — żaden polski katalog AI tych pól nie taguje.
 
 ## Pipeline NiFi
 ```
-ŹRÓDŁA (Product Hunt, GitHub, RSS)
-  → GetHTTP
-  → ExtractText
-  → UpdateRecord (normalizacja)
-  → CheckDuplicate (hash URL + nazwa)
-  → OpenAI API (opis + tagi)
-  → PostgreSQL (INSERT status=pending)
-  → Panel moderacji (approve/reject)
+Hacker News API (Product Hunt zablokowany — 403 Cloudflare)
+  → GenerateFlowFile (timer 60s)
+  → InvokeHTTP (GET topstories.json)
+  → SplitJson (jeden flowfile per ID)
+  → InvokeHTTP (GET /v0/item/{id}.json — szczegóły)
+  → InvokeHTTP (POST OpenAI API — opis PL + kategoria + tagi)
+  → PutDatabaseRecord (INSERT scrape_queue status=ai_done)
+  → Moderacja w Supabase Studio (approve/reject)
   → Frontend (status=approved)
 ```
-Częstotliwość: cron 1× dziennie
+Częstotliwość: cron 1× dziennie o 2:00
+
+**Konfiguracja JDBC (Supabase Session Pooler):**
+- URL: `jdbc:postgresql://aws-1-eu-central-1.pooler.supabase.com:5432/postgres`
+- User: `postgres.szassqzvivdgvpkciyif`
+- Driver: `C:\nifi\lib\postgresql-42.x.x.jar`
 
 ## AI Prompt (opis firmy)
 ```
@@ -94,16 +118,24 @@ Format: JSON { description, category, tags, segment }
 - SQL: UPPER_CASE dla słów kluczowych
 - Commity: `feat:`, `fix:`, `docs:`, `refactor:`
 
-## Decyzje do podjęcia
-- [ ] Node.js vs Python dla backend API
-- [ ] Directus vs Supabase dla panelu admin
-- [ ] Cyberfolks wystarczy czy potrzebny VPS (Hetzner)?
-- [ ] Wybór konkretnej niszy (szeroka AI vs wąski segment)
+## Decyzje podjęte
+- [x] Nisza: narzędzia AI dla polskiego B2B (RODO, AI Act, ceny w PLN)
+- [x] Baza: PostgreSQL na Supabase free zamiast MariaDB na Cyberfolks (ADR-007)
+- [x] Panel admin: Supabase Studio zamiast Directus (ADR-006)
+- [x] NiFi: lokalnie na Windows zamiast Oracle Cloud (ADR-008)
+- [x] Źródło danych: Hacker News API zamiast Product Hunt (zablokowany)
+
+## Decyzje otwarte
+- [ ] Node.js vs Python dla backend API (ADR-005)
 
 ## Status (czerwiec 2026)
 - Domena: ✅ aifirmy.pl (Cyberfolks)
-- Repo: ⬜ do założenia na GitHub
-- Dev: ⬜ nie rozpoczęty
+- Repo: ✅ github.com/siwy126Pablo/aifirmy-pl
+- Baza: ✅ Supabase (6 tabel, 9 kategorii, 3 wpisy seed)
+- Frontend: ✅ Astro scaffold działa lokalnie (`npm run build`)
+- NiFi: 🔄 Flow w trakcie (Tydzień 3)
+- Backend API: ⬜ nie rozpoczęty
+- Cloudflare: ⬜ do skonfigurowania przed startem
 
 ---
 
@@ -135,13 +167,13 @@ docs/
 
 ### .env.example (obowiązkowy)
 ```env
-# Baza danych
-DATABASE_URL=postgresql://user:password@localhost:5432/aifirmy
+# Supabase (PostgreSQL — Session Pooler)
+DATABASE_URL=postgresql://postgres.[project-id]:[password]@aws-1-eu-central-1.pooler.supabase.com:5432/postgres
 
 # AI
 OPENAI_API_KEY=sk-...
 
-# Cache
+# Cache (przyszłość)
 REDIS_URL=redis://localhost:6379
 
 # App

@@ -49,7 +49,61 @@
 
 ---
 
-## Szablon tygodnia
+## [v0.2] — 2026-06-04 (tydzień 2)
+
+### Zrobione
+- ✅ Baza danych PostgreSQL na Supabase free (region: eu-central-1, Frankfurt)
+- ✅ 6 tabel: `tools`, `categories`, `tags`, `tool_tags`, `premium_listings`, `scrape_queue`
+- ✅ Indeksy, trigger `updated_at`, full-text search GIN po polsku
+- ✅ Seed: 9 kategorii, 10 tagów, 3 zatwierdzone wpisy (Make, n8n, Rossum)
+- ✅ Keep-alive: GitHub Actions cron w repo `aifirmy-ping` (ping co 5 dni)
+- ✅ Panel admina: Supabase Studio (Table Editor)
+
+### Odkrycia / problemy
+- Cyberfolks (cyber_IN_unlimited) ma tylko MariaDB — niekompatybilna z schematem (brak JSONB, text[], GIN)
+- Supabase darmowy plan pauzuje projekty po tygodniu nieaktywności — rozwiązane cron pingiem
+- UptimeRobot i Freshping niedostępne bez płatności / deprecated → GitHub Actions jako alternatywa
+
+### Zmieniam podejście do
+- Baza: MariaDB na Cyberfolks → PostgreSQL na Supabase (ADR-007)
+- Panel admin: Directus/custom → Supabase Studio (ADR-006)
+
+### Następny tydzień
+- NiFi flow: SplitJson + drugi InvokeHTTP dla szczegółów itemów
+- Integracja OpenAI API do generowania opisów PL
+- Mapowanie pól na tabelę `scrape_queue`
+- Cron o 2:00 w nocy
+
+---
+
+## [v0.3] — 2026-06-04 (tydzień 3, w trakcie)
+
+### Zrobione
+- ✅ Apache NiFi 2.9.0 zainstalowany lokalnie na Windows (Java 25)
+- ✅ JDBC driver PostgreSQL wgrany do `C:\nifi\lib`
+- ✅ DBCPConnectionPool połączony z Supabase (Session Pooler, port 5432)
+- ✅ Podstawowy flow na kanwie: `GenerateFlowFile → InvokeHTTP → EvaluateJsonPath → PutDatabaseRecord`
+- ✅ Hacker News API odpowiada poprawnie (zwraca tablicę ID topowych postów)
+
+### Odkrycia / problemy
+- Product Hunt blokuje requesty (403 Cloudflare) — nie można scrapować bezpośrednio
+- Supabase Direct Connection wymaga IPv6 — użyć Session Pooler zamiast Direct
+- DBCPConnectionPool wymaga user w formacie `postgres.[project-id]` dla Supabase poolera
+- InvokeHTTP bez `GenerateFlowFile` nie odpala się sam nawet z timerem
+
+### Zmieniam podejście do
+- Źródło danych: Product Hunt → Hacker News API (ADR-008)
+- NiFi: Oracle Cloud → lokalnie Windows na czas developmentu (ADR-008)
+
+### Następny tydzień
+- SplitJson → drugi InvokeHTTP po szczegóły każdego itemu HN
+- InvokeHTTP → OpenAI API (generowanie opisu PL + kategoria + tagi)
+- PutDatabaseRecord → INSERT do `scrape_queue`
+- Cron scheduler na 2:00 w nocy
+
+---
+
+
 
 ```
 ## [v0.X] — [data]
