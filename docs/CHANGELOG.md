@@ -103,7 +103,10 @@
 
 ---
 
-
+- ✅ Pełny NiFi flow: SplitJson → InvokeHTTP (HN details) → OpenAI API → PutDatabaseRecord
+- ✅ Pierwsze rekordy w scrape_queue (stage=ai_done)
+- ✅ Cron 2:00 w nocy
+- ✅ Flow wyeksportowany do nifi-flows/
 
 ```
 ## [v0.X] — [data]
