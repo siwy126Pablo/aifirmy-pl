@@ -2,6 +2,28 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🔗 Project links (use these in every session)
+
+| Resource | URL |
+|---|---|
+| Notion — project overview | https://www.notion.so/aifirmy-pl-Katalog-AI-i-SaaS-373b4cccb4af81bb9ec5ef0a5ca32318 |
+| Notion — session notes | https://app.notion.com/p/374b4cccb4af8103afbbc353f9fd300e |
+| GitHub — main repo | https://github.com/siwy126Pablo/aifirmy-pl |
+| GitHub — keep-alive ping | https://github.com/siwy126Pablo/aifirmy-ping |
+| Supabase — dashboard | https://supabase.com/dashboard/project/szassqzvivdgvpkciyif |
+
+## 🚀 How to start a new session
+
+Paste this at the beginning of each new chat:
+
+```
+Kontynuujemy projekt aifirmy.pl.
+Przeczytaj CLAUDE.md i zapoznaj się z aktualnym statusem projektu.
+Notion (projekt): https://www.notion.so/aifirmy-pl-Katalog-AI-i-SaaS-373b4cccb4af81bb9ec5ef0a5ca32318
+Notion (notatki sesji): https://app.notion.com/p/374b4cccb4af8103afbbc353f9fd300e
+Jesteśmy w Tygodniu X, kontynuujemy: [opisz co robisz].
+```
+
 ## Project overview
 
 **aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market. Domain is live on Cyberfolks; frontend development started June 2026.
@@ -97,29 +119,28 @@ CREATE TABLE tools (
 
 ## ETL pipeline (NiFi)
 
-NiFi 2.9.0 running locally on Windows. Primary source: **Hacker News API** (Product Hunt blocked by Cloudflare). Runs via cron 1× daily.
+NiFi 2.9.0 running locally on Windows. Primary source: **Hacker News API** (Product Hunt blocked by Cloudflare). Runs via cron daily at 2:00 AM.
 
-Current flow on canvas (Week 3, in progress):
+**Complete flow (Week 3 ✅):**
 ```
-GenerateFlowFile (60s timer)
+GenerateFlowFile (cron 2:00 AM)
   → InvokeHTTP (GET https://hacker-news.firebaseio.com/v0/topstories.json)
-  → EvaluateJsonPath (extract fields)
-  → PutDatabaseRecord (INSERT into scrape_queue, Supabase via JDBC Session Pooler)
-```
-
-Planned full pipeline:
-```
-GenerateFlowFile
-  → InvokeHTTP (topstories list)
-  → SplitJson (one flowfile per ID)
+  → SplitJson ($[*] — one flowfile per ID)
   → InvokeHTTP (GET /v0/item/{id}.json — item details)
-  → InvokeHTTP (POST OpenAI API — generate PL description)
-  → PutDatabaseRecord (INSERT scrape_queue status=ai_done)
+  → InvokeHTTP (POST OpenAI API — generate PL description, category, segment)
+  → EvaluateJsonPath (extract description, category, segment)
+  → PutDatabaseRecord (INSERT scrape_queue, Supabase via JDBC Session Pooler)
   → Moderation in Supabase Studio (approve/reject)
   → Frontend (status=approved)
 ```
 
-NiFi JDBC connection: `jdbc:postgresql://aws-1-eu-central-1.pooler.supabase.com:5432/postgres`, user `postgres.szassqzvivdgvpkciyif`.
+**Known quirks:**
+- `EvaluateJsonPath` doesn't support arrays → `ai_tags` stored as raw JSONB in `ai_response` column
+- `scraped_at` excluded from INSERT — Supabase fills automatically via DEFAULT
+- OpenAI prompt simplified (no quotes, no `\n`) to avoid malformed JSON responses
+
+NiFi JDBC: `jdbc:postgresql://aws-1-eu-central-1.pooler.supabase.com:5432/postgres`, user `postgres.szassqzvivdgvpkciyif`.
+Flow exported to `/nifi-flows/` in repo.
 
 ## AI prompt for company descriptions
 
@@ -159,7 +180,18 @@ Frontend is scaffolded and builds successfully (`npm run build` inside `frontend
 - `frontend/src/pages/index.astro` — homepage: hero section, responsive 3-column card grid
 - `frontend/src/pages/narzedzia/[slug].astro` — static detail page via `getStaticPaths`; renders company name, description, category, tags, pricing, external CTA; injects `schema.org SoftwareApplication` JSON-LD via `<Fragment slot="head">`
 
-**Not yet built:** `backend/`, DB migrations, NiFi flows, `/kategoria/[slug]` page, admin panel.
+**Known setup quirks (Windows):**
+- Astro v6 + Tailwind v4 installation requires `--template minimal --no-git --no-install` flag due to Node.js v24 bug
+- PowerShell requires `Set-ExecutionPolicy RemoteSigned` before running npm
+
+**Not yet built:** `backend/`, DB migrations, `/kategoria/[slug]` page, Supabase integration, Stripe/PayU, Cloudflare config.
+
+## Workflow — two Claude instances
+
+- **Claude.ai (this chat)** = architect and advisor — strategy, planning, decisions, documentation
+- **Claude Code in VS Code** = executor — code generation, file editing, commits
+- **CLAUDE.md** = bridge between them — must always be up to date
+- **`.md` files pinned to Claude.ai project** = full context on both sides
 
 ## Environment variables
 
@@ -191,15 +223,21 @@ PORT=3000
 - `updated_at` trigger on `tools`
 - Keep-alive: GitHub Actions cron in repo `aifirmy-ping` (pings Supabase every 5 days)
 
-**Week 3 🔄 In progress** — NiFi pipeline:
-- NiFi 2.9.0 installed locally on Windows, running
-- JDBC driver installed (`C:\nifi\lib\postgresql-42.x.x.jar`)
-- DBCPConnectionPool connected to Supabase ✅
-- Basic flow on canvas: `GenerateFlowFile → InvokeHTTP → EvaluateJsonPath → PutDatabaseRecord`
-- Product Hunt blocked (403) → switched to Hacker News API ✅
-- **TODO:** SplitJson, second InvokeHTTP for item details, OpenAI integration, field mapping to `scrape_queue`
+**Week 3 ✅** — NiFi pipeline complete:
+- Full end-to-end flow: HN topstories → SplitJson → item details → OpenAI GPT-4o → INSERT scrape_queue
+- Cron scheduler: daily at 2:00 AM
+- Flow exported to `/nifi-flows/` in repo
+- Known quirks:
+  - `EvaluateJsonPath` doesn't handle arrays → tags stay in `ai_response` as JSONB
+  - `scraped_at` removed from INSERT (Supabase fills automatically)
+  - Simplified OpenAI prompt to avoid JSON-breaking quotes and `\n`
 
-**Not yet built:** `backend/`, `/kategoria/[slug]` page, Stripe/PayU, Cloudflare config.
+**Week 4 🔄 In progress** — Frontend Astro:
+- Scaffold built locally, `npm run build` passes
+- Layout, CompanyCard, index, [slug] pages done with hardcoded data
+- **TODO:** `/kategoria/[slug]` page, Supabase integration, deploy to Cyberfolks, Cloudflare
+
+**Not yet built:** `backend/`, Stripe/PayU, Cloudflare config.
 
 ## Documentation rules
 

@@ -49,10 +49,39 @@
 
 ---
 
-## [v0.2] — 2026-06-04 (tydzień 2)
+## [v0.1] — 2026-06-04 (tydzień 1)
 
 ### Zrobione
-- ✅ Baza danych PostgreSQL na Supabase free (region: eu-central-1, Frankfurt)
+- ✅ Zainicjowana struktura repozytorium (`frontend/`, `backend/`, `nifi-flows/`, `db/migrations/`, `docs/`)
+- ✅ Zainstalowany Tailwind CSS v4 z pluginem `@tailwindcss/vite` (Astro 6)
+- ✅ `astro.config.mjs` — dodany plugin Tailwind i `site: 'https://aifirmy.pl'`
+- ✅ `src/layouts/Layout.astro` — boilerplate HTML, meta SEO, Open Graph, Twitter Card, canonical URL, named slot `head`
+- ✅ `src/components/CompanyCard.astro` — karta firmy z nazwą, opisem, kategorią, tagiem cenowym, linkami
+- ✅ `src/data/companies.ts` — wspólne źródło danych (interface `Company`, 3 wpisy, helper `getCompanyBySlug`)
+- ✅ `src/pages/index.astro` — strona główna: hero, grid 3 kart firm
+- ✅ `src/pages/narzedzia/[slug].astro` — strona detalu firmy, `getStaticPaths`, schema.org `SoftwareApplication`
+- ✅ `.env.example` z wymaganymi zmiennymi środowiskowymi
+- ✅ Claude Code w VS Code połączony z kontem Pro
+- ✅ CLAUDE.md jako pamięć projektu dla Claude Code
+
+### Odkrycia / problemy
+- Tailwind v4 nie wymaga `tailwind.config.js` — tylko `@import "tailwindcss"` w CSS i plugin Vite
+- Astro v6 + Tailwind v4: instalacja wymaga `--template minimal --no-git --no-install` (bug z Node.js v24)
+- PowerShell na Windows wymaga `Set-ExecutionPolicy RemoteSigned` przed npm
+- Schema.org w Astro wymaga `<Fragment slot="head">` z `set:html` zamiast zwykłego `<script>`
+- Stary projekt AIFIRMY (Next.js + FastAPI + MSSQL) porzucony — zaczynamy od zera z właściwym stackiem
+- Dane firm na razie hardcoded w `src/data/companies.ts` — gotowe do podmiany na fetch z PostgreSQL
+
+### Następny tydzień
+- Baza danych PostgreSQL na Supabase
+- 6 tabel, seed danych
+- Keep-alive GitHub Actions
+
+---
+
+## [v0.2] — 2026-06-04 (tydzień 2)
+
+### Zrobione (region: eu-central-1, Frankfurt)
 - ✅ 6 tabel: `tools`, `categories`, `tags`, `tool_tags`, `premium_listings`, `scrape_queue`
 - ✅ Indeksy, trigger `updated_at`, full-text search GIN po polsku
 - ✅ Seed: 9 kategorii, 10 tagów, 3 zatwierdzone wpisy (Make, n8n, Rossum)
@@ -76,37 +105,36 @@
 
 ---
 
-## [v0.3] — 2026-06-04 (tydzień 3, w trakcie)
+## [v0.3] — 2026-06-04 (tydzień 3)
 
 ### Zrobione
 - ✅ Apache NiFi 2.9.0 zainstalowany lokalnie na Windows (Java 25)
 - ✅ JDBC driver PostgreSQL wgrany do `C:\nifi\lib`
 - ✅ DBCPConnectionPool połączony z Supabase (Session Pooler, port 5432)
-- ✅ Podstawowy flow na kanwie: `GenerateFlowFile → InvokeHTTP → EvaluateJsonPath → PutDatabaseRecord`
-- ✅ Hacker News API odpowiada poprawnie (zwraca tablicę ID topowych postów)
+- ✅ Pełny pipeline end-to-end: `GenerateFlowFile → InvokeHTTP (HN topstories) → SplitJson → InvokeHTTP (item details) → InvokeHTTP (OpenAI GPT-4o) → PutDatabaseRecord (scrape_queue)`
+- ✅ Cron scheduler: codziennie o 2:00 w nocy
+- ✅ Flow wyeksportowany do `/nifi-flows/` w repo
 
 ### Odkrycia / problemy
-- Product Hunt blokuje requesty (403 Cloudflare) — nie można scrapować bezpośrednio
+- Product Hunt blokuje requesty (403 Cloudflare) — zamieniono na Hacker News API
 - Supabase Direct Connection wymaga IPv6 — użyć Session Pooler zamiast Direct
 - DBCPConnectionPool wymaga user w formacie `postgres.[project-id]` dla Supabase poolera
-- InvokeHTTP bez `GenerateFlowFile` nie odpala się sam nawet z timerem
+- `EvaluateJsonPath` nie obsługuje tablic → tagi zostają w `ai_response` jako JSONB
+- `scraped_at` (timestamptz) usunięty z INSERT — Supabase wypełnia automatycznie
+- Cudzysłowy i `\n` psujące JSON do OpenAI → uproszczony prompt
 
 ### Zmieniam podejście do
 - Źródło danych: Product Hunt → Hacker News API (ADR-008)
 - NiFi: Oracle Cloud → lokalnie Windows na czas developmentu (ADR-008)
 
 ### Następny tydzień
-- SplitJson → drugi InvokeHTTP po szczegóły każdego itemu HN
-- InvokeHTTP → OpenAI API (generowanie opisu PL + kategoria + tagi)
-- PutDatabaseRecord → INSERT do `scrape_queue`
-- Cron scheduler na 2:00 w nocy
+- Frontend Astro: strona `/kategoria/[slug]`, podłączenie Supabase
+- Deploy na Cyberfolks
+- Konfiguracja Cloudflare
 
 ---
 
-- ✅ Pełny NiFi flow: SplitJson → InvokeHTTP (HN details) → OpenAI API → PutDatabaseRecord
-- ✅ Pierwsze rekordy w scrape_queue (stage=ai_done)
-- ✅ Cron 2:00 w nocy
-- ✅ Flow wyeksportowany do nifi-flows/
+
 
 ```
 ## [v0.X] — [data]
