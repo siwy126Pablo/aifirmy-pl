@@ -1,41 +1,53 @@
 ---
-import type { GetStaticPaths } from 'astro';
 import Layout from '../../layouts/Layout.astro';
-import { companies } from '../../data/companies';
+import { supabase } from '../../lib/supabase';
 
-export const getStaticPaths: GetStaticPaths = () =>
-  companies.map((company) => ({
-    params: { slug: company.slug },
-    props: { company },
-  }));
+export async function getStaticPaths() {
+  const { data: tools } = await supabase
+    .from('tools')
+    .select('*, categories(name_pl, slug)')
+    .eq('status', 'approved');
 
-const { company } = Astro.props;
+  return tools?.map(tool => ({
+    params: { slug: tool.slug },
+    props: { tool }
+  })) ?? [];
+}
 
-const pricingLabel = { free: 'Bezpłatne', freemium: 'Freemium', paid: 'Płatne' } as const;
-const pricingColor = {
+const { tool } = Astro.props;
+
+const pricingLabel: Record<string, string> = {
+  free: 'Bezpłatne',
+  freemium: 'Freemium',
+  paid: 'Płatne',
+  open_source: 'Open Source'
+};
+
+const pricingColor: Record<string, string> = {
   free: 'bg-green-100 text-green-700',
   freemium: 'bg-blue-100 text-blue-700',
   paid: 'bg-orange-100 text-orange-700',
-} as const;
+  open_source: 'bg-purple-100 text-purple-700',
+};
+
+const pricing = tool.pricing_model ?? 'free';
+const categoryName = tool.categories?.name_pl ?? '';
+const categorySlug = tool.categories?.slug ?? '';
 
 const schema = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: company.name,
-  description: company.description,
-  url: company.url,
-  applicationCategory: company.category,
-  keywords: company.tags.join(', '),
-  offers: {
-    '@type': 'Offer',
-    price: company.pricing === 'paid' ? null : '0',
-    priceCurrency: 'USD',
-    description: pricingLabel[company.pricing],
-  },
+  name: tool.name,
+  description: tool.description_pl ?? tool.tagline_pl,
+  url: tool.website_url,
+  applicationCategory: categoryName,
 });
 ---
 
-<Layout title={company.name} description={company.description}>
+<Layout 
+  title={`${tool.name} — aifirmy.pl`}
+  description={tool.tagline_pl ?? tool.description_pl ?? ''}
+>
   <Fragment slot="head">
     <script type="application/ld+json" set:html={schema} />
   </Fragment>
@@ -50,50 +62,55 @@ const schema = JSON.stringify({
 
     <main class="mx-auto max-w-3xl px-4 py-10">
 
-      <!-- Breadcrumb -->
-      <a
-        href="/"
-        class="mb-8 inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
-      >
+      <a href="/" class="mb-8 inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600">
         ← Powrót do katalogu
       </a>
 
       <article class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
 
-        <!-- Nagłówek karty -->
         <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
-          <h1 class="text-3xl font-bold text-gray-900">{company.name}</h1>
-          <span class={`rounded-full px-3 py-1 text-sm font-medium ${pricingColor[company.pricing]}`}>
-            {pricingLabel[company.pricing]}
+          <h1 class="text-3xl font-bold text-gray-900">{tool.name}</h1>
+          <span class={`rounded-full px-3 py-1 text-sm font-medium ${pricingColor[pricing]}`}>
+            {pricingLabel[pricing]}
           </span>
         </div>
 
-        <!-- Kategoria -->
-        <p class="mb-6 text-sm text-gray-400">
-          Kategoria:&nbsp;
-          <a
-            href={`/kategoria/${company.category.toLowerCase().replace(/\s+/g, '-')}`}
-            class="font-medium text-indigo-600 hover:underline"
-          >
-            {company.category}
-          </a>
+        {categoryName && (
+          <p class="mb-6 text-sm text-gray-400">
+            Kategoria:&nbsp;
+            <a href={`/kategoria/${categorySlug}`} class="font-medium text-indigo-600 hover:underline">
+              {categoryName}
+            </a>
+          </p>
+        )}
+
+        {tool.tagline_pl && (
+          <p class="mb-4 text-lg font-medium text-gray-700">{tool.tagline_pl}</p>
+        )}
+
+        <p class="mb-8 text-base leading-relaxed text-gray-600">
+          {tool.description_pl}
         </p>
 
-        <!-- Opis -->
-        <p class="mb-8 text-base leading-relaxed text-gray-700">{company.description}</p>
-
-        <!-- Tagi -->
-        <div class="mb-8 flex flex-wrap gap-2">
-          {company.tags.map((tag) => (
-            <span class="rounded-md bg-gray-100 px-2.5 py-1 text-xs text-gray-500">
-              {tag}
+        <div class="mb-8 flex flex-wrap gap-3 text-sm text-gray-500">
+          {tool.rodo_compliant && (
+            <span class="rounded-md bg-green-50 px-2.5 py-1 text-green-700">✓ RODO</span>
+          )}
+          {tool.eu_data_hosting && (
+            <span class="rounded-md bg-blue-50 px-2.5 py-1 text-blue-700">✓ Hosting UE</span>
+          )}
+          {tool.has_pl_ui && (
+            <span class="rounded-md bg-indigo-50 px-2.5 py-1 text-indigo-700">✓ Interfejs PL</span>
+          )}
+          {tool.ai_act_risk && (
+            <span class="rounded-md bg-gray-100 px-2.5 py-1 text-gray-600">
+              AI Act: {tool.ai_act_risk}
             </span>
-          ))}
+          )}
         </div>
 
-        <!-- CTA -->
-        <a
-          href={company.url}
+        
+          href={tool.website_url}
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
