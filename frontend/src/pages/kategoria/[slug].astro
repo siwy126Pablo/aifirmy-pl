@@ -1,0 +1,64 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CompanyCard from '../../components/CompanyCard.astro';
+import { supabase } from '../../lib/supabase';
+
+export async function getStaticPaths() {
+  const { data: categories } = await supabase
+    .from('categories')
+    .select('slug, name_pl');
+
+  return categories?.map(cat => ({
+    params: { slug: cat.slug },
+    props: { categoryName: cat.name_pl }
+  })) ?? [];
+}
+
+const { slug } = Astro.params;
+const { categoryName } = Astro.props;
+
+const { data: category } = await supabase
+  .from('categories')
+  .select('id')
+  .eq('slug', slug)
+  .single();
+
+const { data: tools } = await supabase
+  .from('tools')
+  .select('*, categories(name_pl)')
+  .eq('status', 'approved')
+  .eq('category_id', category?.id)
+  .order('created_at', { ascending: false });
+---
+
+<Layout 
+  title={`${categoryName} — narzędzia AI | aifirmy.pl`}
+  description={`Najlepsze narzędzia AI w kategorii ${categoryName} dla polskich firm B2B. Opisy po polsku, ceny, zgodność z RODO i AI Act.`}
+>
+  <main class="max-w-6xl mx-auto px-4 py-12">
+    <a href="/" class="text-sm text-gray-500 hover:text-gray-700 mb-6 inline-block">
+      ← Wszystkie narzędzia
+    </a>
+    <h1 class="text-3xl font-bold mb-2">{categoryName}</h1>
+    <p class="text-gray-500 mb-10">
+      Narzędzia AI dla polskich firm B2B — {tools?.length ?? 0} wpisów
+    </p>
+
+    {tools && tools.length > 0 ? (
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {tools.map(tool => (
+  <CompanyCard
+    name={tool.name}
+    description={tool.description_pl ?? tool.tagline_pl ?? ''}
+    category={tool.categories?.name_pl ?? ''}
+    pricing={tool.pricing_model ?? 'free'}
+    url={tool.website_url}
+    slug={tool.slug}
+  />
+))}
+      </div>
+    ) : (
+      <p class="text-gray-400">Brak narzędzi w tej kategorii. Wkrótce więcej wpisów.</p>
+    )}
+  </main>
+</Layout>
