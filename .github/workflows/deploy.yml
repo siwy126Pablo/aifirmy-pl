@@ -55,6 +55,6 @@ jobs:
           username: siwy126
           password: ${{ secrets.SSH_PASSWORD }}
           port: 222
-          source: admin/*
-          target: /home/siwy126/domains/aifirmy.pl/public_html/admin/
-          strip_components: 1
+          source: admin/
+          target: /home/siwy126/domains/aifirmy.pl/public_html/
+          strip_components: 0
