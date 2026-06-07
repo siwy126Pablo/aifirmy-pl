@@ -174,7 +174,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         .badge-green { background: #dcfce7; color: #16a34a; }
         .badge-blue { background: #dbeafe; color: #2563eb; }
         .badge-gray { background: #f3f4f6; color: #6b7280; }
-        .desc { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .desc { max-width: 400px; white-space: normal; line-height: 1.5; }
         .actions { display: flex; gap: 8px; }
         .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
         .stat { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
