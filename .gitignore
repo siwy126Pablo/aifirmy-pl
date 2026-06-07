@@ -11,3 +11,5 @@ dist/
 # OS and editor files
 .DS_Store
 .idea/
+
+nifi-flows/
