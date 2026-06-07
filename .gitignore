@@ -1,5 +1,4 @@
 # Ignore NiFi flow exports that may contain secrets
-nifi-flows/
 
 # Environment files
 .env
