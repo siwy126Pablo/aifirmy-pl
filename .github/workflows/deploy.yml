@@ -1,0 +1,50 @@
+name: Deploy to Cyberfolks
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Deploy via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: s103.cyber-folks.pl
+          username: siwy126
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 222
+          source: frontend/dist/*
+          target: /home/siwy126/domains/aifirmy.pl/public_html/
+          strip_components: 2
+
+      - name: Fix permissions
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: s103.cyber-folks.pl
+          username: siwy126
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 222
+          script: |
+            find /home/siwy126/domains/aifirmy.pl/public_html -type d -exec chmod 755 {} \;
+            find /home/siwy126/domains/aifirmy.pl/public_html -type f -exec chmod 644 {} \;
