@@ -48,3 +48,13 @@ jobs:
           script: |
             find /home/siwy126/domains/aifirmy.pl/public_html -type d -exec chmod 755 {} \;
             find /home/siwy126/domains/aifirmy.pl/public_html -type f -exec chmod 644 {} \;
+      - name: Deploy admin panel
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: s103.cyber-folks.pl
+          username: siwy126
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 222
+          source: admin/*
+          target: /home/siwy126/domains/aifirmy.pl/public_html/admin/
+          strip_components: 1
