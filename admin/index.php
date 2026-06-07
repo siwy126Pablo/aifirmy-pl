@@ -2,26 +2,145 @@
 session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 
-// Wylogowanie
+define('SUPABASE_URL', 'https://szassqzvivdgvpkciyif.supabase.co');
+define('SUPABASE_KEY', 'TUTAJ_WKLEJ_ANON_KEY'); // ← wklej swój anon key
+
+// ---------- helpers Supabase REST ----------
+
+function sb_get(string $path): array {
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . SUPABASE_KEY,
+            'Authorization: Bearer ' . SUPABASE_KEY,
+        ],
+    ]);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($res, true) ?? [];
+}
+
+function sb_patch(string $table, string $id, array $data): void {
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table . '?id=eq.' . rawurlencode($id));
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER  => true,
+        CURLOPT_CUSTOMREQUEST   => 'PATCH',
+        CURLOPT_POSTFIELDS      => json_encode($data),
+        CURLOPT_HTTPHEADER      => [
+            'apikey: ' . SUPABASE_KEY,
+            'Authorization: Bearer ' . SUPABASE_KEY,
+            'Content-Type: application/json',
+        ],
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+function sb_post(string $table, array $data): void {
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($data),
+        CURLOPT_HTTPHEADER     => [
+            'apikey: ' . SUPABASE_KEY,
+            'Authorization: Bearer ' . SUPABASE_KEY,
+            'Content-Type: application/json',
+            'Prefer: return=minimal',
+        ],
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+function sb_count(string $table, string $filter = ''): int {
+    $url = SUPABASE_URL . '/rest/v1/' . $table . '?select=id&limit=1' . ($filter ? '&' . $filter : '');
+    $ch = curl_init($url);
+    $headers = [];
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER  => true,
+        CURLOPT_HEADERFUNCTION  => function ($ch, $h) use (&$headers) {
+            $headers[] = $h;
+            return strlen($h);
+        },
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . SUPABASE_KEY,
+            'Authorization: Bearer ' . SUPABASE_KEY,
+            'Prefer: count=exact',
+        ],
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+    foreach ($headers as $h) {
+        if (preg_match('/^Content-Range:\s*[^\/]*\/(\d+)/i', $h, $m)) return (int) $m[1];
+    }
+    return 0;
+}
+
+function slugify(string $text): string {
+    $map = [
+        'ą'=>'a','ć'=>'c','ę'=>'e','ł'=>'l','ń'=>'n','ó'=>'o','ś'=>'s','ź'=>'z','ż'=>'z',
+        'Ą'=>'a','Ć'=>'c','Ę'=>'e','Ł'=>'l','Ń'=>'n','Ó'=>'o','Ś'=>'s','Ź'=>'z','Ż'=>'z',
+    ];
+    $text = strtr($text, $map);
+    $text = strtolower($text);
+    $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+    return trim($text, '-');
+}
+
+// ---------- auth ----------
+
 if (isset($_GET['logout'])) {
     session_destroy();
     header('Location: /admin/');
     exit;
 }
 
-// Logowanie
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     if ($_POST['password'] === ADMIN_PASSWORD) {
         $_SESSION['admin'] = true;
         header('Location: /admin/');
         exit;
-    } else {
-        $error = 'Nieprawidłowe hasło';
     }
+    $error = 'Nieprawidłowe hasło';
 }
 
-// Sprawdź czy zalogowany
 $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
+
+// ---------- akcje POST (tylko gdy zalogowany) ----------
+
+if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $tab = $_GET['tab'] ?? 'queue';
+
+    if (isset($_POST['action'], $_POST['id'])) {
+        $id = $_POST['id'];
+        if ($_POST['action'] === 'publish') {
+            sb_patch('scrape_queue', $id, ['stage' => 'published']);
+        } elseif ($_POST['action'] === 'reject') {
+            sb_patch('scrape_queue', $id, ['stage' => 'rejected']);
+        }
+        header('Location: /admin/?tab=' . $tab);
+        exit;
+    }
+
+    if (isset($_POST['add_tool'])) {
+        sb_post('tools', [
+            'slug'          => slugify($_POST['name']),
+            'name'          => $_POST['name'],
+            'tagline_pl'    => $_POST['tagline_pl'] ?: null,
+            'description_pl'=> $_POST['description_pl'] ?: null,
+            'website_url'   => $_POST['website_url'],
+            'category_id'   => $_POST['category_id'] ?: null,
+            'pricing_model' => $_POST['pricing_model'],
+            'rodo_compliant'=> isset($_POST['rodo_compliant']),
+            'ai_act_risk'   => $_POST['ai_act_risk'],
+            'status'        => 'approved',
+        ]);
+        header('Location: /admin/?tab=tools');
+        exit;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="pl">
@@ -85,64 +204,44 @@ $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
 </div>
 
 <div class="container">
-    <?php
-    $pdo = getDB();
-    $tab = $_GET['tab'] ?? 'queue';
+<?php
+$tab = $_GET['tab'] ?? 'queue';
 
-    // Akcje moderacji
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if (isset($_POST['action']) && isset($_POST['id'])) {
-            $id = $_POST['id'];
-            $action = $_POST['action'];
-            if ($action === 'publish') {
-                $pdo->prepare("UPDATE scrape_queue SET stage = 'published' WHERE id = ?")->execute([$id]);
-            } elseif ($action === 'reject') {
-                $pdo->prepare("UPDATE scrape_queue SET stage = 'rejected' WHERE id = ?")->execute([$id]);
-            }
-        }
-        header('Location: /admin/?tab=' . $tab);
-        exit;
-    }
-
-    // Statystyki
-    $stats = $pdo->query("
-        SELECT 
-            (SELECT COUNT(*) FROM scrape_queue WHERE stage = 'ai_done') AS czeka,
-            (SELECT COUNT(*) FROM tools WHERE status = 'approved') AS approved,
-            (SELECT COUNT(*) FROM scrape_queue WHERE stage = 'published') AS opublikowane
-    ")->fetch();
-    ?>
+$czeka      = sb_count('scrape_queue', 'stage=eq.ai_done');
+$approved   = sb_count('tools', 'status=eq.approved');
+$opublikowane = sb_count('scrape_queue', 'stage=eq.published');
+?>
 
     <div class="stats">
         <div class="stat">
-            <div class="stat-val"><?= $stats['czeka'] ?></div>
+            <div class="stat-val"><?= $czeka ?></div>
             <div class="stat-lbl">Czeka na moderację</div>
         </div>
         <div class="stat">
-            <div class="stat-val"><?= $stats['approved'] ?></div>
+            <div class="stat-val"><?= $approved ?></div>
             <div class="stat-lbl">Zatwierdzone narzędzia</div>
         </div>
         <div class="stat">
-            <div class="stat-val"><?= $stats['opublikowane'] ?></div>
+            <div class="stat-val"><?= $opublikowane ?></div>
             <div class="stat-lbl">Opublikowane łącznie</div>
         </div>
     </div>
 
     <div class="tabs">
-        <a href="?tab=queue" class="tab <?= $tab === 'queue' ? 'active' : '' ?>">Kolejka (<?= $stats['czeka'] ?>)</a>
+        <a href="?tab=queue" class="tab <?= $tab === 'queue' ? 'active' : '' ?>">Kolejka (<?= $czeka ?>)</a>
         <a href="?tab=tools" class="tab <?= $tab === 'tools' ? 'active' : '' ?>">Narzędzia</a>
-        <a href="?tab=add" class="tab <?= $tab === 'add' ? 'active' : '' ?>">+ Dodaj wpis</a>
+        <a href="?tab=add"   class="tab <?= $tab === 'add'   ? 'active' : '' ?>">+ Dodaj wpis</a>
     </div>
 
     <?php if ($tab === 'queue'): ?>
     <?php
-    $items = $pdo->query("
-        SELECT id, raw_name, ai_description, ai_category, source_url, scraped_at
-        FROM scrape_queue
-        WHERE stage = 'ai_done'
-        ORDER BY scraped_at DESC
-        LIMIT 50
-    ")->fetchAll();
+    $items = sb_get(
+        'scrape_queue' .
+        '?stage=eq.ai_done' .
+        '&order=scraped_at.desc' .
+        '&limit=50' .
+        '&select=id,raw_name,ai_description,ai_category,source_url,scraped_at'
+    );
     ?>
     <table>
         <tr>
@@ -155,20 +254,20 @@ $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
         </tr>
         <?php foreach ($items as $item): ?>
         <tr>
-            <td><strong><?= htmlspecialchars($item['raw_name']) ?></strong></td>
+            <td><strong><?= htmlspecialchars($item['raw_name'] ?? '') ?></strong></td>
             <td class="desc"><?= htmlspecialchars($item['ai_description'] ?? '') ?></td>
             <td><span class="badge badge-blue"><?= htmlspecialchars($item['ai_category'] ?? '') ?></span></td>
             <td><a href="<?= htmlspecialchars($item['source_url'] ?? '') ?>" target="_blank" style="color:#4f46e5">Link →</a></td>
-            <td><?= date('d.m H:i', strtotime($item['scraped_at'])) ?></td>
+            <td><?= $item['scraped_at'] ? date('d.m H:i', strtotime($item['scraped_at'])) : '' ?></td>
             <td>
                 <div class="actions">
                     <form method="POST">
-                        <input type="hidden" name="id" value="<?= $item['id'] ?>">
+                        <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
                         <input type="hidden" name="action" value="publish">
                         <button class="btn btn-success">✓</button>
                     </form>
                     <form method="POST">
-                        <input type="hidden" name="id" value="<?= $item['id'] ?>">
+                        <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
                         <input type="hidden" name="action" value="reject">
                         <button class="btn btn-danger">✗</button>
                     </form>
@@ -183,13 +282,13 @@ $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
 
     <?php elseif ($tab === 'tools'): ?>
     <?php
-    $tools = $pdo->query("
-        SELECT t.id, t.slug, t.name, t.pricing_model, t.rodo_compliant, t.ai_act_risk, t.status, c.name_pl AS category
-        FROM tools t
-        LEFT JOIN categories c ON t.category_id = c.id
-        ORDER BY t.created_at DESC
-        LIMIT 100
-    ")->fetchAll();
+    $tools = sb_get(
+        'tools' .
+        '?status=eq.approved' .
+        '&order=created_at.desc' .
+        '&limit=100' .
+        '&select=id,slug,name,pricing_model,rodo_compliant,ai_act_risk,status,categories(name_pl)'
+    );
     ?>
     <table>
         <tr>
@@ -199,45 +298,22 @@ $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
             <th>RODO</th>
             <th>AI Act</th>
             <th>Status</th>
-            <th>Akcja</th>
         </tr>
         <?php foreach ($tools as $tool): ?>
         <tr>
-            <td><strong><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= $tool['slug'] ?></small></td>
-            <td><?= htmlspecialchars($tool['category'] ?? '') ?></td>
-            <td><span class="badge badge-gray"><?= $tool['pricing_model'] ?></span></td>
+            <td><strong><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= htmlspecialchars($tool['slug']) ?></small></td>
+            <td><?= htmlspecialchars($tool['categories']['name_pl'] ?? '') ?></td>
+            <td><span class="badge badge-gray"><?= htmlspecialchars($tool['pricing_model'] ?? '') ?></span></td>
             <td><?= $tool['rodo_compliant'] ? '✅' : '❌' ?></td>
             <td><?= htmlspecialchars($tool['ai_act_risk'] ?? '') ?></td>
-            <td><span class="badge <?= $tool['status'] === 'approved' ? 'badge-green' : 'badge-gray' ?>"><?= $tool['status'] ?></span></td>
-            <td><a href="?tab=edit&id=<?= $tool['id'] ?>" class="btn btn-secondary">Edytuj</a></td>
+            <td><span class="badge <?= $tool['status'] === 'approved' ? 'badge-green' : 'badge-gray' ?>"><?= htmlspecialchars($tool['status']) ?></span></td>
         </tr>
         <?php endforeach; ?>
     </table>
 
     <?php elseif ($tab === 'add'): ?>
     <?php
-    $categories = $pdo->query("SELECT id, name_pl FROM categories ORDER BY sort_order")->fetchAll();
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_tool'])) {
-        $slug = strtolower(preg_replace('/[^a-z0-9]+/', '-', $_POST['name']));
-        $stmt = $pdo->prepare("
-            INSERT INTO tools (slug, name, tagline_pl, description_pl, website_url, category_id, pricing_model, rodo_compliant, ai_act_risk, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
-        ");
-        $stmt->execute([
-            $slug,
-            $_POST['name'],
-            $_POST['tagline_pl'],
-            $_POST['description_pl'],
-            $_POST['website_url'],
-            $_POST['category_id'] ?: null,
-            $_POST['pricing_model'],
-            isset($_POST['rodo_compliant']) ? 'true' : 'false',
-            $_POST['ai_act_risk'],
-        ]);
-        header('Location: /admin/?tab=tools');
-        exit;
-    }
+    $categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
     <div style="background:white;padding:32px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);max-width:700px">
         <h2 style="margin-bottom:24px;font-size:18px">Dodaj narzędzie ręcznie</h2>
@@ -263,7 +339,7 @@ $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
                 <select name="category_id" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
                     <option value="">— wybierz —</option>
                     <?php foreach ($categories as $cat): ?>
-                    <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['name_pl']) ?></option>
+                    <option value="<?= htmlspecialchars($cat['id']) ?>"><?= htmlspecialchars($cat['name_pl']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
