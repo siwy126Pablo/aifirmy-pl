@@ -3,7 +3,7 @@ session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 
 define('SUPABASE_URL', 'https://szassqzvivdgvpkciyif.supabase.co');
-define('SUPABASE_KEY', 'TUTAJ_WKLEJ_ANON_KEY'); // ← wklej swój anon key
+define('SUPABASE_KEY', SUPABASE_ANON_KEY ); // ← wklej swój anon key
 
 // ---------- helpers Supabase REST ----------
 
@@ -93,14 +93,14 @@ function slugify(string $text): string {
 
 if (isset($_GET['logout'])) {
     session_destroy();
-    header('Location: /admin/');
+    header('Location: /admin/index.php');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     if ($_POST['password'] === ADMIN_PASSWORD) {
         $_SESSION['admin'] = true;
-        header('Location: /admin/');
+        header('Location: /admin/index.php');
         exit;
     }
     $error = 'Nieprawidłowe hasło';
@@ -120,7 +120,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($_POST['action'] === 'reject') {
             sb_patch('scrape_queue', $id, ['stage' => 'rejected']);
         }
-        header('Location: /admin/?tab=' . $tab);
+        header('Location: /admin/index.php?tab=' . $tab);
         exit;
     }
 
@@ -137,7 +137,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'ai_act_risk'   => $_POST['ai_act_risk'],
             'status'        => 'approved',
         ]);
-        header('Location: /admin/?tab=tools');
+        header('Location: /admin/index.php?tab=tools');
         exit;
     }
 }
