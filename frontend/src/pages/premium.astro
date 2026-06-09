@@ -1,0 +1,159 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const packages = [
+  {
+    name: 'Logo',
+    price: 49,
+    highlight: false,
+    description: 'Logo Twojego narzędzia widoczne na karcie wpisu w katalogu.',
+    features: [
+      'Logo na karcie wpisu',
+      'Wyświetlane w wynikach wyszukiwania',
+      'Widoczność w kategoriach',
+    ],
+  },
+  {
+    name: 'Featured',
+    price: 99,
+    highlight: false,
+    description: 'Wyróżniona karta z oznaczeniem "Polecane" w widoku kategorii.',
+    features: [
+      'Wszystko z pakietu Logo',
+      'Oznaczenie "Polecane" na karcie',
+      'Wyróżnione tło karty w kategorii',
+    ],
+  },
+  {
+    name: 'Dofollow',
+    price: 199,
+    highlight: true,
+    description: 'Link dofollow do Twojej strony — mierzalna wartość SEO.',
+    features: [
+      'Wszystko z pakietu Featured',
+      'Link dofollow do witryny',
+      'Wyższa pozycja w katalogu',
+      'Wzmocnienie domeny (link juice)',
+    ],
+  },
+  {
+    name: 'Top of Category',
+    price: 299,
+    highlight: false,
+    description: 'Pierwsza pozycja w wybranej kategorii — maksymalna widoczność.',
+    features: [
+      'Wszystko z pakietu Dofollow',
+      'Pierwsza pozycja w kategorii',
+      'Baner w nagłówku kategorii',
+      'Dedykowany opis kategorii',
+    ],
+  },
+];
+---
+
+<Layout
+  title="Premium — wyróżnij swoje narzędzie AI"
+  description="Zwiększ widoczność swojego narzędzia AI w katalogu aifirmy.pl. Pakiety premium z linkiem dofollow, pozycją w kategorii i oznaczeniem Polecane."
+>
+  <div class="min-h-screen bg-gray-50">
+
+    <header class="border-b border-gray-200 bg-white">
+      <div class="mx-auto max-w-5xl px-4 py-6">
+        <a href="/" class="text-xl font-bold text-indigo-600">aifirmy.pl</a>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-4 py-16">
+
+      <!-- Hero -->
+      <section class="mb-14 text-center">
+        <h1 class="mb-4 text-4xl font-bold tracking-tight text-gray-900">
+          Wyróżnij swoje narzędzie AI
+        </h1>
+        <p class="mx-auto max-w-2xl text-lg text-gray-500">
+          aifirmy.pl to jedyny polski katalog, który taguje narzędzia pod kątem
+          <strong class="text-gray-700">RODO</strong>,
+          <strong class="text-gray-700">AI Act</strong> i
+          <strong class="text-gray-700">hostingu w UE</strong> —
+          kryteria, których szukają kupujący B2B.
+          Polskie opisy generowane przez AI przyciągają ruch z długiego ogona.
+        </p>
+      </section>
+
+      <!-- Pakiety -->
+      <section class="mb-16">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {packages.map((pkg) => (
+            <div
+              class={[
+                'relative flex flex-col rounded-2xl border p-6 shadow-sm',
+                pkg.highlight
+                  ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500'
+                  : 'border-gray-200 bg-white',
+              ].join(' ')}
+            >
+              {pkg.highlight && (
+                <span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-semibold text-white">
+                  Najpopularniejszy
+                </span>
+              )}
+
+              <div class="mb-4">
+                <h2 class="text-lg font-bold text-gray-900">{pkg.name}</h2>
+                <div class="mt-1 flex items-baseline gap-1">
+                  <span class="text-3xl font-extrabold text-indigo-600">{pkg.price} zł</span>
+                  <span class="text-sm text-gray-400">/mc</span>
+                </div>
+              </div>
+
+              <p class="mb-5 text-sm text-gray-500">{pkg.description}</p>
+
+              <ul class="mb-8 flex-1 space-y-2 text-sm text-gray-600">
+                {pkg.features.map((f) => (
+                  <li class="flex items-start gap-2">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href="/kontakt"
+                class={[
+                  'block rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-colors',
+                  pkg.highlight
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'border border-indigo-600 text-indigo-600 hover:bg-indigo-50',
+                ].join(' ')}
+              >
+                Wybierz
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- Kontakt -->
+      <section class="rounded-2xl border border-gray-200 bg-white px-8 py-10 text-center">
+        <h2 class="mb-2 text-2xl font-bold text-gray-900">Masz pytania?</h2>
+        <p class="mb-4 text-gray-500">
+          Napisz do nas — odpowiemy w ciągu jednego dnia roboczego.
+        </p>
+        <a
+          href="mailto:kontakt@aifirmy.pl"
+          class="text-lg font-semibold text-indigo-600 hover:underline"
+        >
+          kontakt@aifirmy.pl
+        </a>
+      </section>
+
+    </main>
+
+    <footer class="border-t border-gray-200 py-8 text-center text-sm text-gray-400">
+      © {new Date().getFullYear()} aifirmy.pl
+    </footer>
+
+  </div>
+</Layout>

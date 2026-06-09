@@ -1,0 +1,139 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Kontakt"
+  description="Skontaktuj się z zespołem aifirmy.pl — zapytaj o pakiety premium, dodanie narzędzia lub współpracę."
+>
+  <div class="min-h-screen bg-gray-50">
+
+    <header class="border-b border-gray-200 bg-white">
+      <div class="mx-auto max-w-5xl px-4 py-6">
+        <a href="/" class="text-xl font-bold text-indigo-600">aifirmy.pl</a>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-4 py-16">
+
+      <section class="mb-10 text-center">
+        <h1 class="mb-3 text-4xl font-bold tracking-tight text-gray-900">Kontakt</h1>
+        <p class="text-lg text-gray-500">Napisz do nas — odpowiemy w ciągu jednego dnia roboczego.</p>
+      </section>
+
+      <div class="grid grid-cols-1 gap-10 lg:grid-cols-3">
+
+        <!-- Formularz -->
+        <div class="lg:col-span-2">
+          <form
+            action="https://formspree.io/f/mojzwrev"
+            method="POST"
+            class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+          >
+            <div class="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div>
+                <label for="name" class="mb-1 block text-sm font-medium text-gray-700">Imię i nazwisko</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  placeholder="Jan Kowalski"
+                  class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+              <div>
+                <label for="email" class="mb-1 block text-sm font-medium text-gray-700">Adres e-mail</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  placeholder="jan@firma.pl"
+                  class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+            </div>
+
+            <div class="mb-5">
+              <label for="company" class="mb-1 block text-sm font-medium text-gray-700">Nazwa firmy / narzędzia</label>
+              <input
+                type="text"
+                id="company"
+                name="company"
+                placeholder="Acme AI sp. z o.o."
+                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+
+            <div class="mb-6">
+              <label for="message" class="mb-1 block text-sm font-medium text-gray-700">Wiadomość</label>
+              <textarea
+                id="message"
+                name="message"
+                required
+                rows="5"
+                placeholder="Opisz czego szukasz lub o co chcesz zapytać..."
+                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 resize-none"
+              ></textarea>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+            >
+              Wyślij wiadomość
+            </button>
+          </form>
+        </div>
+
+        <!-- Dane kontaktowe -->
+        <aside class="flex flex-col gap-6">
+          <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 class="mb-4 text-base font-semibold text-gray-900">Dane kontaktowe</h2>
+            <div class="flex items-start gap-3">
+              <svg class="mt-0.5 h-5 w-5 shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5H4.5a2.25 2.25 0 00-2.25 2.25m19.5 0l-9.75 6.75L2.25 6.75" />
+              </svg>
+              <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">E-mail</p>
+                <a href="mailto:kontakt@aifirmy.pl" class="text-sm font-medium text-indigo-600 hover:underline">
+                  kontakt@aifirmy.pl
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 class="mb-3 text-base font-semibold text-gray-900">Kiedy pisać?</h2>
+            <ul class="space-y-2 text-sm text-gray-500">
+              <li class="flex items-start gap-2">
+                <span class="mt-0.5 text-indigo-500">→</span>
+                Chcesz dodać swoje narzędzie do katalogu
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="mt-0.5 text-indigo-500">→</span>
+                Interesujesz się pakietem <a href="/premium" class="font-medium text-indigo-600 hover:underline">Premium</a>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="mt-0.5 text-indigo-500">→</span>
+                Masz pytania o RODO lub AI Act
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="mt-0.5 text-indigo-500">→</span>
+                Chcesz nawiązać współpracę
+              </li>
+            </ul>
+          </div>
+        </aside>
+
+      </div>
+
+    </main>
+
+    <footer class="border-t border-gray-200 py-8 text-center text-sm text-gray-400">
+      © {new Date().getFullYear()} aifirmy.pl
+    </footer>
+
+  </div>
+</Layout>
