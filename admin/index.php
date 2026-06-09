@@ -79,6 +79,7 @@ function sb_count(string $table, string $filter = ''): int {
 }
 
 function slugify(string $text): string {
+    $text = preg_replace('/^Show HN:\s*/i', '', $text);
     $map = [
         'ą'=>'a','ć'=>'c','ę'=>'e','ł'=>'l','ń'=>'n','ó'=>'o','ś'=>'s','ź'=>'z','ż'=>'z',
         'Ą'=>'a','Ć'=>'c','Ę'=>'e','Ł'=>'l','Ń'=>'n','Ó'=>'o','Ś'=>'s','Ź'=>'z','Ż'=>'z',
@@ -162,6 +163,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-success { background: #16a34a; color: white; }
         .btn-danger { background: #dc2626; color: white; }
         .btn-secondary { background: #e5e7eb; color: #374151; }
+        .btn-delete { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; font-size: 12px; padding: 4px 10px; }
         .error { color: #dc2626; font-size: 14px; margin-bottom: 12px; }
         .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
         .tab { padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; background: white; border: 1px solid #ddd; text-decoration: none; color: #374151; }
@@ -271,6 +273,7 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
                         <input type="hidden" name="action" value="reject">
                         <button class="btn btn-danger">✗</button>
                     </form>
+                    <button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($item['id']) ?>', 'scrape_queue', 'stage', this.closest('tr'))">Usuń</button>
                 </div>
             </td>
         </tr>
@@ -298,6 +301,7 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
             <th>RODO</th>
             <th>AI Act</th>
             <th>Status</th>
+            <th>Akcja</th>
         </tr>
         <?php foreach ($tools as $tool): ?>
         <tr>
@@ -307,6 +311,7 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
             <td><?= $tool['rodo_compliant'] ? '✅' : '❌' ?></td>
             <td><?= htmlspecialchars($tool['ai_act_risk'] ?? '') ?></td>
             <td><span class="badge <?= $tool['status'] === 'approved' ? 'badge-green' : 'badge-gray' ?>"><?= htmlspecialchars($tool['status']) ?></span></td>
+            <td><button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($tool['id']) ?>', 'tools', 'status', this.closest('tr'))">Usuń</button></td>
         </tr>
         <?php endforeach; ?>
     </table>
@@ -373,5 +378,21 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
 
 </div>
 <?php endif; ?>
+<script>
+function softDelete(id, table, field, row) {
+    if (!window.confirm('Usunąć ten wpis?')) return;
+    fetch('<?= SUPABASE_URL ?>/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: {
+            'apikey': '<?= SUPABASE_KEY ?>',
+            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({[field]: 'rejected'})
+    }).then(function(r) {
+        if (r.ok) row.remove();
+    });
+}
+</script>
 </body>
 </html>
