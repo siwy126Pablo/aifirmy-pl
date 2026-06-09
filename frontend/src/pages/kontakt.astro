@@ -26,11 +26,13 @@ import Layout from '../layouts/Layout.astro';
         <!-- Formularz -->
         <div class="lg:col-span-2">
           <form
-            action="https://formspree.io/f/mojzwrev"
+            action="https://api.web3forms.com/submit"
             method="POST"
             class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
           >
-            <input type="hidden" name="_next" value="https://aifirmy.pl/dziekujemy" />
+            <input type="hidden" name="access_key" value="07987465-7f4b-4103-9367-f139abe1e558" />
+            <input type="hidden" name="redirect" value="https://aifirmy.pl/dziekujemy" />
+            <input type="hidden" name="subject" value="Nowa wiadomość z aifirmy.pl" />
 
             <div class="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
