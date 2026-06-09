@@ -1,0 +1,48 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Dziękujemy za wiadomość"
+  description="Otrzymaliśmy Twoją wiadomość. Odezwiemy się wkrótce."
+>
+  <div class="min-h-screen bg-gray-50">
+
+    <header class="border-b border-gray-200 bg-white">
+      <div class="mx-auto max-w-5xl px-4 py-6">
+        <a href="/" class="text-xl font-bold text-indigo-600">aifirmy.pl</a>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-4 py-16">
+      <div class="mx-auto max-w-md text-center">
+
+        <div class="mb-6 flex justify-center">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
+            <svg class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+
+        <h1 class="mb-3 text-3xl font-bold tracking-tight text-gray-900">Dziękujemy!</h1>
+        <p class="mb-8 text-lg text-gray-500">
+          Twoja wiadomość dotarła do nas. Odpiszemy w ciągu jednego dnia roboczego na podany adres e-mail.
+        </p>
+
+        <a
+          href="/"
+          class="inline-block rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+        >
+          Wróć na stronę główną
+        </a>
+
+      </div>
+    </main>
+
+    <footer class="border-t border-gray-200 py-8 text-center text-sm text-gray-400">
+      © {new Date().getFullYear()} aifirmy.pl
+    </footer>
+
+  </div>
+</Layout>
