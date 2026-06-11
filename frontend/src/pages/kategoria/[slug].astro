@@ -29,6 +29,12 @@ const { data: tools } = await supabase
   .eq('status', 'approved')
   .eq('category_id', category?.id)
   .order('created_at', { ascending: false });
+
+function pluralize(n: number): string {
+  if (n === 1) return 'wpis';
+  if (n >= 2 && n <= 4) return 'wpisy';
+  return 'wpisów';
+}
 ---
 
 <Layout 
@@ -41,7 +47,7 @@ const { data: tools } = await supabase
     </a>
     <h1 class="text-3xl font-bold mb-2">{categoryName}</h1>
     <p class="text-gray-500 mb-10">
-      Narzędzia AI dla polskich firm B2B — {tools?.length ?? 0} wpisów
+      Narzędzia AI dla polskich firm B2B — {tools?.length ?? 0} {pluralize(tools?.length ?? 0)}
     </p>
 
     {tools && tools.length > 0 ? (
