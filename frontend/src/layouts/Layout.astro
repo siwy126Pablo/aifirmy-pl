@@ -55,6 +55,15 @@ const navLinks = [
     <meta name="twitter:image" content={new URL(ogImage, Astro.site)} />
 
     <slot name="head" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3SP1TRXF7M"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-3SP1TRXF7M');
+    </script>
   </head>
   <body>
     <header class="border-b border-gray-200 bg-white">
