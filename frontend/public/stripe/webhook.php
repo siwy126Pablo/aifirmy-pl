@@ -84,7 +84,8 @@ if ($event->type === 'checkout.session.completed') {
     }
 
     $subscription_id = $full_session->subscription ?? null;
-    $price_id        = $full_session->line_items->data[0]->price->id ?? null;
+    $line_items = \Stripe\Checkout\Session::allLineItems($full_session->id);
+    $price_id   = $line_items->data[0]->price->id ?? null;
 
     // Mapowanie price_id → plan i cena
     $price_map = [
