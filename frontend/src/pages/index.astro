@@ -5,11 +5,17 @@ import { supabase } from '../lib/supabase';
 
 const { data: companies, error } = await supabase
   .from('tools')
-  .select('*, categories(name_pl)')
+  .select('*, categories(name_pl, slug), premium_listings(id, plan, ends_at)')
   .eq('status', 'approved')
   .order('created_at', { ascending: false });
 
 if (error) console.error('Supabase error:', error);
+
+const sorted = [...(companies ?? [])].sort((a, b) => {
+  const aP = a.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
+  const bP = b.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
+  return bP - aP;
+});
 ---
 
 <Layout
@@ -37,17 +43,23 @@ if (error) console.error('Supabase error:', error);
           Najnowsze wpisy
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  {companies?.map(tool => (
-    <CompanyCard
-  name={tool.name}
-  description={tool.description_pl ?? tool.tagline_pl ?? ''}
-  category={tool.categories?.name_pl ?? ''}
-  pricing={tool.pricing_model ?? 'free'}
-  url={tool.website_url}
-  slug={tool.slug}
-/>
-  ))}
-</div>
+          {sorted.map(tool => {
+            const isPremium = tool.premium_listings?.some(
+              (p: any) => p.ends_at && new Date(p.ends_at) > new Date()
+            );
+            return (
+              <CompanyCard
+                name={tool.name}
+                description={tool.description_pl ?? tool.tagline_pl ?? ''}
+                category={tool.categories?.name_pl ?? ''}
+                pricing={tool.pricing_model ?? 'free'}
+                url={tool.website_url}
+                slug={tool.slug}
+                isPremium={isPremium}
+              />
+            );
+          })}
+        </div>
       </section>
 
     </main>

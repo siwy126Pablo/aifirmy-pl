@@ -25,10 +25,16 @@ const { data: category } = await supabase
 
 const { data: tools } = await supabase
   .from('tools')
-  .select('*, categories(name_pl)')
+  .select('*, categories(name_pl, slug), premium_listings(id, plan, ends_at)')
   .eq('status', 'approved')
   .eq('category_id', category?.id)
   .order('created_at', { ascending: false });
+
+const sorted = [...(tools ?? [])].sort((a, b) => {
+  const aP = a.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
+  const bP = b.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
+  return bP - aP;
+});
 
 function pluralize(n: number): string {
   if (n === 1) return 'wpis';
@@ -52,16 +58,22 @@ function pluralize(n: number): string {
 
     {tools && tools.length > 0 ? (
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tools.map(tool => (
-  <CompanyCard
-    name={tool.name}
-    description={tool.description_pl ?? tool.tagline_pl ?? ''}
-    category={tool.categories?.name_pl ?? ''}
-    pricing={tool.pricing_model ?? 'free'}
-    url={tool.website_url}
-    slug={tool.slug}
-  />
-))}
+        {sorted.map(tool => {
+          const isPremium = tool.premium_listings?.some(
+            (p: any) => p.ends_at && new Date(p.ends_at) > new Date()
+          );
+          return (
+            <CompanyCard
+              name={tool.name}
+              description={tool.description_pl ?? tool.tagline_pl ?? ''}
+              category={tool.categories?.name_pl ?? ''}
+              pricing={tool.pricing_model ?? 'free'}
+              url={tool.website_url}
+              slug={tool.slug}
+              isPremium={isPremium}
+            />
+          );
+        })}
       </div>
     ) : (
       <p class="text-gray-400">Brak narzędzi w tej kategorii. Wkrótce więcej wpisów.</p>
