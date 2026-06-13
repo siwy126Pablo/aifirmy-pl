@@ -35,6 +35,27 @@ if (!defined('SUPABASE_KEY')) {
     define('SUPABASE_KEY', SUPABASE_ANON_KEY);
 }
 
+function send_web3forms_email(string $to, string $subject, string $message, string $key): void {
+    $ch = curl_init('https://api.web3forms.com/submit');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode([
+            'access_key' => $key,
+            'to'         => $to,
+            'subject'    => $subject,
+            'message'    => $message,
+        ]),
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+    ]);
+    $result = curl_exec($ch);
+    $code   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code !== 200) {
+        error_log("web3forms: błąd wysyłki do {$to} — HTTP {$code} — {$result}");
+    }
+}
+
 // ---- Walidacja obecności danych ----
 if (empty($payload) || empty($sig_header)) {
     http_response_code(400);
@@ -106,6 +127,9 @@ if ($event->type === 'checkout.session.completed') {
     $price_pln = $price_map[$price_id]['price_pln'];
     $now       = gmdate('Y-m-d\TH:i:s\Z');
     $ends_at   = gmdate('Y-m-d\TH:i:s\Z', strtotime('+30 days'));
+    $customer_email = $full_session->customer_details->email
+        ?? $full_session->customer_email
+        ?? '';
 
     $body = json_encode([
         'tool_id'    => null,
@@ -135,6 +159,39 @@ if ($event->type === 'checkout.session.completed') {
 
     if ($http_code >= 400) {
         error_log('webhook.php: błąd Supabase INSERT — HTTP ' . $http_code . ' — ' . $response);
+    }
+
+    if ($http_code === 201) {
+        $w3f_key = defined('WEB3FORMS_KEY') ? WEB3FORMS_KEY : (getenv('WEB3FORMS_KEY') ?: '');
+
+        if (!empty($w3f_key) && !empty($customer_email)) {
+            send_web3forms_email(
+                'pablo@aifirmy.pl',
+                "Nowy zakup premium — {$plan} — {$customer_email}",
+                implode("\n", [
+                    "Plan: {$plan}",
+                    "Cena: {$price_pln} PLN",
+                    "Payment ID: {$subscription_id}",
+                    "Email klienta: {$customer_email}",
+                    "Data zakupu: {$now}",
+                ]),
+                $w3f_key
+            );
+
+            send_web3forms_email(
+                $customer_email,
+                'Dziękujemy za zakup pakietu premium w aifirmy.pl',
+                implode("\n", [
+                    "Dziękujemy za zakup pakietu {$plan} w aifirmy.pl!",
+                    "",
+                    "Twój wpis zostanie aktywowany w ciągu 24 godzin.",
+                    "W razie pytań napisz do nas: kontakt@aifirmy.pl",
+                ]),
+                $w3f_key
+            );
+        } elseif (empty($w3f_key)) {
+            error_log('webhook.php: brak WEB3FORMS_KEY — email nie wysłany');
+        }
     }
 }
 
