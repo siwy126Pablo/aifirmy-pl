@@ -35,24 +35,23 @@ if (!defined('SUPABASE_KEY')) {
     define('SUPABASE_KEY', SUPABASE_ANON_KEY);
 }
 
-function send_web3forms_email(string $to, string $subject, string $message, string $key): void {
-    $ch = curl_init('https://api.web3forms.com/submit');
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode([
-            'access_key' => $key,
-            'to'         => $to,
-            'subject'    => $subject,
-            'message'    => $message,
-        ]),
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-    ]);
-    $result = curl_exec($ch);
-    $code   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if ($code !== 200) {
-        error_log("web3forms: błąd wysyłki do {$to} — HTTP {$code} — {$result}");
+function send_smtp_email(string $to, string $subject, string $message): void {
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = 's103.cyber-folks.pl';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'kontakt@aifirmy.pl';
+        $mail->Password   = defined('SMTP_PASSWORD') ? SMTP_PASSWORD : (getenv('SMTP_PASSWORD') ?: '');
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        $mail->setFrom('kontakt@aifirmy.pl', 'aifirmy.pl');
+        $mail->addAddress($to);
+        $mail->Subject = $subject;
+        $mail->Body    = $message;
+        $mail->send();
+    } catch (Exception $e) {
+        error_log("send_smtp_email: błąd wysyłki do {$to} — " . $mail->ErrorInfo);
     }
 }
 
@@ -161,37 +160,29 @@ if ($event->type === 'checkout.session.completed') {
         error_log('webhook.php: błąd Supabase INSERT — HTTP ' . $http_code . ' — ' . $response);
     }
 
-    if ($http_code === 201) {
-        $w3f_key = defined('WEB3FORMS_KEY') ? WEB3FORMS_KEY : (getenv('WEB3FORMS_KEY') ?: '');
+    if ($http_code === 201 && !empty($customer_email)) {
+        send_smtp_email(
+            'kontakt@aifirmy.pl',
+            "Nowy zakup premium — {$plan} — {$customer_email}",
+            implode("\n", [
+                "Plan: {$plan}",
+                "Cena: {$price_pln} PLN",
+                "Payment ID: {$subscription_id}",
+                "Email klienta: {$customer_email}",
+                "Data zakupu: {$now}",
+            ])
+        );
 
-        if (!empty($w3f_key) && !empty($customer_email)) {
-            send_web3forms_email(
-                'kontakt@aifirmy.pl',
-                "Nowy zakup premium — {$plan} — {$customer_email}",
-                implode("\n", [
-                    "Plan: {$plan}",
-                    "Cena: {$price_pln} PLN",
-                    "Payment ID: {$subscription_id}",
-                    "Email klienta: {$customer_email}",
-                    "Data zakupu: {$now}",
-                ]),
-                $w3f_key
-            );
-
-            send_web3forms_email(
-                $customer_email,
-                'Dziękujemy za zakup pakietu premium w aifirmy.pl',
-                implode("\n", [
-                    "Dziękujemy za zakup pakietu {$plan} w aifirmy.pl!",
-                    "",
-                    "Twój wpis zostanie aktywowany w ciągu 24 godzin.",
-                    "W razie pytań napisz do nas: kontakt@aifirmy.pl",
-                ]),
-                $w3f_key
-            );
-        } elseif (empty($w3f_key)) {
-            error_log('webhook.php: brak WEB3FORMS_KEY — email nie wysłany');
-        }
+        send_smtp_email(
+            $customer_email,
+            'Dziękujemy za zakup pakietu premium w aifirmy.pl',
+            implode("\n", [
+                "Dziękujemy za zakup pakietu {$plan} w aifirmy.pl!",
+                "",
+                "Twój wpis zostanie aktywowany w ciągu 24 godzin.",
+                "W razie pytań napisz do nas: kontakt@aifirmy.pl",
+            ])
+        );
     }
 }
 
