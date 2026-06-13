@@ -89,10 +89,10 @@ if ($event->type === 'checkout.session.completed') {
 
     // Mapowanie price_id → plan i cena
     $price_map = [
-        'price_1ThXE6CDrs3IUxTR9cyQCgvy' => ['plan' => 'logo',            'price_pln' => 49],
-        'price_1ThXERCDrs3IUxTRRgrGP30C' => ['plan' => 'featured',        'price_pln' => 99],
-        'price_1ThXEmCDrs3IUxTRTVCpbeL9' => ['plan' => 'dofollow',        'price_pln' => 199],
-        'price_1ThXFECDrs3IUxTR8cK0JZF8' => ['plan' => 'top_category',    'price_pln' => 299],
+        'price_1ThqoACDrs3IUxTReX7N2lB9' => ['plan' => 'logo',            'price_pln' => 49],
+        'price_1ThqoYCDrs3IUxTRyunZ9KKM' => ['plan' => 'featured',        'price_pln' => 99],
+        'price_1ThqovCDrs3IUxTRqqrXSHhF' => ['plan' => 'dofollow',        'price_pln' => 199],
+        'price_1ThqpQCDrs3IUxTR2Qy8z58h' => ['plan' => 'top_category',    'price_pln' => 299],
     ];
 
     if ($price_id === null || !isset($price_map[$price_id])) {

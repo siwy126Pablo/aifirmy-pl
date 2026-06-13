@@ -44,10 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // ---- Whitelist price_id ----
 const ALLOWED_PRICES = [
-    'price_1ThXE6CDrs3IUxTR9cyQCgvy', // 49 zł
-    'price_1ThXERCDrs3IUxTRRgrGP30C', // 99 zł
-    'price_1ThXEmCDrs3IUxTRTVCpbeL9', // 199 zł
-    'price_1ThXFECDrs3IUxTR8cK0JZF8', // 299 zł
+    'price_1ThqoACDrs3IUxTReX7N2lB9', // 49 zł
+    'price_1ThqoYCDrs3IUxTRyunZ9KKM', // 99 zł
+    'price_1ThqovCDrs3IUxTRqqrXSHhF', // 199 zł
+    'price_1ThqpQCDrs3IUxTR2Qy8z58h', // 299 zł
 ];
 
 $price_id = trim($_POST['price_id'] ?? '');
