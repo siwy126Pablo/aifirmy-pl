@@ -166,7 +166,7 @@ if ($event->type === 'checkout.session.completed') {
 
         if (!empty($w3f_key) && !empty($customer_email)) {
             send_web3forms_email(
-                'pablo@aifirmy.pl',
+                'kontakt@aifirmy.pl',
                 "Nowy zakup premium — {$plan} — {$customer_email}",
                 implode("\n", [
                     "Plan: {$plan}",
