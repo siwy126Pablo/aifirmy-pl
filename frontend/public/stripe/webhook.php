@@ -48,7 +48,9 @@ function send_smtp_email(string $to, string $subject, string $message): void {
         $mail->setFrom('kontakt@aifirmy.pl', 'aifirmy.pl');
         $mail->addAddress($to);
         $mail->Subject = $subject;
-        $mail->Body    = $message;
+        $mail->Body     = $message;
+        $mail->CharSet  = 'UTF-8';
+        $mail->Encoding = 'base64';
         $mail->send();
     } catch (Exception $e) {
         error_log("send_smtp_email: błąd wysyłki do {$to} — " . $mail->ErrorInfo);
