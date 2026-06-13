@@ -188,6 +188,31 @@ if ($event->type === 'checkout.session.completed') {
     }
 }
 
+if ($event->type === 'customer.subscription.deleted') {
+    $subscription    = $event->data->object;
+    $subscription_id = $subscription->id;
+
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/premium_listings?payment_id=eq.' . $subscription_id);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST  => 'PATCH',
+        CURLOPT_POSTFIELDS     => json_encode(['ends_at' => gmdate('Y-m-d\TH:i:s\Z')]),
+        CURLOPT_HTTPHEADER     => [
+            'apikey: '               . SUPABASE_KEY,
+            'Authorization: Bearer ' . SUPABASE_KEY,
+            'Content-Type: application/json',
+            'Prefer: return=minimal',
+        ],
+    ]);
+    $response  = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($http_code >= 400) {
+        error_log('webhook.php: błąd PATCH premium_listings przy anulowaniu — HTTP ' . $http_code);
+    }
+}
+
 http_response_code(200);
 header('Content-Type: application/json');
 echo json_encode(['received' => true]);
