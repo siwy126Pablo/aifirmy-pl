@@ -1,0 +1,51 @@
+---
+---
+<div
+  id="cookie-consent"
+  class="hidden fixed inset-x-0 bottom-0 z-50 bg-gray-900 text-white shadow-lg"
+>
+  <div class="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <p class="text-sm text-gray-100">
+      Używamy Google Analytics do analizy ruchu. Czy wyrażasz zgodę na cookies analityczne?
+      <a href="/polityka-prywatnosci" class="underline hover:text-white">Polityka prywatności</a>
+    </p>
+    <div class="flex shrink-0 gap-3">
+      <button
+        id="cookie-reject"
+        type="button"
+        class="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500"
+      >
+        Odrzucam
+      </button>
+      <button
+        id="cookie-accept"
+        type="button"
+        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+      >
+        Akceptuję
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CONSENT_KEY = 'cookie_consent';
+  const banner = document.getElementById('cookie-consent');
+  const acceptBtn = document.getElementById('cookie-accept');
+  const rejectBtn = document.getElementById('cookie-reject');
+
+  if (!localStorage.getItem(CONSENT_KEY) && banner) {
+    banner.classList.remove('hidden');
+  }
+
+  function setConsent(value: string) {
+    localStorage.setItem(CONSENT_KEY, value);
+    banner?.classList.add('hidden');
+    if (value === 'accepted') {
+      window.dispatchEvent(new Event('cookie_accepted'));
+    }
+  }
+
+  acceptBtn?.addEventListener('click', () => setConsent('accepted'));
+  rejectBtn?.addEventListener('click', () => setConsent('rejected'));
+</script>

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import CookieConsent from '../components/CookieConsent.astro';
 
 interface Props {
   title: string;
@@ -56,13 +57,33 @@ const navLinks = [
 
     <slot name="head" />
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3SP1TRXF7M"></script>
+    <!-- Google Analytics (ładowany dopiero po zgodzie na cookies) -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-3SP1TRXF7M');
+      const GA_ID = 'G-3SP1TRXF7M';
+
+      function loadGoogleAnalytics() {
+        if (window.gtagLoaded) return;
+        window.gtagLoaded = true;
+
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+        document.head.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(...args: unknown[]) {
+          window.dataLayer.push(args);
+        }
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', GA_ID);
+      }
+
+      if (localStorage.getItem('cookie_consent') === 'accepted') {
+        loadGoogleAnalytics();
+      }
+
+      window.addEventListener('cookie_accepted', loadGoogleAnalytics);
     </script>
   </head>
   <body>
@@ -87,5 +108,6 @@ const navLinks = [
       </div>
     </header>
     <slot />
+    <CookieConsent />
   </body>
 </html>
