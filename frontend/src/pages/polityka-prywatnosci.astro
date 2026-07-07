@@ -1,0 +1,134 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const lastUpdated = 'czerwiec 2026';
+---
+
+<Layout
+  title="Polityka prywatności"
+  description="Polityka prywatności aifirmy.pl — jakie dane zbieramy, na jakiej podstawie prawnej i jakie masz prawa."
+>
+  <div class="min-h-screen bg-gray-50">
+    <main class="mx-auto max-w-3xl px-4 py-16">
+
+      <header class="mb-10">
+        <h1 class="mb-3 text-4xl font-bold tracking-tight text-gray-900">Polityka prywatności</h1>
+        <p class="text-sm text-gray-400">Ostatnia aktualizacja: {lastUpdated}</p>
+      </header>
+
+      <div class="space-y-10 text-base leading-relaxed text-gray-700">
+
+        <section>
+          <h2 class="mb-3 text-xl font-semibold text-gray-900">1. Administrator danych</h2>
+          <p>
+            Administratorem danych osobowych zbieranych za pośrednictwem serwisu aifirmy.pl jest
+            osoba fizyczna prowadząca serwis aifirmy.pl. We wszystkich sprawach dotyczących
+            ochrony danych osobowych można kontaktować się pod adresem e-mail:{' '}
+            <a href="mailto:kontakt@aifirmy.pl" class="font-medium text-indigo-600 hover:underline">
+              kontakt@aifirmy.pl
+            </a>.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-xl font-semibold text-gray-900">2. Jakie dane zbieramy</h2>
+          <ul class="list-disc space-y-3 pl-6">
+            <li>
+              <span class="font-medium text-gray-900">Google Analytics 4</span> — wyłącznie po wyrażeniu zgody
+              na cookies analityczne. Zbierane są zanonimizowane dane o ruchu na stronie: odwiedzane podstrony,
+              typ przeglądarki i urządzenia, przybliżona lokalizacja (kraj).
+            </li>
+            <li>
+              <span class="font-medium text-gray-900">Stripe</span> — przy zakupie pakietu premium przetwarzane są
+              dane niezbędne do realizacji płatności: imię i nazwisko, adres e-mail oraz dane karty płatniczej.
+              Dane karty są przetwarzane wyłącznie przez Stripe i nie trafiają na serwery aifirmy.pl.
+            </li>
+            <li>
+              <span class="font-medium text-gray-900">Formularz kontaktowy</span> — adres e-mail oraz treść
+              wysłanej wiadomości, wykorzystywane wyłącznie w celu udzielenia odpowiedzi.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-xl font-semibold text-gray-900">3. Podstawa prawna przetwarzania</h2>
+          <ul class="list-disc space-y-2 pl-6">
+            <li>
+              <span class="font-medium text-gray-900">Zgoda</span> (art. 6 ust. 1 lit. a RODO) — w zakresie
+              cookies analitycznych (Google Analytics 4).
+            </li>
+            <li>
+              <span class="font-medium text-gray-900">Wykonanie umowy</span> (art. 6 ust. 1 lit. b RODO) — w
+              zakresie danych przetwarzanych przy realizacji płatności za pakiety premium.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-xl font-semibold text-gray-900">4. Cookies</h2>
+          <ul class="list-disc space-y-3 pl-6">
+            <li>
+              <span class="font-medium text-gray-900">Analityczne (Google Analytics 4)</span> — ładowane wyłącznie
+              po wyrażeniu zgody w banerze cookies. Możesz w każdej chwili cofnąć zgodę.
+            </li>
+            <li>
+              <span class="font-medium text-gray-900">Niezbędne</span> — cookies sesji Stripe, wymagane wyłącznie
+              w trakcie realizacji płatności za pakiet premium.
+            </li>
+          </ul>
+
+          <div class="mt-5 rounded-xl border border-gray-200 bg-white p-5">
+            <p class="mb-3 text-sm text-gray-600">
+              W dowolnym momencie możesz zmienić swoje preferencje dotyczące cookies analitycznych.
+            </p>
+            <button
+              id="manage-cookies"
+              type="button"
+              class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+            >
+              Zmień preferencje cookies
+            </button>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-xl font-semibold text-gray-900">5. Twoje prawa</h2>
+          <p class="mb-3">W związku z przetwarzaniem danych osobowych przysługuje Ci prawo do:</p>
+          <ul class="list-disc space-y-2 pl-6">
+            <li>dostępu do swoich danych,</li>
+            <li>sprostowania danych,</li>
+            <li>usunięcia danych,</li>
+            <li>przenoszenia danych,</li>
+            <li>wniesienia sprzeciwu wobec przetwarzania.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-xl font-semibold text-gray-900">6. Kontakt w sprawach danych osobowych</h2>
+          <p>
+            W sprawach dotyczących przetwarzania danych osobowych napisz na adres:{' '}
+            <a href="mailto:kontakt@aifirmy.pl" class="font-medium text-indigo-600 hover:underline">
+              kontakt@aifirmy.pl
+            </a>.
+          </p>
+        </section>
+
+      </div>
+
+    </main>
+
+    <footer class="border-t border-gray-200 py-8 text-center text-sm text-gray-400">
+      © {new Date().getFullYear()} aifirmy.pl ·{' '}
+      <a href="/polityka-prywatnosci" class="hover:text-gray-600 hover:underline">
+        Polityka prywatności
+      </a>
+    </footer>
+  </div>
+</Layout>
+
+<script>
+  document.getElementById('manage-cookies')?.addEventListener('click', () => {
+    localStorage.removeItem('cookie_consent');
+    window.location.reload();
+  });
+</script>
