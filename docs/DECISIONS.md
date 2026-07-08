@@ -155,4 +155,30 @@ Szybszy start bez konfiguracji infrastruktury. Migracja na Oracle Cloud możliwa
 
 ---
 
+## ADR-009 — Linki afiliacyjne: dedykowana tabela + panel admina
+**Data:** lipiec 2026
+**Status:** ✅ Przyjęta
+
+**Kontekst:**
+Pojawiła się pierwsza okazja monetyzacji przez program afiliacyjny (ClickUp przez PartnerStack, Tier 2 Polska, $10/signup firmowy, cookie 180 dni). Potrzebny sposób zarządzania takimi linkami bez hardcodowania w kodzie przy każdym nowym programie.
+
+**Opcje:**
+- Hardcode linku w komponencie/stronie narzędzia — szybkie, ale nieskalowalne przy kolejnych programach
+- Kolumna `affiliate_url` bezpośrednio w tabeli `tools` — prostsze, ale nie pozwala na notatki o warunkach ani łatwą dezaktywację
+- Osobna tabela `affiliate_links` + panel admina — więcej pracy na start, ale skalowalne
+
+**Decyzja:** Osobna tabela `affiliate_links` (relacja do `tools`) + strona `admin/affiliate.php`
+
+**Uzasadnienie:**
+Programy afiliacyjne będą się pojawiać częściej. Osobna tabela pozwala trzymać notatki o warunkach (cookie duration, stawki, wymogi disclosure) przy każdym linku, włączać/wyłączać bez usuwania danych, i w przyszłości obsłużyć więcej niż jeden program na to samo narzędzie bez zmiany schematu.
+
+**Szczegóły implementacji:**
+- Migracja: `db/migrations/001_affiliate_links.sql`
+- Trigger `updated_at` reużywa istniejącą funkcję `set_updated_at()` (potwierdzoną jako identyczną z triggerem `trg_tools_updated` na tabeli `tools`)
+- Panel: `admin/affiliate.php`, wzorowany 1:1 na `admin/index.php` (sesja, helpery `sb_get/sb_post/sb_patch`)
+- Frontend: `[slug].astro` używa `affiliate_url` + wyświetla `disclosure_text`, gdy istnieje aktywny rekord; bez zmian gdy brak
+- Pierwszy wpis testowy: ClickUp / PartnerStack
+
+---
+
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

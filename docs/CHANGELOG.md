@@ -134,7 +134,7 @@
 
 ---
 
-## [v0.4] — 2026-07-08 (tydzień 4)
+## [v0.7] — 2026-07-08 (tydzień 7)
 
 ### Zrobione
 - ✅ Migracja `db/migrations/001_affiliate_links.sql` — tabela `affiliate_links` (program partnerski per narzędzie, `active` toggle, `disclosure_text`)

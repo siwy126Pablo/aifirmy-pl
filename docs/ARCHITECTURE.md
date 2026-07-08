@@ -77,6 +77,22 @@ CREATE TABLE tools (
 ```
 **Unikalny wyróżnik:** `rodo_compliant`, `dpa_available`, `eu_data_hosting`, `ai_act_risk` — żaden polski katalog AI tych pól nie taguje.
 
+## Model danych — tabela affiliate_links
+```sql
+CREATE TABLE affiliate_links (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  tool_id          UUID        NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+  program_name     TEXT        NOT NULL,
+  affiliate_url    TEXT        NOT NULL,
+  commission_note  TEXT,
+  disclosure_text  TEXT        NOT NULL DEFAULT 'Ten link jest linkiem afiliacyjnym — możemy otrzymać prowizję.',
+  active           BOOLEAN     NOT NULL DEFAULT true,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+Zarządzane przez `admin/affiliate.php`. Gdy aktywny link istnieje dla danego `tool_id`, strona detalu narzędzia (`/narzedzia/[slug]`) używa `affiliate_url` zamiast `website_url` i wyświetla `disclosure_text` pod CTA. (ADR-009)
+
 ## Pipeline NiFi
 ```
 Hacker News API (Product Hunt zablokowany — 403 Cloudflare)
@@ -124,6 +140,7 @@ Format: JSON { description, category, tags, segment }
 - [x] Panel admin: Supabase Studio zamiast Directus (ADR-006)
 - [x] NiFi: lokalnie na Windows zamiast Oracle Cloud (ADR-008)
 - [x] Źródło danych: Hacker News API zamiast Product Hunt (zablokowany)
+- [x] Linki afiliacyjne: dedykowana tabela + panel admina zamiast hardcode (ADR-009)
 
 ## Decyzje otwarte
 - [ ] Node.js vs Python dla backend API (ADR-005)
