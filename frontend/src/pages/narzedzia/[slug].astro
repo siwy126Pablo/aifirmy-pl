@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 export async function getStaticPaths() {
   const { data: tools } = await supabase
     .from('tools')
-    .select('*, categories(name_pl, slug), tool_tags(tags(name_pl, slug))')
+    .select('*, categories(name_pl, slug), tool_tags(tags(name_pl, slug)), affiliate_links(affiliate_url, disclosure_text, active)')
     .eq('status', 'approved');
 
   return tools?.map(tool => ({
@@ -34,6 +34,9 @@ const pricing = tool.pricing_model ?? 'free';
 const categoryName = tool.categories?.name_pl ?? '';
 const categorySlug = tool.categories?.slug ?? '';
 const tags = (tool.tool_tags ?? []).map((tt: any) => tt.tags).filter(Boolean);
+
+const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
+const ctaUrl = activeAffiliateLink?.affiliate_url ?? tool.website_url;
 
 const schema = JSON.stringify({
   '@context': 'https://schema.org',
@@ -126,13 +129,17 @@ const schema = JSON.stringify({
         )}
 
         <a
-          href={tool.website_url}
+          href={ctaUrl}
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
         >
           Odwiedź stronę →
         </a>
+
+        {activeAffiliateLink && (
+          <p class="mt-2 text-xs text-gray-500">{activeAffiliateLink.disclosure_text}</p>
+        )}
 
       </article>
     </main>

@@ -134,6 +134,24 @@
 
 ---
 
+## [v0.4] — 2026-07-08 (tydzień 4)
+
+### Zrobione
+- ✅ Migracja `db/migrations/001_affiliate_links.sql` — tabela `affiliate_links` (program partnerski per narzędzie, `active` toggle, `disclosure_text`)
+- ✅ Panel admina `admin/affiliate.php` — lista (JOIN z `tools`), dodawanie, edycja, toggle aktywności bez przeładowania strony (PATCH przez Supabase REST z JS)
+- ✅ Link nawigacyjny w `admin/index.php` do panelu linków afiliacyjnych
+- ✅ Frontend: `narzedzia/[slug].astro` używa `affiliate_url` zamiast `website_url` gdy istnieje aktywny link, z dyskretnym tekstem ujawnienia pod CTA
+
+### Odkrycia / problemy
+- `db/migrations/001_initial.sql` wspomniana w CLAUDE.md nigdy nie trafiła do repo — schemat `tools` powstał bezpośrednio w Supabase Studio, więc trigger `updated_at` nie miał udokumentowanej nazwy funkcji. Nowy trigger (`set_updated_at`) zdefiniowany z `CREATE OR REPLACE`, żeby nie kolidować z ewentualną funkcją o innej nazwie w bazie.
+- Pierwszy realny przypadek testowy do dodania ręcznie: ClickUp przez PartnerStack (cookie 180 dni, Tier 2 Polska, $10/signup)
+
+### Następny tydzień
+- Dodać ręcznie pierwszy wpis ClickUp/PartnerStack przez panel i zweryfikować end-to-end na produkcji
+- Strona `/kategoria/[slug]`, deploy na Cyberfolks, konfiguracja Cloudflare
+
+---
+
 
 
 ```
