@@ -237,6 +237,12 @@ PORT=3000
 - Layout, CompanyCard, index, [slug] pages done with hardcoded data
 - **TODO:** `/kategoria/[slug]` page, Supabase integration, deploy to Cyberfolks, Cloudflare
 
+**Tydzień 7 ✅** — Affiliate links:
+- Tabela `affiliate_links` (relacja do `tools`, trigger `updated_at` reużywa `set_updated_at()`)
+- Panel `admin/affiliate.php` — CRUD + toggle aktywności, wzorowany na `admin/index.php`
+- Frontend `[slug].astro` — CTA przełącza się na `affiliate_url` + disclosure, gdy aktywny link istnieje
+- Pierwszy program: ClickUp / PartnerStack (Tier 2 PL, $10/signup, cookie 180 dni) — aplikacja złożona, czeka na akceptację
+
 **Not yet built:** `backend/`, Stripe/PayU, Cloudflare config.
 
 ## Documentation rules
