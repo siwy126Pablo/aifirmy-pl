@@ -77,9 +77,9 @@ Zmiana hostingu na Hetzner/OVH możliwa gdy ruch uzasadni koszt. Cloudflare daje
 
 ---
 
-## ADR-005 — Backend: do podjęcia
+## ADR-005 — Backend: Node.js vs Python (FastAPI)
 **Data:** —
-**Status:** ⏳ Otwarta
+**Status:** ❌ Zamknięta — superseded
 
 **Opcje:**
 - Node.js (Express / Fastify)
@@ -90,11 +90,14 @@ Zmiana hostingu na Hetzner/OVH możliwa gdy ruch uzasadni koszt. Cloudflare daje
 - Ekosystem bibliotek AI/scraping
 - Wydajność przy katalogu
 
+**Notatka (czerwiec 2026):**
+ADR-005 stała się bezprzedmiotowa. Dedykowany backend Node.js/Python nigdy nie powstał — logika biznesowa żyje w PHP (admin panel, Stripe checkout, webhook, email) + bezpośrednich wywołaniach Supabase REST API z frontendu Astro. Formalnie zamknięta czerwiec 2026.
+
 ---
 
 ## ADR-006 — Panel admin: Supabase Studio
 **Data:** czerwiec 2026
-**Status:** ✅ Przyjęta
+**Status:** ✅ Przyjęta (zaktualizowana)
 
 **Kontekst:**
 Potrzebny panel do moderacji wpisów (approve/reject) i zarządzania danymi katalogu.
@@ -108,6 +111,9 @@ Potrzebny panel do moderacji wpisów (approve/reject) i zarządzania danymi kata
 
 **Uzasadnienie:**
 Baza i tak trafiła na Supabase (ADR-007). Studio jest dostępne od razu, bez dodatkowego deploymentu. Dla solo developera i ~20 wpisów dziennie do moderacji — wystarczy w pełni.
+
+**Aktualizacja (czerwiec 2026):**
+W praktyce Supabase Studio zostało zastąpione przez custom PHP panel admina (admin/index.php). Panel używa Supabase REST API przez curl — Cyberfolks nie ma pdo_pgsql więc bezpośrednie połączenie JDBC nie wchodzi w grę. Studio pozostaje dostępne do zadań SQL (migracje, diagnostyka) ale nie jest głównym narzędziem moderacji.
 
 ---
 
