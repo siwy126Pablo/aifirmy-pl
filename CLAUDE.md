@@ -28,18 +28,22 @@ Jesteśmy w Tygodniu X, kontynuujemy: [opisz co robisz].
 
 **aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market. Domain is live on Cyberfolks; frontend development started June 2026.
 
-## Planned tech stack
+## Tech stack (aktualny)
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Frontend | Astro + Tailwind CSS | |
-| Backend/API | Node.js (Express/Fastify) **or** Python (FastAPI) — ADR-005 pending | |
-| Database | PostgreSQL — **Supabase free** (eu-central-1, Frankfurt) | Cyberfolks has MariaDB only — incompatible with schema |
-| Cache | Redis | |
-| ETL/Scraping | Apache NiFi 2.9.0 — **self-hosted locally on Windows** | Oracle Cloud dropped — ADR-003 updated |
-| AI descriptions | OpenAI API (GPT-4o) | |
-| Admin panel | **Supabase Studio** — ADR-006 resolved | Built-in table editor, no custom admin needed |
+| Frontend | Astro 6 + Tailwind CSS v4 | ✅ wdrożony (`@tailwindcss/vite`, bez pliku konfiguracyjnego) |
+| Backend/API | brak dedykowanego backendu Node/Python | ADR-005 zamknięte przez brak działania — logika biznesowa żyje w PHP (admin, Stripe, e-mail) + bezpośrednich wywołaniach Supabase REST API z frontendu |
+| Database | PostgreSQL — **Supabase free** (eu-central-1, Frankfurt) | Cyberfolks ma tylko MariaDB — niekompatybilne ze schematem |
+| ETL/Scraping | Apache NiFi 2.9.0 — **self-hosted lokalnie na Windows** | 3 źródła: Hacker News (cron 2:00), BetaList (cron 3:00), Product Hunt RSS (cron 4:00) |
+| AI descriptions | OpenAI API — **`gpt-4o-mini`** | nie `gpt-4o` |
+| Admin panel | **PHP + Supabase REST API** | nie Supabase Studio — ADR-006 wymaga aktualizacji |
+| Płatności | **Stripe (Live mode)** — `checkout.php` + `webhook.php` | webhook pod `/stripe/webhook.php` (Cloudflare WAF blokuje POST do `/admin/`) |
+| Email | **PHPMailer** przez SMTP Cyberfolks | `s103.cyber-folks.pl:587` |
+| Analytics | **Google Analytics 4** (`G-3SP1TRXF7M`) | warunkowe ładowanie po cookie consent |
 | Hosting | Cyberfolks (frontend) + Cloudflare (CDN, DDoS, SSL Full strict) | |
+
+**Lokalizacja projektu:** `C:\Dev\aifirmy-pl` (przeniesiony z `C:\Users\pawel\Praca` — ESET blokował `node_modules` pod `C:\Users\`).
 
 ## Repository structure (planned)
 
@@ -70,9 +74,11 @@ aifirmy-pl/
 - **ADR-007:** Database is **Supabase free (PostgreSQL)** — Cyberfolks package (cyber_IN_unlimited) provides MariaDB only, which lacks `JSONB`, `text[]`, `GIN` index, and Polish full-text search. Supabase free: 500 MB, 50k users/mo, 5 GB transfer. Project keep-alive via GitHub Actions cron (repo: `aifirmy-ping`, pings every 5 days).
 - **ADR-008:** NiFi runs **locally on Windows** (NiFi 2.9.0, Java 25, JDBC driver in `C:\nifi\lib`). Supabase connection via Session Pooler: `aws-1-eu-central-1.pooler.supabase.com:5432`, user `postgres.[project-id]`. Product Hunt blocked (Cloudflare 403) — replaced with **Hacker News API** as primary scraping source.
 
+> ⚠️ ADR-006 is now out of date in practice (admin panel is PHP + Supabase REST API, not Supabase Studio) — flag for a follow-up ADR update.
+
 ## Open architectural decisions
 
-- **ADR-005:** Backend language — Node.js vs Python (FastAPI). Evaluate based on AI/scraping library ecosystem.
+- **ADR-005:** ~~Backend language — Node.js vs Python (FastAPI).~~ Superseded in practice — no dedicated backend was built; consider formally closing this ADR.
 
 ## Data model
 
@@ -119,38 +125,44 @@ CREATE TABLE tools (
 
 ## ETL pipeline (NiFi)
 
-NiFi 2.9.0 running locally on Windows. Primary source: **Hacker News API** (Product Hunt blocked by Cloudflare). Runs via cron daily at 2:00 AM.
+NiFi 2.9.0 running locally on Windows. Three sources feed `scrape_queue`, each on its own daily cron:
 
-**Complete flow (Week 3 ✅):**
+- **Hacker News API** — cron 2:00
+- **BetaList** — cron 3:00
+- **Product Hunt RSS** — cron 4:00 (Product Hunt's own API/site is blocked by Cloudflare 403 — RSS is the workaround)
+
+**Flow per source:**
 ```
-GenerateFlowFile (cron 2:00 AM)
-  → InvokeHTTP (GET https://hacker-news.firebaseio.com/v0/topstories.json)
-  → SplitJson ($[*] — one flowfile per ID)
-  → InvokeHTTP (GET /v0/item/{id}.json — item details)
-  → InvokeHTTP (POST OpenAI API — generate PL description, category, segment)
-  → EvaluateJsonPath (extract description, category, segment)
+GenerateFlowFile (cron 2:00 / 3:00 / 4:00)
+  → InvokeHTTP (GET source: HN topstories / BetaList / Product Hunt RSS)
+  → SplitJson / parse feed (one flowfile per item)
+  → InvokeHTTP (GET item details, where applicable)
+  → InvokeHTTP (POST OpenAI API gpt-4o-mini — generate name, description, category, tags, segment, pricing_model)
+  → EvaluateJsonPath (extract fields)
   → PutDatabaseRecord (INSERT scrape_queue, Supabase via JDBC Session Pooler)
-  → Moderation in Supabase Studio (approve/reject)
+  → Moderation via admin panel (PHP + Supabase REST API) (approve/reject)
   → Frontend (status=approved)
 ```
 
 **Known quirks:**
 - `EvaluateJsonPath` doesn't support arrays → `ai_tags` stored as raw JSONB in `ai_response` column
 - `scraped_at` excluded from INSERT — Supabase fills automatically via DEFAULT
-- OpenAI prompt simplified (no quotes, no `\n`) to avoid malformed JSON responses
+- OpenAI prompt kept as one line with no quotes / no `\n` — `ReplaceText` turns literal `\n` into the letter `n`, and quotes lose their escaping backslash otherwise, which breaks the JSON response
+- `InvokeHTTP` caches its connection pool — after changing processor config, **Stop the flow, wait ~30s, then Start** or the old config keeps being used
+- Cloudflare WAF blocks `POST /admin/` — this is why the Stripe webhook lives at `/stripe/webhook.php` instead of under `/admin/`
 
 NiFi JDBC: `jdbc:postgresql://aws-1-eu-central-1.pooler.supabase.com:5432/postgres`, user `postgres.szassqzvivdgvpkciyif`.
 Flow exported to `/nifi-flows/` in repo.
 
-## AI prompt for company descriptions
+## AI prompt for tool descriptions
+
+Current system prompt (single line, no quotes — see NiFi quirks above):
 
 ```
-Opisz firmę/narzędzie w 2 zdaniach.
-Ton: neutralny, informacyjny, SEO-friendly, bez marketingu.
-Język: polski.
-Dodaj: główna kategoria, 3-5 tagów, ocena segmentu (enterprise/SMB/solo).
-Format: JSON { description, category, tags, segment }
+Opisz narzedzie/firme w 2 zdaniach. Ton: neutralny, informacyjny, SEO-friendly. Jezyk: polski. Format odpowiedzi tylko JSON bez markdown: { name, description, category, tags, segment, pricing_model } Zasady dla pola name: - Krotka nazwa produktu lub narzedzia (max 50 znakow) - Bez prefiksu Show HN: i podobnych - Bez podtytulu po myslniku lub dwukropku Zasady dla pola pricing_model: - Wybierz JEDNA wartosc: free, freemium, paid, open_source Zasady dla pola category: - Wybierz JEDNA kategorie z tej listy: Automatyzacja procesów, Analityka i BI, Finanse i księgowość, HR i rekrutacja, Marketing i content, Obsługa klienta, Prawo i compliance, Sprzedaż i CRM, Zarządzanie projektami
 ```
+
+Uses `gpt-4o-mini` (not `gpt-4o`).
 
 ## SEO conventions
 
@@ -166,25 +178,6 @@ Format: JSON { description, category, tags, segment }
 - Variables: `camelCase`
 - SQL keywords: `UPPER_CASE`
 - Git commit prefixes: `feat:`, `fix:`, `docs:`, `refactor:`
-
-## Current status (June 2026)
-
-Frontend is scaffolded and builds successfully (`npm run build` inside `frontend/`).
-
-**Built so far:**
-
-- `frontend/` — Astro 6 + Tailwind CSS v4 (`@tailwindcss/vite` plugin, no config file needed)
-- `frontend/src/layouts/Layout.astro` — HTML boilerplate, SEO meta tags, full Open Graph + Twitter Card, canonical URL from `Astro.site`, named `<slot name="head">` for per-page additions
-- `frontend/src/components/CompanyCard.astro` — company card with name, description, category, pricing badge (free/freemium/paid), internal and external links
-- `frontend/src/data/companies.ts` — typed `Company` interface + hardcoded array of 3 entries; shared by all pages. **Replace with PostgreSQL queries once backend is ready.**
-- `frontend/src/pages/index.astro` — homepage: hero section, responsive 3-column card grid
-- `frontend/src/pages/narzedzia/[slug].astro` — static detail page via `getStaticPaths`; renders company name, description, category, tags, pricing, external CTA; injects `schema.org SoftwareApplication` JSON-LD via `<Fragment slot="head">`
-
-**Known setup quirks (Windows):**
-- Astro v6 + Tailwind v4 installation requires `--template minimal --no-git --no-install` flag due to Node.js v24 bug
-- PowerShell requires `Set-ExecutionPolicy RemoteSigned` before running npm
-
-**Not yet built:** `backend/`, DB migrations, `/kategoria/[slug]` page, Supabase integration, Stripe/PayU, Cloudflare config.
 
 ## Workflow — two Claude instances
 
@@ -212,30 +205,36 @@ NODE_ENV=development
 PORT=3000
 ```
 
-## Current status (June 2026)
+## Current status (czerwiec 2026)
 
-**Week 1 ✅** — Strategy, niche, 9 categories, list of 100 tools.
+**Tydzień 1 ✅** — Strategia, nisza, 9 kategorii, lista 100 narzędzi.
 
-**Week 2 ✅** — Database live on Supabase:
-- 6 tables created: `tools`, `categories`, `tags`, `tool_tags`, `premium_listings`, `scrape_queue`
-- Seed data: 9 categories, 10 tags, 3 approved tools (Make, n8n, Rossum)
-- Full-text search index (`GIN`, `to_tsvector('simple', ...)`)
-- `updated_at` trigger on `tools`
-- Keep-alive: GitHub Actions cron in repo `aifirmy-ping` (pings Supabase every 5 days)
+**Tydzień 2 ✅** — Baza Supabase (6 tabel):
+- `tools`, `categories`, `tags`, `tool_tags`, `premium_listings`, `scrape_queue`
+- Seed: 9 kategorii, 10 tagów, 3 zatwierdzone narzędzia (Make, n8n, Rossum)
+- Indeks pełnotekstowy (`GIN`, `to_tsvector('simple', ...)`)
+- Trigger `updated_at` na `tools`
+- Keep-alive: cron GitHub Actions w repo `aifirmy-ping` (ping co 5 dni)
 
-**Week 3 ✅** — NiFi pipeline complete:
-- Full end-to-end flow: HN topstories → SplitJson → item details → OpenAI GPT-4o → INSERT scrape_queue
-- Cron scheduler: daily at 2:00 AM
-- Flow exported to `/nifi-flows/` in repo
-- Known quirks:
-  - `EvaluateJsonPath` doesn't handle arrays → tags stay in `ai_response` as JSONB
-  - `scraped_at` removed from INSERT (Supabase fills automatically)
-  - Simplified OpenAI prompt to avoid JSON-breaking quotes and `\n`
+**Tydzień 3 ✅** — Pipeline NiFi (3 źródła: HN + BetaList + Product Hunt RSS):
+- HN topstories → SplitJson → item details → OpenAI → INSERT `scrape_queue`
+- Cron: HN 2:00, BetaList 3:00, Product Hunt RSS 4:00
+- Flow wyeksportowany do `/nifi-flows/`
 
-**Week 4 🔄 In progress** — Frontend Astro:
-- Scaffold built locally, `npm run build` passes
-- Layout, CompanyCard, index, [slug] pages done with hardcoded data
-- **TODO:** `/kategoria/[slug]` page, Supabase integration, deploy to Cyberfolks, Cloudflare
+**Tydzień 4 ✅** — Frontend Astro:
+- Wszystkie strony (`index`, `/narzedzia/[slug]`, `/kategoria/[slug]`)
+- Integracja z Supabase (zapytania zamiast danych hardcodowanych)
+- Deploy na Cyberfolks
+
+**Tydzień 5 ✅** — Monetyzacja:
+- Stripe Live mode, `checkout.php` + `webhook.php`
+- Panel admina PHP (`admin/index.php`)
+- Soft delete narzędzi
+
+**Tydzień 6 ✅** — Growth:
+- Google Analytics 4 (`G-3SP1TRXF7M`, warunkowe ładowanie po cookie consent)
+- Search Console
+- E-mail po zakupie (PHPMailer, SMTP Cyberfolks)
 
 **Tydzień 7 ✅** — Affiliate links:
 - Tabela `affiliate_links` (relacja do `tools`, trigger `updated_at` reużywa `set_updated_at()`)
@@ -243,7 +242,16 @@ PORT=3000
 - Frontend `[slug].astro` — CTA przełącza się na `affiliate_url` + disclosure, gdy aktywny link istnieje
 - Pierwszy program: ClickUp / PartnerStack (Tier 2 PL, $10/signup, cookie 180 dni) — aplikacja złożona, czeka na akceptację
 
-**Not yet built:** `backend/`, Stripe/PayU, Cloudflare config.
+**T5.5 ✅** — Poprawki pipeline: slugify, `name` generowane przez AI, `pricing_model` z AI, filtr URL, obsługa BetaList.
+
+**Ostatnie sesje ✅** — Cookie consent, polityka prywatności, wyróżnienie premium, obsługa anulowania subskrypcji.
+
+**Known setup quirks (Windows):**
+- Astro v6 + Tailwind v4 installation requires `--template minimal --no-git --no-install` flag due to Node.js v24 bug
+- PowerShell requires `Set-ExecutionPolicy RemoteSigned` before running npm
+- Projekt trzymany w `C:\Dev\aifirmy-pl` — ESET blokował `node_modules` pod `C:\Users\`
+
+**Not yet built:** dedykowany backend Node/Python (obecnie logika w PHP + Supabase REST API), `db/migrations/` jako uporządkowany katalog migracji, finalna weryfikacja konfiguracji Cloudflare.
 
 ## Documentation rules
 
