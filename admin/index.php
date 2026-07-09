@@ -293,8 +293,9 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
         '?status=eq.approved' .
         '&order=created_at.desc' .
         '&limit=100' .
-        '&select=id,slug,name,website_url,pricing_model,rodo_compliant,ai_act_risk,status,categories(name_pl)'
+        '&select=id,slug,name,website_url,category_id,pricing_model,rodo_compliant,ai_act_risk,status,categories(name_pl)'
     );
+    $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
     <table>
         <tr>
@@ -313,6 +314,13 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
                 <div style="margin-top:6px">
                     <input type="text" id="url-<?= htmlspecialchars($tool['id']) ?>" value="<?= htmlspecialchars($tool['website_url'] ?? '') ?>" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;width:200px">
                     <button class="btn btn-secondary" style="font-size:12px;padding:4px 8px" onclick="saveUrl('<?= htmlspecialchars($tool['id']) ?>')">Zapisz URL</button>
+                    <select id="cat-<?= htmlspecialchars($tool['id']) ?>" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px">
+                        <?php foreach ($tools_categories as $cat): ?>
+                        <option value="<?= htmlspecialchars($cat['id']) ?>" <?= $cat['id'] === $tool['category_id'] ? 'selected' : '' ?>><?= htmlspecialchars($cat['name_pl']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button class="btn btn-secondary" style="font-size:12px;padding:4px 8px" onclick="saveCategory('<?= htmlspecialchars($tool['id']) ?>')">Zapisz kategorię</button>
+                    <span id="msg-<?= htmlspecialchars($tool['id']) ?>" style="font-size:12px;color:#16a34a"></span>
                 </div>
             </td>
             <td><?= htmlspecialchars($tool['categories']['name_pl'] ?? '') ?></td>
@@ -416,6 +424,25 @@ function saveUrl(id) {
         body: JSON.stringify({website_url: newUrl})
     }).then(function(r) {
         if (r.ok) input.value = newUrl;
+    });
+}
+
+function saveCategory(id) {
+    var select = document.getElementById('cat-' + id);
+    var msg = document.getElementById('msg-' + id);
+    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: {
+            'apikey': '<?= SUPABASE_KEY ?>',
+            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({category_id: select.value})
+    }).then(function(r) {
+        if (r.ok) {
+            msg.textContent = 'Zapisano';
+            setTimeout(function() { msg.textContent = ''; }, 2000);
+        }
     });
 }
 </script>
