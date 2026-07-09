@@ -293,7 +293,7 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
         '?status=eq.approved' .
         '&order=created_at.desc' .
         '&limit=100' .
-        '&select=id,slug,name,pricing_model,rodo_compliant,ai_act_risk,status,categories(name_pl)'
+        '&select=id,slug,name,website_url,pricing_model,rodo_compliant,ai_act_risk,status,categories(name_pl)'
     );
     ?>
     <table>
@@ -308,7 +308,13 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
         </tr>
         <?php foreach ($tools as $tool): ?>
         <tr>
-            <td><strong><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= htmlspecialchars($tool['slug']) ?></small></td>
+            <td>
+                <strong><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= htmlspecialchars($tool['slug']) ?></small>
+                <div style="margin-top:6px">
+                    <input type="text" id="url-<?= htmlspecialchars($tool['id']) ?>" value="<?= htmlspecialchars($tool['website_url'] ?? '') ?>" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;width:200px">
+                    <button class="btn btn-secondary" style="font-size:12px;padding:4px 8px" onclick="saveUrl('<?= htmlspecialchars($tool['id']) ?>')">Zapisz URL</button>
+                </div>
+            </td>
             <td><?= htmlspecialchars($tool['categories']['name_pl'] ?? '') ?></td>
             <td><span class="badge badge-gray"><?= htmlspecialchars($tool['pricing_model'] ?? '') ?></span></td>
             <td><?= $tool['rodo_compliant'] ? '✅' : '❌' ?></td>
@@ -394,6 +400,22 @@ function softDelete(id, table, field, row) {
         body: JSON.stringify({[field]: 'rejected'})
     }).then(function(r) {
         if (r.ok) row.remove();
+    });
+}
+
+function saveUrl(id) {
+    var input = document.getElementById('url-' + id);
+    var newUrl = input.value;
+    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: {
+            'apikey': '<?= SUPABASE_KEY ?>',
+            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({website_url: newUrl})
+    }).then(function(r) {
+        if (r.ok) input.value = newUrl;
     });
 }
 </script>
