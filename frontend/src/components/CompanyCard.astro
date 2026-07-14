@@ -7,9 +7,13 @@ interface Props {
   url: string;
   slug: string;
   isPremium?: boolean;
+  affiliateUrl?: string | null;
+  disclosureText?: string | null;
 }
 
-const { name, description, category, pricing, url, slug, isPremium = false } = Astro.props;
+const { name, description, category, pricing, url, slug, isPremium = false, affiliateUrl, disclosureText } = Astro.props;
+
+const ctaUrl = affiliateUrl ?? url;
 
 const pricingLabel: Record<Props['pricing'], string> = {
   free: 'Bezpłatne',
@@ -49,13 +53,22 @@ const pricingColor: Record<Props['pricing'], string> = {
         Szczegóły
       </a>
       <a
-        href={url}
+        href={ctaUrl}
         target="_blank"
         rel="noopener noreferrer"
         class="text-gray-400 hover:text-gray-600 hover:underline"
       >
         Strona →
       </a>
+      {affiliateUrl && (
+        <span
+          class="cursor-help text-gray-300 hover:text-gray-500"
+          title={disclosureText ?? 'Link afiliacyjny — możemy otrzymać prowizję.'}
+          aria-label={disclosureText ?? 'Link afiliacyjny — możemy otrzymać prowizję.'}
+        >
+          ⓘ
+        </span>
+      )}
     </div>
   </div>
 </article>

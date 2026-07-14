@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 
 const { data: companies, error } = await supabase
   .from('tools')
-  .select('*, categories(name_pl, slug), premium_listings(id, plan, ends_at)')
+  .select('*, categories(name_pl, slug), premium_listings(id, plan, ends_at), affiliate_links(affiliate_url, disclosure_text, active)')
   .eq('status', 'approved')
   .order('created_at', { ascending: false });
 
@@ -47,6 +47,7 @@ const sorted = [...(companies ?? [])].sort((a, b) => {
             const isPremium = tool.premium_listings?.some(
               (p: any) => p.ends_at && new Date(p.ends_at) > new Date()
             );
+            const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
             return (
               <CompanyCard
                 name={tool.name}
@@ -56,6 +57,8 @@ const sorted = [...(companies ?? [])].sort((a, b) => {
                 url={tool.website_url}
                 slug={tool.slug}
                 isPremium={isPremium}
+                affiliateUrl={activeAffiliateLink?.affiliate_url}
+                disclosureText={activeAffiliateLink?.disclosure_text}
               />
             );
           })}

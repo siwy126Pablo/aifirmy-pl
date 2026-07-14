@@ -25,7 +25,7 @@ const { data: category } = await supabase
 
 const { data: tools } = await supabase
   .from('tools')
-  .select('*, categories(name_pl, slug), premium_listings(id, plan, ends_at)')
+  .select('*, categories(name_pl, slug), premium_listings(id, plan, ends_at), affiliate_links(affiliate_url, disclosure_text, active)')
   .eq('status', 'approved')
   .eq('category_id', category?.id)
   .order('created_at', { ascending: false });
@@ -62,6 +62,7 @@ function pluralize(n: number): string {
           const isPremium = tool.premium_listings?.some(
             (p: any) => p.ends_at && new Date(p.ends_at) > new Date()
           );
+          const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
           return (
             <CompanyCard
               name={tool.name}
@@ -71,6 +72,8 @@ function pluralize(n: number): string {
               url={tool.website_url}
               slug={tool.slug}
               isPremium={isPremium}
+              affiliateUrl={activeAffiliateLink?.affiliate_url}
+              disclosureText={activeAffiliateLink?.disclosure_text}
             />
           );
         })}
