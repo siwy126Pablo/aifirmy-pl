@@ -1,4 +1,6 @@
 ---
+import { categoryColors, categoryColorFallback } from '../lib/category-colors';
+
 interface Props {
   name: string;
   description: string;
@@ -11,9 +13,12 @@ interface Props {
   disclosureText?: string | null;
   rodoCompliant?: boolean;
   aiActRisk?: 'minimal' | 'limited' | 'high' | 'unacceptable' | null;
+  logoUrl?: string | null;
 }
 
-const { name, description, category, pricing, url, slug, isPremium = false, affiliateUrl, disclosureText, rodoCompliant = false, aiActRisk = null } = Astro.props;
+const { name, description, category, pricing, url, slug, isPremium = false, affiliateUrl, disclosureText, rodoCompliant = false, aiActRisk = null, logoUrl = null } = Astro.props;
+
+const placeholderColor = categoryColors[category] ?? categoryColorFallback;
 
 const ctaUrl = affiliateUrl ?? url;
 
@@ -44,7 +49,17 @@ const aiActColor: Record<string, string> = {
     </span>
   )}
   <div class="flex items-start justify-between gap-2">
-    <h2 class="text-lg font-semibold text-gray-900">{name}</h2>
+    <div class="flex min-w-0 items-center gap-3">
+      {logoUrl ? (
+        <img src={logoUrl} alt={`Logo ${name}`}
+          class="h-10 w-10 shrink-0 rounded-lg border border-gray-100 object-contain" />
+      ) : (
+        <span class={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold ${placeholderColor.bg} ${placeholderColor.text}`}>
+          {name.charAt(0).toUpperCase()}
+        </span>
+      )}
+      <h2 class="truncate text-lg font-semibold text-gray-900">{name}</h2>
+    </div>
     <span class={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${pricingColor[pricing]}`}>
       {pricingLabel[pricing]}
     </span>

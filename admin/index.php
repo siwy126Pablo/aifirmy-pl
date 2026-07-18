@@ -78,6 +78,13 @@ function sb_count(string $table, string $filter = ''): int {
     return 0;
 }
 
+function favicon_from_url(string $url): ?string {
+    $domain = parse_url($url, PHP_URL_HOST);
+    if (!$domain) return null;
+    $domain = preg_replace('/^www\./i', '', $domain);
+    return 'https://www.google.com/s2/favicons?domain=' . rawurlencode($domain) . '&sz=128';
+}
+
 function slugify(string $text): string {
     $text = preg_replace('/^Show HN:\s*/i', '', $text);
     $map = [
@@ -126,12 +133,17 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['add_tool'])) {
+        $logoUrl = trim($_POST['logo_url'] ?? '');
+        if ($logoUrl === '') {
+            $logoUrl = favicon_from_url($_POST['website_url']);
+        }
         sb_post('tools', [
             'slug'          => slugify($_POST['name']),
             'name'          => $_POST['name'],
             'tagline_pl'    => $_POST['tagline_pl'] ?: null,
             'description_pl'=> $_POST['description_pl'] ?: null,
             'website_url'   => $_POST['website_url'],
+            'logo_url'      => $logoUrl,
             'category_id'   => $_POST['category_id'] ?: null,
             'pricing_model' => $_POST['pricing_model'],
             'rodo_compliant'=> isset($_POST['rodo_compliant']),
@@ -293,7 +305,7 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
         '?status=eq.approved' .
         '&order=created_at.desc' .
         '&limit=100' .
-        '&select=id,slug,name,website_url,category_id,pricing_model,rodo_compliant,ai_act_risk,status,categories(name_pl)'
+        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,rodo_compliant,ai_act_risk,status,categories(name_pl)'
     );
     $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
@@ -321,6 +333,14 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
                     </select>
                     <button class="btn btn-secondary" style="font-size:12px;padding:4px 8px" onclick="saveCategory('<?= htmlspecialchars($tool['id']) ?>')">Zapisz kategorię</button>
                     <span id="msg-<?= htmlspecialchars($tool['id']) ?>" style="font-size:12px;color:#16a34a"></span>
+                </div>
+                <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+                    <?php if ($tool['logo_url']): ?>
+                    <img src="<?= htmlspecialchars($tool['logo_url']) ?>" alt="" style="width:20px;height:20px;border-radius:4px;object-fit:contain;border:1px solid #eee">
+                    <?php endif; ?>
+                    <input type="text" id="logo-<?= htmlspecialchars($tool['id']) ?>" value="<?= htmlspecialchars($tool['logo_url'] ?? '') ?>" placeholder="Logo URL" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;width:200px">
+                    <button class="btn btn-secondary" style="font-size:12px;padding:4px 8px" onclick="saveLogo('<?= htmlspecialchars($tool['id']) ?>')">Zapisz logo</button>
+                    <span id="logo-msg-<?= htmlspecialchars($tool['id']) ?>" style="font-size:12px;color:#16a34a"></span>
                 </div>
             </td>
             <td><?= htmlspecialchars($tool['categories']['name_pl'] ?? '') ?></td>
@@ -355,6 +375,10 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
             <div>
                 <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">URL strony *</label>
                 <input type="url" name="website_url" required style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+            </div>
+            <div>
+                <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Logo URL (opcjonalnie — jeśli puste, użyjemy favicon strony)</label>
+                <input type="url" name="logo_url" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
             </div>
             <div>
                 <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Kategoria</label>
@@ -438,6 +462,25 @@ function saveCategory(id) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({category_id: select.value})
+    }).then(function(r) {
+        if (r.ok) {
+            msg.textContent = 'Zapisano';
+            setTimeout(function() { msg.textContent = ''; }, 2000);
+        }
+    });
+}
+
+function saveLogo(id) {
+    var input = document.getElementById('logo-' + id);
+    var msg = document.getElementById('logo-msg-' + id);
+    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: {
+            'apikey': '<?= SUPABASE_KEY ?>',
+            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({logo_url: input.value || null})
     }).then(function(r) {
         if (r.ok) {
             msg.textContent = 'Zapisano';

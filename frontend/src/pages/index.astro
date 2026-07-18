@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import CompanyCard from '../components/CompanyCard.astro';
+import CategoryIcon from '../components/icons/CategoryIcon.astro';
 import { supabase } from '../lib/supabase';
 
 const { data: companies, error } = await supabase
@@ -16,6 +17,40 @@ const sorted = [...(companies ?? [])].sort((a, b) => {
   const bP = b.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
   return bP - aP;
 });
+
+const { data: categoryList } = await supabase
+  .from('categories')
+  .select('id, slug, name_pl')
+  .order('sort_order');
+
+const categoryCounts = new Map<string, number>();
+for (const tool of companies ?? []) {
+  if (!tool.category_id) continue;
+  categoryCounts.set(tool.category_id, (categoryCounts.get(tool.category_id) ?? 0) + 1);
+}
+
+const categoryTiles = (categoryList ?? []).map(cat => ({
+  ...cat,
+  count: categoryCounts.get(cat.id) ?? 0,
+}));
+
+const categoryHoverBorder: Record<string, string> = {
+  'Automatyzacja procesów': 'hover:border-violet-300',
+  'Analityka i BI': 'hover:border-blue-300',
+  'Finanse i księgowość': 'hover:border-emerald-300',
+  'HR i rekrutacja': 'hover:border-orange-300',
+  'Marketing i content': 'hover:border-pink-300',
+  'Obsługa klienta': 'hover:border-teal-300',
+  'Prawo i compliance': 'hover:border-amber-300',
+  'Sprzedaż i CRM': 'hover:border-red-300',
+  'Zarządzanie projektami': 'hover:border-gray-300',
+};
+
+function pluralizeTools(n: number): string {
+  if (n === 1) return 'narzędzie';
+  if (n >= 2 && n <= 4) return 'narzędzia';
+  return 'narzędzi';
+}
 ---
 
 <Layout
@@ -35,6 +70,27 @@ const sorted = [...(companies ?? [])].sort((a, b) => {
         <p class="mx-auto max-w-xl text-lg text-gray-500">
           Przejrzyste opisy, kategorie i informacje o cenach — wszystko w jednym miejscu.
         </p>
+      </section>
+
+      <!-- Kategorie -->
+      <section class="mb-12">
+        <h2 class="mb-6 text-sm font-semibold uppercase tracking-wide text-gray-400">
+          Kategorie
+        </h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {categoryTiles.map(cat => (
+            <a
+              href={`/kategoria/${cat.slug}`}
+              class={`flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md ${categoryHoverBorder[cat.name_pl] ?? 'hover:border-gray-300'}`}
+            >
+              <CategoryIcon category={cat.name_pl} size={40} />
+              <div class="min-w-0">
+                <p class="truncate font-semibold text-gray-900">{cat.name_pl}</p>
+                <p class="text-sm text-gray-500">{cat.count} {pluralizeTools(cat.count)}</p>
+              </div>
+            </a>
+          ))}
+        </div>
       </section>
 
       <!-- Karty firm -->
@@ -61,6 +117,7 @@ const sorted = [...(companies ?? [])].sort((a, b) => {
                 disclosureText={activeAffiliateLink?.disclosure_text}
                 rodoCompliant={tool.rodo_compliant}
                 aiActRisk={tool.ai_act_risk}
+                logoUrl={tool.logo_url}
               />
             );
           })}
