@@ -38,6 +38,53 @@ const tags = (tool.tool_tags ?? []).map((tt: any) => tt.tags).filter(Boolean);
 const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
 const ctaUrl = activeAffiliateLink?.affiliate_url ?? tool.website_url;
 
+let similarTools: any[] = [];
+
+if (tool.category_id) {
+  const { data } = await supabase
+    .from('tools')
+    .select('id, slug, name, tagline_pl, description_pl, logo_url, created_at')
+    .eq('category_id', tool.category_id)
+    .eq('status', 'approved')
+    .neq('id', tool.id)
+    .order('created_at', { ascending: false })
+    .limit(3);
+  similarTools = data ?? [];
+}
+
+const stillNeeded = 3 - similarTools.length;
+
+if (stillNeeded > 0) {
+  const { data: toolTagRows } = await supabase
+    .from('tool_tags')
+    .select('tag_id')
+    .eq('tool_id', tool.id);
+  const tagIds = (toolTagRows ?? []).map((r: any) => r.tag_id);
+
+  if (tagIds.length > 0) {
+    const excludeIds = new Set([tool.id, ...similarTools.map(t => t.id)]);
+    const { data: tagMatchRows } = await supabase
+      .from('tool_tags')
+      .select('tools!inner(id, slug, name, tagline_pl, description_pl, logo_url, created_at, status)')
+      .in('tag_id', tagIds)
+      .eq('tools.status', 'approved');
+
+    const extra: any[] = [];
+    for (const row of (tagMatchRows ?? []) as any[]) {
+      const t = row.tools;
+      if (!t || excludeIds.has(t.id)) continue;
+      excludeIds.add(t.id);
+      extra.push(t);
+    }
+    extra.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    similarTools = [...similarTools, ...extra.slice(0, stillNeeded)];
+  }
+}
+
+function truncate(text: string, max: number) {
+  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
+}
+
 const aiActBadgeColor: Record<string, string> = {
   minimal: 'bg-green-100 text-green-700',
   limited: 'bg-yellow-100 text-yellow-700',
@@ -239,6 +286,35 @@ const faqSchema = JSON.stringify({
 
         {activeAffiliateLink && (
           <p class="mt-2 text-xs text-gray-500">{activeAffiliateLink.disclosure_text}</p>
+        )}
+
+        {similarTools.length > 0 && (
+          <div class="mt-10">
+            <h2 class="mb-3 text-xl font-semibold text-gray-900">Podobne narzędzia</h2>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {similarTools.map((t: any) => (
+                <a
+                  href={`/narzedzia/${t.slug}`}
+                  class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+                >
+                  {t.logo_url ? (
+                    <img src={t.logo_url} alt={`Logo ${t.name}`}
+                      class="h-9 w-9 shrink-0 rounded-lg border border-gray-100 object-contain" />
+                  ) : (
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-sm font-semibold text-indigo-600">
+                      {t.name?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-gray-900">{t.name}</p>
+                    <p class="truncate text-xs text-gray-500">
+                      {t.tagline_pl || truncate(t.description_pl ?? '', 80)}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
         )}
 
       </article>
