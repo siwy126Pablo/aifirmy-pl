@@ -9,9 +9,11 @@ interface Props {
   isPremium?: boolean;
   affiliateUrl?: string | null;
   disclosureText?: string | null;
+  rodoCompliant?: boolean;
+  aiActRisk?: 'minimal' | 'limited' | 'high' | 'unacceptable' | null;
 }
 
-const { name, description, category, pricing, url, slug, isPremium = false, affiliateUrl, disclosureText } = Astro.props;
+const { name, description, category, pricing, url, slug, isPremium = false, affiliateUrl, disclosureText, rodoCompliant = false, aiActRisk = null } = Astro.props;
 
 const ctaUrl = affiliateUrl ?? url;
 
@@ -25,6 +27,13 @@ const pricingColor: Record<Props['pricing'], string> = {
   free: 'bg-green-100 text-green-700',
   freemium: 'bg-blue-100 text-blue-700',
   paid: 'bg-orange-100 text-orange-700',
+};
+
+const aiActColor: Record<string, string> = {
+  minimal: 'bg-green-100 text-green-700',
+  limited: 'bg-yellow-100 text-yellow-700',
+  high: 'bg-red-100 text-red-700',
+  unacceptable: 'bg-red-200 text-red-900',
 };
 ---
 
@@ -41,7 +50,22 @@ const pricingColor: Record<Props['pricing'], string> = {
     </span>
   </div>
 
-  <p class="line-clamp-3 text-sm text-gray-600">{description}</p>
+  {(rodoCompliant || aiActRisk) && (
+    <div class="flex flex-wrap gap-1.5">
+      {rodoCompliant && (
+        <span class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
+          ✓ RODO
+        </span>
+      )}
+      {aiActRisk && (
+        <span class={`rounded-full px-2 py-0.5 text-[11px] font-medium ${aiActColor[aiActRisk]}`}>
+          AI Act: {aiActRisk}
+        </span>
+      )}
+    </div>
+  )}
+
+  <p class="line-clamp-4 text-sm text-gray-600">{description}</p>
 
   <div class="mt-auto flex items-center justify-between pt-1">
     <span class="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{category}</span>

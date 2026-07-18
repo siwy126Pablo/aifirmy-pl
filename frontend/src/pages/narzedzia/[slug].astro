@@ -38,6 +38,62 @@ const tags = (tool.tool_tags ?? []).map((tt: any) => tt.tags).filter(Boolean);
 const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
 const ctaUrl = activeAffiliateLink?.affiliate_url ?? tool.website_url;
 
+const aiActBadgeColor: Record<string, string> = {
+  minimal: 'bg-green-100 text-green-700',
+  limited: 'bg-yellow-100 text-yellow-700',
+  high: 'bg-red-100 text-red-700',
+  unacceptable: 'bg-red-200 text-red-900',
+};
+
+const pricingExplanation: Record<string, string> = {
+  free: 'oznacza to, że korzystanie z narzędzia jest całkowicie bezpłatne.',
+  freemium: 'oznacza to, że podstawowa wersja jest darmowa, a zaawansowane funkcje wymagają płatnej subskrypcji.',
+  paid: 'oznacza to, że korzystanie z narzędzia wymaga wykupienia licencji lub subskrypcji.',
+  open_source: 'oznacza to, że kod źródłowy jest publicznie dostępny, a narzędzie można używać i modyfikować bezpłatnie.',
+};
+
+const aiActExplanation: Record<string, string> = {
+  minimal: 'minimalne',
+  limited: 'ograniczone',
+  high: 'wysokie',
+  unacceptable: 'niedopuszczalne',
+};
+
+const targetSizeLabels: Record<string, string> = {
+  smb: 'małych i średnich firm',
+  mid: 'firm średniej wielkości',
+  enterprise: 'dużych organizacji (enterprise)',
+};
+
+const targetSizeText = ((tool.target_size ?? []) as string[])
+  .map((t: string) => targetSizeLabels[t] ?? t)
+  .join(', ');
+
+const faqs = [
+  {
+    question: `Czy ${tool.name} jest zgodne z RODO?`,
+    answer: tool.rodo_compliant
+      ? `Tak — ${tool.name} spełnia wymogi RODO, co jest istotne dla firm przetwarzających dane osobowe w UE.`
+      : 'Brak potwierdzonej zgodności z RODO — zalecamy weryfikację bezpośrednio u dostawcy przed wdrożeniem.',
+  },
+  {
+    question: `Jaki jest model cenowy ${tool.name}?`,
+    answer: `${pricingLabel[pricing]} — ${pricingExplanation[pricing] ?? ''}`,
+  },
+  ...(tool.ai_act_risk
+    ? [{
+        question: `Jaki poziom ryzyka według unijnego AI Act ma ${tool.name}?`,
+        answer: `${tool.name} klasyfikowane jest jako ryzyko ${aiActExplanation[tool.ai_act_risk] ?? tool.ai_act_risk} zgodnie z unijnym AI Act.${tool.ai_act_notes ? ' ' + tool.ai_act_notes : ''}`,
+      }]
+    : []),
+  {
+    question: `Dla jakich firm nadaje się ${tool.name}?`,
+    answer: targetSizeText
+      ? `Narzędzie dopasowane do: ${targetSizeText}.`
+      : 'Brak danych o dedykowanej wielkości firmy — narzędzie może być odpowiednie niezależnie od rozmiaru organizacji.',
+  },
+];
+
 const schema = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -45,6 +101,19 @@ const schema = JSON.stringify({
   description: tool.description_pl ?? tool.tagline_pl,
   url: tool.website_url,
   applicationCategory: categoryName,
+});
+
+const faqSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(faq => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.answer,
+    },
+  })),
 });
 ---
 
@@ -54,6 +123,7 @@ const schema = JSON.stringify({
 >
   <Fragment slot="head">
     <script type="application/ld+json" set:html={schema} />
+    <script type="application/ld+json" set:html={faqSchema} />
   </Fragment>
 
   <div class="min-h-screen bg-gray-50">
@@ -83,6 +153,21 @@ const schema = JSON.stringify({
             {pricingLabel[pricing]}
           </span>
         </div>
+
+        {(tool.rodo_compliant || tool.ai_act_risk) && (
+          <div class="mb-4 flex flex-wrap gap-1.5">
+            {tool.rodo_compliant && (
+              <span class="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                ✓ RODO
+              </span>
+            )}
+            {tool.ai_act_risk && (
+              <span class={`rounded-full px-2 py-0.5 text-xs font-medium ${aiActBadgeColor[tool.ai_act_risk]}`}>
+                AI Act: {tool.ai_act_risk}
+              </span>
+            )}
+          </div>
+        )}
 
         {categoryName && (
           <p class="mb-6 text-sm text-gray-400">
@@ -127,6 +212,21 @@ const schema = JSON.stringify({
             ))}
           </div>
         )}
+
+        <div class="mb-8">
+          <h2 class="mb-3 text-xl font-semibold text-gray-900">Najczęściej zadawane pytania</h2>
+          <div class="divide-y divide-gray-200 rounded-lg border border-gray-200">
+            {faqs.map(faq => (
+              <details class="group px-4 py-3 [&_summary::-webkit-details-marker]:hidden">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-gray-800 hover:text-indigo-600 focus:text-indigo-600 focus:outline-none">
+                  {faq.question}
+                  <span class="shrink-0 text-gray-400 transition-transform group-open:rotate-45">+</span>
+                </summary>
+                <p class="mt-2 text-sm leading-relaxed text-gray-600">{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
 
         <a
           href={ctaUrl}

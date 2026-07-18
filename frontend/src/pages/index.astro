@@ -59,6 +59,8 @@ const sorted = [...(companies ?? [])].sort((a, b) => {
                 isPremium={isPremium}
                 affiliateUrl={activeAffiliateLink?.affiliate_url}
                 disclosureText={activeAffiliateLink?.disclosure_text}
+                rodoCompliant={tool.rodo_compliant}
+                aiActRisk={tool.ai_act_risk}
               />
             );
           })}
