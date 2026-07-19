@@ -18,11 +18,7 @@ declare(strict_types=1);
 $verify_debug_start = microtime(true);
 error_log("verify_tool: start " . microtime(true));
 
-function verify_debug(string $label): void {
-    global $verify_debug_start;
-    $elapsedMs = round((microtime(true) - $verify_debug_start) * 1000);
-    $line = sprintf('verify_tool: %s (+%dms od startu, %s)', $label, $elapsedMs, microtime(true));
-
+function verify_write_log(string $line): void {
     error_log($line);
 
     $logDir = '/home/siwy126/domains/aifirmy.pl/private_html/logs';
@@ -31,6 +27,33 @@ function verify_debug(string $label): void {
     }
     @file_put_contents($logDir . '/verify_debug.log', $line . PHP_EOL, FILE_APPEND | LOCK_EX);
 }
+
+function verify_debug(string $label): void {
+    global $verify_debug_start;
+    $elapsedMs = round((microtime(true) - $verify_debug_start) * 1000);
+    verify_write_log(sprintf('verify_tool: %s (+%dms od startu, %s)', $label, $elapsedMs, microtime(true)));
+}
+
+// Siatka bezpieczeństwa na fatal errory, których zwykły try/catch NIE łapie
+// (np. wyczerpanie pamięci, przekroczenie limitu czasu, błędy parsowania).
+// try/catch niżej łapie TypeError/Error przy przetwarzaniu odpowiedzi AI —
+// to tutaj jest na wypadek, gdyby coś umknęło i try/catch.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err === null) {
+        return;
+    }
+    if (!in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        return;
+    }
+    verify_write_log(sprintf(
+        'verify_tool FATAL (shutdown/error_get_last): [type=%d] %s w %s:%d',
+        $err['type'],
+        $err['message'],
+        $err['file'],
+        $err['line']
+    ));
+});
 
 // Typowy limit czasu wykonania na hostingu współdzielonym to 30s — kończymy
 // wcześniej, żeby zdążyć zwrócić czytelny błąd JSON zamiast 502 od LiteSpeed.
@@ -196,9 +219,10 @@ $systemPrompt = 'Na podstawie treści strony narzędzia/firmy zweryfikuj i zaktu
     . 'logo_hint — URL do favicon lub OG image ze strony jeśli widoczny w HTML head, inaczej null.';
 
 $payload = [
-    'model'      => 'gpt-4o-mini',
-    'max_tokens' => 400,
-    'messages'   => [
+    'model'           => 'gpt-4o-mini',
+    'max_tokens'      => 400,
+    'response_format' => ['type' => 'json_object'],
+    'messages'        => [
         ['role' => 'system', 'content' => $systemPrompt],
         ['role' => 'user', 'content' => $pageText],
     ],
@@ -216,10 +240,11 @@ curl_setopt_array($ch, [
     ],
 ]);
 $openaiRes   = curl_exec($ch);
+$openaiHttp  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $openaiError = curl_error($ch);
 curl_close($ch);
 
-verify_debug('po OpenAI');
+verify_debug('po OpenAI (HTTP ' . $openaiHttp . ')');
 
 if ($openaiRes === false || $openaiError !== '') {
     http_response_code(502);
@@ -227,56 +252,87 @@ if ($openaiRes === false || $openaiError !== '') {
     exit;
 }
 
-$openaiData = json_decode($openaiRes, true);
-$content    = $openaiData['choices'][0]['message']['content'] ?? null;
+// ---------- 5. Parsowanie odpowiedzi OpenAI i budowa response ----------
+//
+// Od tego miejsca do zwrócenia JSON-a całość owinięta w try/catch (\Throwable,
+// bo TypeError/Error nie dziedziczą po Exception) — to tutaj najczęściej
+// dochodziło do fatal errora (np. gdy OpenAI zwróci coś innego niż czysty
+// JSON w message.content, albo pole "category" w nieoczekiwanym kształcie).
 
-if (!$content) {
-    http_response_code(502);
-    echo json_encode(['error' => 'OpenAI nie zwróciło odpowiedzi.']);
-    exit;
-}
-
-$ai = json_decode($content, true);
-if (!is_array($ai)) {
-    http_response_code(502);
-    echo json_encode(['error' => 'Nie udało się sparsować odpowiedzi AI jako JSON.']);
-    exit;
-}
-
-// dopasuj nazwę kategorii zwróconą przez AI do category_id
-$matchedCategoryId = null;
-foreach ($categories as $cat) {
-    if (mb_strtolower(trim($cat['name_pl'])) === mb_strtolower(trim($ai['category'] ?? ''))) {
-        $matchedCategoryId = $cat['id'];
-        break;
+try {
+    if ($openaiHttp >= 400) {
+        verify_write_log('verify_tool: OpenAI HTTP ' . $openaiHttp . ' — surowa odpowiedź: ' . mb_substr((string) $openaiRes, 0, 2000));
+        throw new RuntimeException('OpenAI zwróciło błąd HTTP ' . $openaiHttp . '.');
     }
+
+    $openaiData = json_decode($openaiRes, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        verify_write_log('verify_tool: nie udało się zdekodować odpowiedzi HTTP z OpenAI (' . json_last_error_msg() . ') — surowa odpowiedź: ' . mb_substr((string) $openaiRes, 0, 2000));
+        throw new RuntimeException('Nie udało się zdekodować odpowiedzi HTTP z OpenAI: ' . json_last_error_msg());
+    }
+
+    $content = $openaiData['choices'][0]['message']['content'] ?? null;
+
+    // Surowa treść content — logujemy PRZED próbą jej sparsowania, żeby mieć
+    // dowód nawet jeśli json_decode niżej zawiedzie (np. odpowiedź owinięta
+    // w markdown ```json mimo instrukcji w prompcie).
+    verify_write_log('verify_tool: surowa treść content z OpenAI (pierwsze 2000 znaków): ' . mb_substr((string) $content, 0, 2000));
+
+    if (!$content) {
+        throw new RuntimeException('OpenAI nie zwróciło treści odpowiedzi (message.content puste).');
+    }
+
+    $ai = json_decode($content, true);
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($ai)) {
+        throw new RuntimeException('Nie udało się sparsować odpowiedzi AI jako JSON: ' . json_last_error_msg());
+    }
+
+    // Dopasuj nazwę kategorii zwróconą przez AI do category_id. $ai['category']
+    // teoretycznie nie musi być stringiem (np. AI zwróci tablicę) — bez tego
+    // sprawdzenia trim()/mb_strtolower() rzuciłyby TypeError (strict_types=1).
+    $aiCategoryRaw  = $ai['category'] ?? '';
+    $aiCategoryName = is_string($aiCategoryRaw) ? trim($aiCategoryRaw) : '';
+
+    $matchedCategoryId = null;
+    foreach ($categories as $cat) {
+        if ($aiCategoryName !== '' && mb_strtolower(trim((string) $cat['name_pl'])) === mb_strtolower($aiCategoryName)) {
+            $matchedCategoryId = $cat['id'];
+            break;
+        }
+    }
+
+    $logoHint = $ai['logo_hint'] ?? $logoHintFromHtml;
+
+    $response = [
+        'old' => [
+            'description'   => $tool['description_pl'],
+            'category'      => $tool['categories']['name_pl'] ?? null,
+            'category_id'   => $tool['category_id'],
+            'pricing_model' => $tool['pricing_model'],
+            'best_for_pl'   => $tool['best_for_pl'],
+            'ai_act_risk'   => $tool['ai_act_risk'],
+            'logo_url'      => $tool['logo_url'],
+        ],
+        'new' => [
+            'description'            => $ai['description'] ?? null,
+            'category'               => $aiCategoryName !== '' ? $aiCategoryName : null,
+            'category_id'            => $matchedCategoryId,
+            'pricing_model'          => $ai['pricing_model'] ?? null,
+            'best_for_pl'            => $ai['best_for_pl'] ?? null,
+            'ai_act_risk_suggestion' => $ai['ai_act_risk_suggestion'] ?? null,
+            'logo_hint'              => $logoHint,
+        ],
+    ];
+
+    echo json_encode($response);
+
+    verify_debug('po zapisie response');
+} catch (\Throwable $e) {
+    verify_debug('WYJĄTEK: ' . $e->getMessage() . ' w ' . $e->getFile() . ':' . $e->getLine());
+    verify_write_log('verify_tool: stack trace: ' . $e->getTraceAsString());
+
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+    echo json_encode(['error' => 'Błąd przetwarzania odpowiedzi AI: ' . $e->getMessage()]);
 }
-
-$logoHint = $ai['logo_hint'] ?? $logoHintFromHtml;
-
-// ---------- 5. Odpowiedź: stare vs nowe dane ----------
-
-$response = [
-    'old' => [
-        'description'   => $tool['description_pl'],
-        'category'      => $tool['categories']['name_pl'] ?? null,
-        'category_id'   => $tool['category_id'],
-        'pricing_model' => $tool['pricing_model'],
-        'best_for_pl'   => $tool['best_for_pl'],
-        'ai_act_risk'   => $tool['ai_act_risk'],
-        'logo_url'      => $tool['logo_url'],
-    ],
-    'new' => [
-        'description'            => $ai['description'] ?? null,
-        'category'               => $ai['category'] ?? null,
-        'category_id'            => $matchedCategoryId,
-        'pricing_model'          => $ai['pricing_model'] ?? null,
-        'best_for_pl'            => $ai['best_for_pl'] ?? null,
-        'ai_act_risk_suggestion' => $ai['ai_act_risk_suggestion'] ?? null,
-        'logo_hint'              => $logoHint,
-    ],
-];
-
-echo json_encode($response);
-
-verify_debug('po zapisie response');
