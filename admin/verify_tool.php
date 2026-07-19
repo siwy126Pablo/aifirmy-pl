@@ -8,7 +8,33 @@ declare(strict_types=1);
  *
  * Dodaj w private_html/config/openai.php:
  *   define('OPENAI_API_KEY', 'sk-...');
+ *
+ * Debug: ścieżka pliku error_log na Cyberfolks/LiteSpeed nie jest nigdzie
+ * zdefiniowana w tym repo (brak php.ini/.user.ini/ini_set) — zależy od
+ * konfiguracji hostingu. Dlatego oprócz error_log() piszemy też jawnie do
+ * private_html/logs/verify_debug.log (poza webrootem, jak config/).
  */
+
+$verify_debug_start = microtime(true);
+error_log("verify_tool: start " . microtime(true));
+
+function verify_debug(string $label): void {
+    global $verify_debug_start;
+    $elapsedMs = round((microtime(true) - $verify_debug_start) * 1000);
+    $line = sprintf('verify_tool: %s (+%dms od startu, %s)', $label, $elapsedMs, microtime(true));
+
+    error_log($line);
+
+    $logDir = '/home/siwy126/domains/aifirmy.pl/private_html/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    @file_put_contents($logDir . '/verify_debug.log', $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+}
+
+// Typowy limit czasu wykonania na hostingu współdzielonym to 30s — kończymy
+// wcześniej, żeby zdążyć zwrócić czytelny błąd JSON zamiast 502 od LiteSpeed.
+set_time_limit(25);
 
 session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
@@ -67,6 +93,8 @@ if (empty($tools)) {
 $tool = $tools[0];
 $categories = sb_get('categories?order=sort_order&select=id,name_pl');
 
+verify_debug('po pobraniu narzędzia i kategorii z Supabase');
+
 // ---------- 2. Live fetch strony narzędzia ----------
 
 $ch = curl_init($tool['website_url']);
@@ -74,7 +102,8 @@ curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_MAXREDIRS      => 5,
-    CURLOPT_TIMEOUT        => 10,
+    CURLOPT_TIMEOUT        => 6,
+    CURLOPT_CONNECTTIMEOUT => 6,
     CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     CURLOPT_HTTPHEADER     => ['Accept: text/html'],
 ]);
@@ -82,6 +111,8 @@ $html      = curl_exec($ch);
 $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlError = curl_error($ch);
 curl_close($ch);
+
+verify_debug('po curl strony');
 
 if ($html === false || $curlError !== '') {
     http_response_code(502);
@@ -177,7 +208,7 @@ $ch = curl_init('https://api.openai.com/v1/chat/completions');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
-    CURLOPT_TIMEOUT        => 30,
+    CURLOPT_TIMEOUT        => 15,
     CURLOPT_POSTFIELDS     => json_encode($payload),
     CURLOPT_HTTPHEADER     => [
         'Content-Type: application/json',
@@ -187,6 +218,8 @@ curl_setopt_array($ch, [
 $openaiRes   = curl_exec($ch);
 $openaiError = curl_error($ch);
 curl_close($ch);
+
+verify_debug('po OpenAI');
 
 if ($openaiRes === false || $openaiError !== '') {
     http_response_code(502);
@@ -223,7 +256,7 @@ $logoHint = $ai['logo_hint'] ?? $logoHintFromHtml;
 
 // ---------- 5. Odpowiedź: stare vs nowe dane ----------
 
-echo json_encode([
+$response = [
     'old' => [
         'description'   => $tool['description_pl'],
         'category'      => $tool['categories']['name_pl'] ?? null,
@@ -242,4 +275,8 @@ echo json_encode([
         'ai_act_risk_suggestion' => $ai['ai_act_risk_suggestion'] ?? null,
         'logo_hint'              => $logoHint,
     ],
-]);
+];
+
+echo json_encode($response);
+
+verify_debug('po zapisie response');
