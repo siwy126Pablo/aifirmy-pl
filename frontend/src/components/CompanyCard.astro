@@ -14,9 +14,10 @@ interface Props {
   rodoCompliant?: boolean;
   aiActRisk?: 'minimal' | 'limited' | 'high' | 'unacceptable' | null;
   logoUrl?: string | null;
+  bestForPl?: string | null;
 }
 
-const { name, description, category, pricing, url, slug, isPremium = false, affiliateUrl, disclosureText, rodoCompliant = false, aiActRisk = null, logoUrl = null } = Astro.props;
+const { name, description, category, pricing, url, slug, isPremium = false, affiliateUrl, disclosureText, rodoCompliant = false, aiActRisk = null, logoUrl = null, bestForPl = null } = Astro.props;
 
 const placeholderColor = categoryColors[category] ?? categoryColorFallback;
 
@@ -64,6 +65,10 @@ const aiActColor: Record<string, string> = {
       {pricingLabel[pricing]}
     </span>
   </div>
+
+  {bestForPl && (
+    <p class="-mt-2 text-xs italic text-gray-400">Najlepsze dla: {bestForPl}</p>
+  )}
 
   {(rodoCompliant || aiActRisk) && (
     <div class="flex flex-wrap gap-1.5">

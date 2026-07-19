@@ -201,6 +201,10 @@ const faqSchema = JSON.stringify({
           </span>
         </div>
 
+        {tool.best_for_pl && (
+          <p class="-mt-4 mb-4 text-sm italic text-gray-500">Najlepsze dla: {tool.best_for_pl}</p>
+        )}
+
         {(tool.rodo_compliant || tool.ai_act_risk) && (
           <div class="mb-4 flex flex-wrap gap-1.5">
             {tool.rodo_compliant && (
