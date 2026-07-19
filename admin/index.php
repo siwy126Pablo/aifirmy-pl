@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
+require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/openai.php';
 
 define('SUPABASE_URL', 'https://szassqzvivdgvpkciyif.supabase.co');
 define('SUPABASE_KEY', SUPABASE_ANON_KEY ); // ← wklej swój anon key
@@ -48,6 +49,20 @@ function sb_post(string $table, array $data): void {
             'Authorization: Bearer ' . SUPABASE_KEY,
             'Content-Type: application/json',
             'Prefer: return=minimal',
+        ],
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+function sb_delete(string $table, string $id): void {
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table . '?id=eq.' . rawurlencode($id));
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST  => 'DELETE',
+        CURLOPT_HTTPHEADER     => [
+            'apikey: ' . SUPABASE_KEY,
+            'Authorization: Bearer ' . SUPABASE_KEY,
         ],
     ]);
     curl_exec($ch);
@@ -127,6 +142,10 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
             sb_patch('scrape_queue', $id, ['stage' => 'published']);
         } elseif ($_POST['action'] === 'reject') {
             sb_patch('scrape_queue', $id, ['stage' => 'rejected']);
+        } elseif ($_POST['action'] === 'hard_delete') {
+            sb_delete('scrape_queue', $id);
+        } elseif ($_POST['action'] === 'restore_to_queue') {
+            sb_patch('scrape_queue', $id, ['stage' => 'ai_done']);
         }
         header('Location: /admin/index.php?tab=' . $tab);
         exit;
@@ -194,6 +213,20 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         .stat { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
         .stat-val { font-size: 32px; font-weight: 600; color: #4f46e5; }
         .stat-lbl { font-size: 13px; color: #6b7280; margin-top: 4px; }
+        .notice { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+        .notice a { color: #4f46e5; font-weight: 500; text-decoration: none; margin-left: 8px; }
+        .notice a:hover { text-decoration: underline; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
+        .modal-box { background: white; border-radius: 12px; padding: 24px; max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+        .verify-row { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f3f4f6; }
+        .verify-row:last-child { border-bottom: none; }
+        .verify-check { display: flex; align-items: center; gap: 6px; font-weight: 500; font-size: 14px; margin-bottom: 8px; }
+        .verify-warn { color: #dc2626; font-weight: 400; font-size: 12px; }
+        .verify-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .verify-old, .verify-new { padding: 8px 10px; border-radius: 6px; font-size: 13px; line-height: 1.4; word-break: break-word; }
+        .verify-old { background: #f3f4f6; color: #6b7280; }
+        .verify-new { background: #dcfce7; color: #166534; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -227,6 +260,7 @@ $tab = $_GET['tab'] ?? 'queue';
 $czeka      = sb_count('scrape_queue', 'stage=eq.ai_done');
 $approved   = sb_count('tools', 'status=eq.approved');
 $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
+$odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
 ?>
 
     <div class="stats">
@@ -246,6 +280,7 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
 
     <div class="tabs">
         <a href="?tab=queue" class="tab <?= $tab === 'queue' ? 'active' : '' ?>">Kolejka (<?= $czeka ?>)</a>
+        <a href="?tab=ai_rejected" class="tab <?= $tab === 'ai_rejected' ? 'active' : '' ?>">Odrzucone przez AI (<?= $odrzucone_ai ?>)</a>
         <a href="?tab=tools" class="tab <?= $tab === 'tools' ? 'active' : '' ?>">Narzędzia</a>
         <a href="?tab=add"   class="tab <?= $tab === 'add'   ? 'active' : '' ?>">+ Dodaj wpis</a>
     </div>
@@ -260,6 +295,12 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
         '&select=id,raw_name,ai_description,ai_category,source_url,scraped_at'
     );
     ?>
+    <?php if ($odrzucone_ai > 0): ?>
+    <div class="notice">
+        ⚠️ <strong><?= $odrzucone_ai ?></strong> odrzuconych przez AI oczekuje na przegląd.
+        <a href="?tab=ai_rejected">Sprawdź →</a>
+    </div>
+    <?php endif; ?>
     <table>
         <tr>
             <th>Nazwa</th>
@@ -295,6 +336,51 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
         <?php endforeach; ?>
         <?php if (empty($items)): ?>
         <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:40px">Brak wpisów do moderacji 🎉</td></tr>
+        <?php endif; ?>
+    </table>
+
+    <?php elseif ($tab === 'ai_rejected'): ?>
+    <?php
+    $rejected_items = sb_get(
+        'scrape_queue' .
+        '?stage=eq.ai_rejected' .
+        '&order=scraped_at.desc' .
+        '&limit=50' .
+        '&select=id,raw_name,ai_description,source_url,scraped_at'
+    );
+    ?>
+    <table>
+        <tr>
+            <th>Nazwa (raw)</th>
+            <th>Opis AI</th>
+            <th>Źródło</th>
+            <th>Data</th>
+            <th>Akcja</th>
+        </tr>
+        <?php foreach ($rejected_items as $item): ?>
+        <tr>
+            <td><strong><?= htmlspecialchars($item['raw_name'] ?? '') ?></strong></td>
+            <td class="desc"><?= htmlspecialchars($item['ai_description'] ?? '') ?></td>
+            <td><a href="<?= htmlspecialchars($item['source_url'] ?? '') ?>" target="_blank" style="color:#4f46e5">Link →</a></td>
+            <td><?= $item['scraped_at'] ? date('d.m H:i', strtotime($item['scraped_at'])) : '' ?></td>
+            <td>
+                <div class="actions">
+                    <form method="POST" onsubmit="return confirm('Usunąć trwale? Tej operacji nie można cofnąć.');">
+                        <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
+                        <input type="hidden" name="action" value="hard_delete">
+                        <button class="btn btn-danger">Usuń trwale</button>
+                    </form>
+                    <form method="POST">
+                        <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
+                        <input type="hidden" name="action" value="restore_to_queue">
+                        <button class="btn btn-secondary">To jednak produkt — przenieś do kolejki</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+        <?php if (empty($rejected_items)): ?>
+        <tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:40px">Brak odrzuconych wpisów 🎉</td></tr>
         <?php endif; ?>
     </table>
 
@@ -348,7 +434,12 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
             <td><?= $tool['rodo_compliant'] ? '✅' : '❌' ?></td>
             <td><?= htmlspecialchars($tool['ai_act_risk'] ?? '') ?></td>
             <td><span class="badge <?= $tool['status'] === 'approved' ? 'badge-green' : 'badge-gray' ?>"><?= htmlspecialchars($tool['status']) ?></span></td>
-            <td><button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($tool['id']) ?>', 'tools', 'status', this.closest('tr'))">Usuń</button></td>
+            <td>
+                <div class="actions">
+                    <button class="btn btn-secondary" style="font-size:12px;padding:6px 10px" onclick="verifyTool('<?= htmlspecialchars($tool['id']) ?>', this)">🔍 Zweryfikuj przez AI</button>
+                    <button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($tool['id']) ?>', 'tools', 'status', this.closest('tr'))">Usuń</button>
+                </div>
+            </td>
         </tr>
         <?php endforeach; ?>
     </table>
@@ -418,6 +509,18 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
     <?php endif; ?>
 
 </div>
+
+<div id="verify-modal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+        <h2 style="margin-bottom:16px;font-size:18px">Weryfikacja AI — porównanie</h2>
+        <div id="verify-modal-body"></div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeVerifyModal()">Anuluj</button>
+            <button class="btn btn-success" onclick="applyVerifiedChanges()">Zatwierdź zaznaczone zmiany</button>
+        </div>
+    </div>
+</div>
+
 <?php endif; ?>
 <script>
 function softDelete(id, table, field, row) {
@@ -485,6 +588,148 @@ function saveLogo(id) {
         if (r.ok) {
             msg.textContent = 'Zapisano';
             setTimeout(function() { msg.textContent = ''; }, 2000);
+        }
+    });
+}
+
+// ---------- Weryfikacja narzędzia przez AI ----------
+
+var VERIFY_FIELD_DEFS = [
+    { key: 'description',            oldKey: 'description',   dbField: 'description_pl', label: 'Opis',           defaultChecked: true },
+    { key: 'category',               oldKey: 'category',      dbField: 'category_id',    label: 'Kategoria',      defaultChecked: true, useIdField: 'category_id' },
+    { key: 'pricing_model',          oldKey: 'pricing_model', dbField: 'pricing_model',  label: 'Model cenowy',   defaultChecked: true },
+    { key: 'best_for_pl',            oldKey: 'best_for_pl',   dbField: 'best_for_pl',    label: 'Najlepsze dla',  defaultChecked: true },
+    { key: 'ai_act_risk_suggestion', oldKey: 'ai_act_risk',   dbField: 'ai_act_risk',    label: 'AI Act ryzyko',  defaultChecked: false },
+    { key: 'logo_hint',              oldKey: 'logo_url',      dbField: 'logo_url',       label: 'Logo URL',       defaultChecked: false },
+];
+
+var verifyTargetId = null;
+var verifyPatchValues = [];
+
+function verifyTool(id, btn) {
+    var original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Weryfikuję…';
+
+    fetch('verify_tool.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'tool_id=' + encodeURIComponent(id)
+    })
+    .then(function(r) {
+        return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+    })
+    .then(function(res) {
+        if (!res.ok || res.data.error) {
+            alert(res.data.error || 'Weryfikacja nie powiodła się.');
+            return;
+        }
+        verifyTargetId = id;
+        openVerifyModal(res.data);
+    })
+    .catch(function() {
+        alert('Błąd sieci podczas weryfikacji.');
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.textContent = original;
+    });
+}
+
+function verifyDisplayValue(v) {
+    return (v === null || v === undefined || v === '') ? '(brak)' : String(v);
+}
+
+function openVerifyModal(data) {
+    var body = document.getElementById('verify-modal-body');
+    body.innerHTML = '';
+    verifyPatchValues = [];
+
+    VERIFY_FIELD_DEFS.forEach(function(def) {
+        var oldVal = data.old ? data.old[def.oldKey] : null;
+        var newVal = data.new ? data.new[def.key] : null;
+        var patchVal = def.useIdField ? (data.new ? data.new[def.useIdField] : null) : newVal;
+        var unresolved = !!def.useIdField && !patchVal;
+
+        var idx = verifyPatchValues.length;
+        verifyPatchValues.push({ dbField: def.dbField, value: patchVal });
+
+        var row = document.createElement('div');
+        row.className = 'verify-row';
+
+        var label = document.createElement('label');
+        label.className = 'verify-check';
+
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = def.defaultChecked && !unresolved;
+        cb.disabled = unresolved;
+        cb.dataset.index = String(idx);
+
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(' ' + def.label));
+        if (unresolved) {
+            var warn = document.createElement('span');
+            warn.className = 'verify-warn';
+            warn.textContent = ' (nie rozpoznano kategorii — pomiń lub popraw ręcznie)';
+            label.appendChild(warn);
+        }
+
+        var compare = document.createElement('div');
+        compare.className = 'verify-compare';
+
+        var oldBox = document.createElement('div');
+        oldBox.className = 'verify-old';
+        oldBox.textContent = verifyDisplayValue(oldVal);
+
+        var newBox = document.createElement('div');
+        newBox.className = 'verify-new';
+        newBox.textContent = verifyDisplayValue(newVal);
+
+        compare.appendChild(oldBox);
+        compare.appendChild(newBox);
+
+        row.appendChild(label);
+        row.appendChild(compare);
+        body.appendChild(row);
+    });
+
+    document.getElementById('verify-modal').style.display = 'flex';
+}
+
+function closeVerifyModal() {
+    document.getElementById('verify-modal').style.display = 'none';
+    verifyTargetId = null;
+    verifyPatchValues = [];
+}
+
+function applyVerifiedChanges() {
+    var checks = document.querySelectorAll('#verify-modal-body input[type=checkbox]:checked');
+    var payload = {};
+    checks.forEach(function(cb) {
+        var entry = verifyPatchValues[Number(cb.dataset.index)];
+        payload[entry.dbField] = entry.value;
+    });
+
+    if (Object.keys(payload).length === 0) {
+        closeVerifyModal();
+        return;
+    }
+
+    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(verifyTargetId), {
+        method: 'PATCH',
+        headers: {
+            'apikey': '<?= SUPABASE_KEY ?>',
+            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    }).then(function(r) {
+        if (r.ok) {
+            closeVerifyModal();
+            location.reload();
+        } else {
+            alert('Nie udało się zapisać zmian.');
         }
     });
 }
