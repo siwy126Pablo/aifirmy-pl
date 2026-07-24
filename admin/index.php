@@ -391,7 +391,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         '?status=eq.approved' .
         '&order=created_at.desc' .
         '&limit=100' .
-        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,rodo_compliant,ai_act_risk,status,categories(name_pl)'
+        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,rodo_compliant,ai_act_risk,status,ai_verified_at,categories(name_pl)'
     );
     $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
@@ -436,7 +436,12 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             <td><span class="badge <?= $tool['status'] === 'approved' ? 'badge-green' : 'badge-gray' ?>"><?= htmlspecialchars($tool['status']) ?></span></td>
             <td>
                 <div class="actions">
-                    <button class="btn btn-secondary" style="font-size:12px;padding:6px 10px" onclick="verifyTool('<?= htmlspecialchars($tool['id']) ?>', this)">🔍 Zweryfikuj przez AI</button>
+                    <div>
+                        <button class="btn btn-secondary" style="font-size:12px;padding:6px 10px" onclick="verifyTool('<?= htmlspecialchars($tool['id']) ?>', this)">🔍 Zweryfikuj przez AI</button>
+                        <div id="verified-<?= htmlspecialchars($tool['id']) ?>" style="font-size:11px;color:#9ca3af;margin-top:4px">
+                            <?= $tool['ai_verified_at'] ? 'Sprawdzono: ' . date('d.m.Y', strtotime($tool['ai_verified_at'])) : '' ?>
+                        </div>
+                    </div>
                     <button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($tool['id']) ?>', 'tools', 'status', this.closest('tr'))">Usuń</button>
                 </div>
             </td>
@@ -703,6 +708,12 @@ function closeVerifyModal() {
     verifyPatchValues = [];
 }
 
+function formatPlDate(isoString) {
+    var d = new Date(isoString);
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
+}
+
 function applyVerifiedChanges() {
     var checks = document.querySelectorAll('#verify-modal-body input[type=checkbox]:checked');
     var payload = {};
@@ -716,7 +727,11 @@ function applyVerifiedChanges() {
         return;
     }
 
-    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(verifyTargetId), {
+    var targetId = verifyTargetId;
+    var verifiedAt = new Date().toISOString();
+    payload.ai_verified_at = verifiedAt;
+
+    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(targetId), {
         method: 'PATCH',
         headers: {
             'apikey': '<?= SUPABASE_KEY ?>',
@@ -726,8 +741,9 @@ function applyVerifiedChanges() {
         body: JSON.stringify(payload)
     }).then(function(r) {
         if (r.ok) {
+            var verifiedEl = document.getElementById('verified-' + targetId);
+            if (verifiedEl) verifiedEl.textContent = 'Sprawdzono: ' + formatPlDate(verifiedAt);
             closeVerifyModal();
-            location.reload();
         } else {
             alert('Nie udało się zapisać zmian.');
         }
