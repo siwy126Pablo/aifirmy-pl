@@ -226,6 +226,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         .verify-old, .verify-new { padding: 8px 10px; border-radius: 6px; font-size: 13px; line-height: 1.4; word-break: break-word; }
         .verify-old { background: #f3f4f6; color: #6b7280; }
         .verify-new { background: #dcfce7; color: #166534; }
+        .verify-hint-note { margin-top: 6px; font-size: 12px; color: #6b7280; font-style: italic; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
     </style>
 </head>
@@ -698,6 +699,53 @@ function openVerifyModal(data) {
         row.appendChild(compare);
         body.appendChild(row);
     });
+
+    // Podpowiedź ai_act_risk wg kategorii — tylko fallback, gdy strona nie dała
+    // AI żadnej własnej sugestii (ai_act_risk_suggestion puste). Osobny wiersz,
+    // wyraźnie odróżniony etykietą, żeby nie mylić z sugestią z treści strony.
+    var categoryHint = data.new ? data.new.category_ai_act_hint : null;
+    var pageSuggestion = data.new ? data.new.ai_act_risk_suggestion : null;
+    if (categoryHint && !pageSuggestion) {
+        var hintIdx = verifyPatchValues.length;
+        verifyPatchValues.push({ dbField: 'ai_act_risk', value: categoryHint });
+
+        var hintRow = document.createElement('div');
+        hintRow.className = 'verify-row';
+
+        var hintLabel = document.createElement('label');
+        hintLabel.className = 'verify-check';
+
+        var hintCb = document.createElement('input');
+        hintCb.type = 'checkbox';
+        hintCb.checked = false;
+        hintCb.dataset.index = String(hintIdx);
+
+        hintLabel.appendChild(hintCb);
+        hintLabel.appendChild(document.createTextNode(' Sugestia wg kategorii (Załącznik III AI Act)'));
+
+        var hintCompare = document.createElement('div');
+        hintCompare.className = 'verify-compare';
+
+        var hintOldBox = document.createElement('div');
+        hintOldBox.className = 'verify-old';
+        hintOldBox.textContent = verifyDisplayValue(data.old ? data.old.ai_act_risk : null);
+
+        var hintNewBox = document.createElement('div');
+        hintNewBox.className = 'verify-new';
+        hintNewBox.textContent = verifyDisplayValue(categoryHint);
+
+        hintCompare.appendChild(hintOldBox);
+        hintCompare.appendChild(hintNewBox);
+
+        var hintNote = document.createElement('div');
+        hintNote.className = 'verify-hint-note';
+        hintNote.textContent = 'Ogólna orientacja, nie porada prawna — zweryfikuj indywidualnie';
+
+        hintRow.appendChild(hintLabel);
+        hintRow.appendChild(hintCompare);
+        hintRow.appendChild(hintNote);
+        body.appendChild(hintRow);
+    }
 
     document.getElementById('verify-modal').style.display = 'flex';
 }

@@ -15,6 +15,21 @@ declare(strict_types=1);
  * private_html/logs/verify_debug.log (poza webrootem, jak config/).
  */
 
+// Statyczna, uzupełniająca podpowiedź ai_act_risk oparta na kategorii narzędzia
+// (Załącznik III AI Act) — używana TYLKO gdy AI nie znalazło żadnej wzmianki
+// o AI Act na samej stronie (ai_act_risk_suggestion puste). Finanse i księgowość
+// oraz Prawo i compliance celowo pominięte — zbyt zróżnicowane wewnętrznie,
+// wymagają ręcznej oceny za każdym razem.
+$CATEGORY_AI_ACT_HINTS = [
+    'HR i rekrutacja'          => 'high',
+    'Obsługa klienta'          => 'limited',
+    'Automatyzacja procesów'   => 'minimal',
+    'Analityka i BI'           => 'minimal',
+    'Marketing i content'      => 'minimal',
+    'Sprzedaż i CRM'           => 'minimal',
+    'Zarządzanie projektami'   => 'minimal',
+];
+
 $verify_debug_start = microtime(true);
 error_log("verify_tool: start " . microtime(true));
 
@@ -308,6 +323,18 @@ try {
 
     $logoHint = $ai['logo_hint'] ?? $logoHintFromHtml;
 
+    // Podpowiedź wg kategorii — tylko jako fallback, gdy AI nie zwróciło
+    // sugestii na podstawie treści strony. Oparta na BIEŻĄCEJ kategorii
+    // narzędzia w bazie (nie na nowej kategorii zasugerowanej przez AI).
+    $aiActRiskSuggestion = $ai['ai_act_risk_suggestion'] ?? null;
+    $categoryAiActHint   = null;
+    if (empty($aiActRiskSuggestion)) {
+        $currentCategoryName = $tool['categories']['name_pl'] ?? null;
+        if ($currentCategoryName !== null && isset($CATEGORY_AI_ACT_HINTS[$currentCategoryName])) {
+            $categoryAiActHint = $CATEGORY_AI_ACT_HINTS[$currentCategoryName];
+        }
+    }
+
     $response = [
         'old' => [
             'description'   => $tool['description_pl'],
@@ -324,7 +351,8 @@ try {
             'category_id'            => $matchedCategoryId,
             'pricing_model'          => $ai['pricing_model'] ?? null,
             'best_for_pl'            => $ai['best_for_pl'] ?? null,
-            'ai_act_risk_suggestion' => $ai['ai_act_risk_suggestion'] ?? null,
+            'ai_act_risk_suggestion' => $aiActRiskSuggestion,
+            'category_ai_act_hint'   => $categoryAiActHint,
             'logo_hint'              => $logoHint,
         ],
     ];
