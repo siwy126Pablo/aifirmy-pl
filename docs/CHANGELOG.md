@@ -134,6 +134,29 @@
 
 ---
 
+## [v0.4] — 2026-06-09 (tydzień 5.5 — poprawki przed T6)
+
+### Zrobione
+- ✅ Slugify naprawiony — zachowuje wszystkie litery ASCII, usuwa tylko znaki specjalne i prefiks "Show HN:"
+- ✅ Prompt OpenAI zwraca pole `name` (krótka nazwa produktu, max 30–50 znaków, bez prefiksów)
+- ✅ Usunięte śmieciowe wpisy z HN (Inbox-beam, Lathe, KVarN, Build a Basic AI Agent, Verbatim RAG Model)
+- ✅ Trigger `promote_scrape_to_tools()` mapuje `category` → `category_id` (lookup po nazwie)
+- ✅ `pricing_model` klasyfikowany automatycznie przez OpenAI (free/freemium/paid/open_source)
+- ✅ Soft delete w panelu admina — przycisk "Usuń" w `scrape_queue` i `tools`, PATCH status=rejected, bez reload
+- ✅ Filtr HN w NiFi (RouteOnAttribute) — blokuje GitHub, blogi, newsy (reuters, cnbc, bbc, medium, substack)
+- ✅ Odmiana "2 wpisów" na stronie kategorii (helper pluralize)
+- ✅ OG image `og-default.png` (1200×630px, granat + indigo)
+- ✅ Runbook moderacji zaktualizowany (nowa ścieżka projektu, kolumny `name`/`ai_pricing_model`, soft delete w adminie)
+
+### Odkrycia / problemy
+- Connection pool w NiFi InvokeHTTP cache'uje stare połączenie po zmianie configu — trzeba Stop → 30s → Start
+- Migracja pełnego źródła HN → BetaList RSS (zadanie 7b) odłożona na później — zrealizowana docelowo jako dodatkowe równoległe źródło, nie zamiennik (patrz v0.6/v0.7)
+
+### Następny tydzień
+- Start T6: Google Analytics, Search Console, Stripe checkout
+
+---
+
 ## [v0.7] — 2026-07-08 (tydzień 7)
 
 ### Zrobione
@@ -152,7 +175,41 @@
 
 ---
 
+## [v0.8] — 2026-07-15 (dokończenie linków afiliacyjnych)
 
+### Zrobione
+- ✅ Aplikacja ClickUp/PartnerStack **zaakceptowana tego samego dnia** — komisja zaktualizowana: flat fee per country (geo-based), nowe aktywacje włącznie z darmowymi planami, cookie 180 dni, last touch attribution
+- ✅ Rzeczywisty link afiliacyjny aktywny: `https://try.web.clickup.com/x86tvl83r5tw`, wpisany do `admin/affiliate.php` dla "Brain² by ClickUp"
+- ✅ Naprawiona luka: strona główna i strony kategorii (`CompanyCard.astro`) linkowały bezpośrednio na `website_url`, pomijając affiliate link — rozszerzono logikę z `[slug].astro` na komponent karty (commit `6515c3f`). Karta pokazuje ⓘ tooltip z disclosure, CTA używa `affiliateUrl ?? url`
+- ✅ Zweryfikowane przez `npm run build` — strona główna i kategoria "Zarządzanie projektami" poprawnie linkują na link afiliacyjny
+- ✅ Zweryfikowane na żywo na produkcji — zrzut ekranu potwierdza kartę "Brain² by ClickUp" z linkiem "Strona →" i ikonką ⓘ
+
+### Zmieniam podejście do
+- Temat affiliate links (ADR-009) uznany za **zamknięty**. Jedyne co zostało poza zakresem Claude: podpięcie wypłat Stripe/PayPal w PartnerStack — ręczne zadanie Pabla
+
+### Następny krok
+- Dokumentacja: ADR-009 dopisane do `DECISIONS.md`, `ARCHITECTURE.md`, Tydzień 7 w `CLAUDE.md`
+
+---
+
+## [v0.9] — 2026-07-17 (sesja moderacyjna — problem jakości pipeline'u)
+
+### Zrobione
+- ✅ Weryfikacja kolejnej partii wpisów z `scrape_queue` — zastosowane spójne kryteria oceny: realny, identyfikowalny produkt vs. artykuł/news/benchmark; realna przydatność B2B dla polskich firm; poprawne przypisanie kategorii
+
+### Odkrycia / problemy
+- **Potwierdzony powracający wzorzec halucynacji:** OpenAI generuje wiarygodnie brzmiące opisy i nazwy produktów dla postów HN, które w rzeczywistości nie są produktami (eseje, benchmarki, prace akademickie) — w tym nieistniejące nazwy modeli (np. "GPT-5.5-Cyber", "GPT-5.6 Sol", "GPT-5.6 Sol Ultra" pojawiające się wielokrotnie)
+- Show HN / Launch HN z identyfikatorem batcha YC pozostają najbardziej wiarygodnym sygnałem prawdziwego produktu
+- Problem nie został rozwiązany przez dodanie BetaList/Product Hunt jako równoległych źródeł (Tydzień 6) — te źródła zmniejszają udział złych wpisów z HN, ale nie eliminują halucynacji przy samym HN
+
+### Zmieniam podejście do
+- TODO dopisane do runbooka moderacji: potrzebne dodatkowe źródło danych o wyższym stosunku sygnału do szumu niż HN, lub zaostrzenie filtrów przed krokiem OpenAI
+
+### Następny krok
+- Ocena dodatkowych źródeł o wysokim SNR (kandydaci do rozważenia w kolejnej sesji planistycznej)
+- Odświeżenie `STATUS.md` i `CHANGELOG.md` o Tydzień 7 i ustalenia z tej sesji (ta aktualizacja)
+
+---
 
 ```
 ## [v0.X] — [data]
