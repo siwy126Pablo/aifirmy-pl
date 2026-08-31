@@ -118,12 +118,33 @@ const targetSizeText = ((tool.target_size ?? []) as string[])
   .map((t: string) => targetSizeLabels[t] ?? t)
   .join(', ');
 
+const aiActRiskEducation: Record<string, string> = {
+  minimal: 'Większość narzędzi AI należy do tej kategorii — np. chatboty obsługi klienta bez wpływu na ważne decyzje, filtry spamu, systemy rekomendacji. AI Act nie nakłada tu żadnych obowiązkowych wymogów, jedynie zachęca do dobrowolnych kodeksów postępowania.',
+  limited: 'Narzędzia tej kategorii podlegają obowiązkom przejrzystości (art. 50 AI Act) — musisz poinformować użytkowników, że wchodzą w interakcję z systemem AI lub że treść została wygenerowana bądź zmodyfikowana przez AI. Nie wymaga to certyfikacji, tylko jasnej informacji dla odbiorców.',
+  high: 'Narzędzia z tej kategorii (np. rekrutacja, ocena zdolności kredytowej, systemy edukacyjne) podlegają rygorystycznym wymogom: zarządzanie ryzykiem, dokumentacja techniczna, nadzór człowieka, ocena zgodności przed wdrożeniem i wpis do unijnej bazy systemów wysokiego ryzyka. Wdrożenie takiego narzędzia wymaga starannego przygotowania zgodności.',
+  unacceptable: 'Systemy tej kategorii są w Unii Europejskiej całkowicie zakazane — np. scoring społeczny przez władze publiczne, manipulacyjne techniki wykorzystujące podatności ludzi, czy nieukierunkowane zbieranie wizerunków twarzy do baz rozpoznawania. Żadne narzędzie w tym katalogu nie powinno mieć tej klasyfikacji.',
+};
+
 const faqs = [
   {
     question: `Czy ${tool.name} jest zgodne z RODO?`,
     answer: tool.rodo_compliant
-      ? `Tak — ${tool.name} spełnia wymogi RODO, co jest istotne dla firm przetwarzających dane osobowe w UE.`
-      : 'Brak potwierdzonej zgodności z RODO — zalecamy weryfikację bezpośrednio u dostawcy przed wdrożeniem.',
+      ? 'Tak. Zgodność z RODO oznacza, że dostawca zobowiązuje się przetwarzać dane osobowe zgodnie z unijnym rozporządzeniem o ochronie danych — masz prawo do informacji, dostępu, poprawiania i usunięcia swoich danych, a dostawca musi zgłaszać naruszenia bezpieczeństwa.'
+      : 'Brak potwierdzonej zgodności z RODO nie musi oznaczać naruszenia przepisów, ale przed wdrożeniem warto samodzielnie zweryfikować politykę prywatności dostawcy, zwłaszcza jeśli przetwarzasz dane osobowe klientów lub pracowników.',
+  },
+  {
+    question: 'Czy dostępna jest umowa DPA?',
+    answer: 'Umowa powierzenia przetwarzania danych (DPA) to formalny dokument regulujący zasady przetwarzania danych osobowych przez dostawcę w Twoim imieniu — RODO wymaga jej zawarcia, gdy zewnętrzny dostawca ma dostęp do danych osobowych Twoich klientów lub pracowników.'
+      + (tool.dpa_available
+        ? ' Ten dostawca oferuje gotową umowę DPA — możesz ją podpisać przed rozpoczęciem korzystania z narzędzia.'
+        : ' Brak potwierdzonej dostępności DPA — jeśli planujesz przetwarzać dane osobowe, zapytaj dostawcę bezpośrednio przed wdrożeniem.'),
+  },
+  {
+    question: 'Czy dane są przetwarzane w UE?',
+    answer: 'Przetwarzanie danych w UE oznacza, że serwery przechowujące dane znajdują się na terenie Unii Europejskiej, co upraszcza zgodność z RODO — nie trzeba wtedy polegać na dodatkowych mechanizmach transferu danych poza UE.'
+      + (tool.eu_data_hosting
+        ? ' To narzędzie przetwarza dane na terenie UE.'
+        : ' Jeśli dane są przetwarzane poza UE, dostawca musi zapewnić mechanizm transferu zgodny z RODO (np. Standardowe Klauzule Umowne) — warto to zweryfikować przed wdrożeniem.'),
   },
   {
     question: `Jaki jest model cenowy ${tool.name}?`,
@@ -132,7 +153,7 @@ const faqs = [
   ...(tool.ai_act_risk
     ? [{
         question: `Jaki poziom ryzyka według unijnego AI Act ma ${tool.name}?`,
-        answer: `${tool.name} klasyfikowane jest jako ryzyko ${aiActExplanation[tool.ai_act_risk] ?? tool.ai_act_risk} zgodnie z unijnym AI Act.${tool.ai_act_notes ? ' ' + tool.ai_act_notes : ''}`,
+        answer: `${tool.name} klasyfikowane jest jako ryzyko ${aiActExplanation[tool.ai_act_risk] ?? tool.ai_act_risk} zgodnie z unijnym AI Act.${tool.ai_act_notes ? ' ' + tool.ai_act_notes : ''} ${aiActRiskEducation[tool.ai_act_risk] ?? ''}`,
       }]
     : []),
   {
