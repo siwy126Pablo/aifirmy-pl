@@ -8,6 +8,7 @@ export const categoryColors: Record<string, { bg: string; text: string }> = {
   'Prawo i compliance': { bg: 'bg-amber-50', text: 'text-amber-600' },
   'Sprzedaż i CRM': { bg: 'bg-red-50', text: 'text-red-600' },
   'Zarządzanie projektami': { bg: 'bg-gray-100', text: 'text-gray-600' },
+  'Cyberbezpieczeństwo AI': { bg: 'bg-slate-50', text: 'text-slate-600' },
 };
 
 export const categoryColorFallback = { bg: 'bg-gray-100', text: 'text-gray-600' };
