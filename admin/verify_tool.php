@@ -194,19 +194,69 @@ function extract_page_text(string $html): string {
     return mb_substr(implode("\n", $parts), 0, 3000);
 }
 
+// Rozwiązuje względny URL (href/content z <meta>/<link>) do postaci absolutnej
+// względem strony narzędzia. Absolutne URL-e (http/https) wraca bez zmian.
+function resolve_logo_url(string $href, string $baseUrl): string {
+    if ($href === '' || preg_match('#^https?://#i', $href)) {
+        return $href;
+    }
+    $parts  = parse_url($baseUrl);
+    $origin = ($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? '');
+    return $href[0] === '/' ? $origin . $href : $origin . '/' . $href;
+}
+
 function extract_logo_hint(string $html, string $baseUrl): ?string {
-    if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\']/is', $html, $m)) {
-        return html_entity_decode($m[1]);
-    }
-    if (preg_match('/<link[^>]+rel=["\'](?:shortcut )?icon["\'][^>]+href=["\'](.*?)["\']/is', $html, $m)) {
-        $href = html_entity_decode($m[1]);
-        if (preg_match('#^https?://#i', $href)) {
-            return $href;
+    // HTML nie wymusza kolejności atrybutów (property przed content, rel przed
+    // href) — nowoczesne frameworki (Next.js i in.) ją często odwracają. Dlatego
+    // najpierw wyciągamy CAŁY tag <meta>/<link>, a property/content i rel/href
+    // dopasowujemy osobno wewnątrz jego treści, niezależnie od kolejności.
+    if (preg_match_all('/<meta\b[^>]*>/i', $html, $metaTags)) {
+        foreach ($metaTags[0] as $tag) {
+            if (preg_match('/\bproperty=["\']og:image["\']/i', $tag)
+                && preg_match('/\bcontent=["\']([^"\']*)["\']/i', $tag, $cm)
+                && $cm[1] !== ''
+            ) {
+                return resolve_logo_url(html_entity_decode($cm[1]), $baseUrl);
+            }
         }
-        $parts  = parse_url($baseUrl);
-        $origin = ($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? '');
-        return $href !== '' && $href[0] === '/' ? $origin . $href : $origin . '/' . $href;
     }
+
+    $iconHref      = null;
+    $appleIconHref = null;
+    if (preg_match_all('/<link\b[^>]*>/i', $html, $linkTags)) {
+        foreach ($linkTags[0] as $tag) {
+            if (!preg_match('/\brel=["\']([^"\']*)["\']/i', $tag, $relMatch)) {
+                continue;
+            }
+            if (!preg_match('/\bhref=["\']([^"\']*)["\']/i', $tag, $hrefMatch) || $hrefMatch[1] === '') {
+                continue;
+            }
+            $rel  = mb_strtolower(trim($relMatch[1]));
+            $href = html_entity_decode($hrefMatch[1]);
+
+            if ($iconHref === null && ($rel === 'icon' || $rel === 'shortcut icon')) {
+                $iconHref = $href;
+            } elseif ($appleIconHref === null && $rel === 'apple-touch-icon') {
+                $appleIconHref = $href;
+            }
+        }
+    }
+
+    $href = $iconHref ?? $appleIconHref;
+    if ($href !== null) {
+        return resolve_logo_url($href, $baseUrl);
+    }
+
+    // Fallback: żaden og:image/favicon/apple-touch-icon nie znaleziony w HTML.
+    // Ta sama logika ekstrakcji domeny co promote_scrape_to_tools() w Supabase
+    // (protokół + www. odcięte, potem wszystko od pierwszego "/"), dla spójności
+    // z resztą systemu — tam też jest to ostateczny, niezawodny fallback.
+    $domain = preg_replace('#^https?://(www\.)?#i', '', $baseUrl);
+    $domain = preg_replace('#/.*$#', '', (string) $domain);
+    if ($domain !== '') {
+        return 'https://www.google.com/s2/favicons?domain=' . $domain . '&sz=128';
+    }
+
     return null;
 }
 
