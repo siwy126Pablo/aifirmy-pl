@@ -8,9 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|
 | Notion — project overview | https://www.notion.so/aifirmy-pl-Katalog-AI-i-SaaS-373b4cccb4af81bb9ec5ef0a5ca32318 |
 | Notion — session notes / status | https://app.notion.com/p/374b4cccb4af8103afbbc353f9fd300e |
+| Notion — LinkedIn drafts | https://app.notion.com/p/3c5b4cccb4af81a08f4cd24070dffab9 |
 | GitHub — main repo | https://github.com/siwy126Pablo/aifirmy-pl |
 | GitHub — keep-alive ping | https://github.com/siwy126Pablo/aifirmy-ping |
 | Supabase — dashboard | https://supabase.com/dashboard/project/szassqzvivdgvpkciyif |
+| AWStats (Cyberfolks) | https://s103.cyber-folks.pl:2223/CMD_AWSTATS/aifirmy.pl/index.html |
 
 ## 🚀 How to start a new session
 
@@ -23,25 +25,27 @@ Notion (status): https://app.notion.com/p/374b4cccb4af8103afbbc353f9fd300e
 Kontynuujemy: [opisz co robisz].
 ```
 
+**Before doing anything:** run `git status` and `git log --oneline -5`, then compare against `origin/main` — this project is worked on from two computers and pushes get rejected fairly often (`[rejected] (fetch first)`). Standard fix: `git pull --rebase && git push`. If anything looks unexpected on remote, stop and ask Pablo rather than guessing.
+
 ## Project overview
 
-**aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market, with a unique differentiator: every listing is tagged for RODO compliance, EU AI Act risk level, and PLN pricing. Live on Cyberfolks, generating revenue (Stripe live + affiliate).
+**aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market, with a unique differentiator: every listing is tagged for RODO compliance, EU AI Act risk level, and PLN pricing. Live on Cyberfolks, generating revenue (Stripe live + affiliate). ~260+ tools across **10 categories** as of September 2026.
 
-## Tech stack (current, post Pakiet poprawek 2)
+## Tech stack (current)
 
 | Layer | Technology | Notes |
 |---|---|---|
 | Frontend | Astro 6 + Tailwind CSS v4 | `frontend/` subdirectory in repo root — always prefix paths with `frontend/` in git commands |
 | Backend/API | No dedicated Node/Python backend | ADR-005 closed — business logic lives in PHP (admin, Stripe, email) + direct Supabase REST calls from frontend |
 | Database | PostgreSQL — Supabase free (eu-central-1) | Cyberfolks has MariaDB only — incompatible with schema |
-| ETL/Scraping | Apache NiFi 2.9.0 — self-hosted on Windows | 3 sources (HN, BetaList, Product Hunt), two-layer quality filter added 2026-07-19 (see below) |
-| AI descriptions (pipeline) | OpenAI `gpt-4o-mini` | Prompt returns `best_for_pl` and `is_real_product` as of 2026-07-19 |
-| AI verification (admin) | OpenAI `gpt-4o-mini` | New 2026-07-19 — `verify_tool.php`, `response_format: json_object`, key in `private_html/config/openai.php` on server (not in repo) |
+| ETL/Scraping | Apache NiFi 2.9.0 — self-hosted on Windows | **4 sources**: HN, BetaList, Product Hunt, **YC-OSS API** (added 2026-08-30) |
+| AI descriptions (pipeline) | OpenAI `gpt-4o-mini` | Prompt returns `best_for_pl` and `is_real_product`; YC branch additionally passes real `source_context` (YC one_liner/long_description) instead of guessing from title alone |
+| AI verification (admin) | OpenAI `gpt-4o-mini` | `verify_tool.php`, `response_format: json_object`, key in `private_html/config/openai.php` on server (not in repo) |
 | Admin panel | PHP + Supabase REST API | `admin/index.php`, `admin/affiliate.php`, `admin/verify_tool.php` |
 | Payments | Stripe (Live mode) | `checkout.php` + `webhook.php` at `/stripe/webhook.php` (Cloudflare WAF blocks POST to `/admin/`) |
 | Email | PHPMailer via Cyberfolks SMTP | `s103.cyber-folks.pl:587` |
-| Analytics | Google Analytics 4 (`G-3SP1TRXF7M`) | Conditional load after cookie consent |
-| Hosting | Cyberfolks (frontend) + Cloudflare | SSL Full strict, CDN, DNS |
+| Analytics | Google Analytics 4 (`G-3SP1TRXF7M`) + Search Console + AWStats | **GA4 is unreliable** — see "Analytics reliability" section below. Search Console + AWStats are the trusted sources. |
+| Hosting | Cyberfolks (frontend) + Cloudflare | SSL Full strict, CDN, DNS, **Redirect Rules (www→apex, added 2026-08-31)** |
 
 **Project location:** `C:\Dev\aifirmy-pl` (moved from `C:\Users\pawel\Praca` — ESET blocked `node_modules` under `C:\Users\`).
 
@@ -52,35 +56,33 @@ aifirmy-pl/
 ├── frontend/              ← Astro + Tailwind (ALWAYS prefix paths with frontend/)
 │   └── src/
 │       ├── pages/          ← index, /narzedzia/[slug], /kategoria/[slug]
-│       ├── components/     ← CompanyCard.astro, icons/CategoryIcon.astro
-│       └── lib/             ← category-colors.ts
+│       ├── components/     ← CompanyCard.astro, icons/CategoryIcon.astro, CookieConsent.astro
+│       ├── lib/             ← category-colors.ts
+│       └── layouts/         ← Layout.astro (GA4 script, footer disclosure duplicated per-page — see Known Issues)
 ├── admin/                  ← PHP admin panel (repo root, NOT under frontend/)
 │   ├── index.php            ← main panel: Kolejka / Odrzucone przez AI / Narzędzia / Dodaj wpis
 │   ├── affiliate.php        ← affiliate links CRUD
-│   └── verify_tool.php      ← "Zweryfikuj przez AI" endpoint (new 2026-07-19)
-├── nifi-flows/              ← NiFi flow exports (.json) — export manually after UI changes
+│   └── verify_tool.php      ← "Zweryfikuj przez AI" endpoint
+├── nifi-flows/              ← NiFi flow exports (.json) — export manually after UI changes, one-line JSON so git diff shows "1 line changed" even for large edits (normal)
 ├── db/
-│   └── migrations/          ← PostgreSQL SQL migrations (not always used — some schema changes made directly in Supabase Studio)
+│   └── migrations/          ← PostgreSQL SQL migrations (not always used — schema changes often made directly in Supabase SQL Editor)
 └── docs/                    ← ARCHITECTURE.md, DECISIONS.md, CHANGELOG.md, STATUS.md
 ```
 
 **Not in repo (server-only, never committed):**
 - `private_html/config/db.php` — admin panel session password
-- `private_html/config/openai.php` — `OPENAI_API_KEY` constant for `verify_tool.php` (added 2026-07-19, unconditional `require_once` — admin panel 500s if missing)
+- `private_html/config/openai.php` — `OPENAI_API_KEY` constant for `verify_tool.php` (unconditional `require_once` — admin panel 500s if missing)
 - `private_html/logs/verify_debug.log` — debug checkpoint log for `verify_tool.php`
 
 ## Architecture decisions (settled)
 
 - **ADR-001:** Frontend is Astro.
 - **ADR-002:** Docs-as-code in `/docs`, Notion for planning only.
-- **ADR-003/008:** ETL is Apache NiFi 2.9.0, self-hosted locally on Windows (Java, Task Scheduler autostart, not Windows Service).
+- **ADR-003/008:** ETL is Apache NiFi 2.9.0, self-hosted locally on Windows.
 - **ADR-004:** Hosting is Cyberfolks + Cloudflare.
-- **ADR-006:** Admin panel is PHP + Supabase REST API (superseded Supabase Studio in practice).
+- **ADR-006:** Admin panel is PHP + Supabase REST API.
 - **ADR-007:** Database is Supabase free (PostgreSQL) — Cyberfolks MariaDB lacks JSONB/text[]/GIN.
-- **ADR-009:** Affiliate links via dedicated `affiliate_links` table + `admin/affiliate.php` — **closed**, ClickUp/PartnerStack live on production.
-
-## Open architectural decisions
-
+- **ADR-009:** Affiliate links via dedicated `affiliate_links` table + `admin/affiliate.php` — closed, ClickUp/PartnerStack live.
 - **ADR-005:** Closed — no dedicated backend was ever built.
 
 ## Data model
@@ -88,14 +90,14 @@ aifirmy-pl/
 Core table `tools`, plus `categories`, `tags`, `tool_tags`, `premium_listings`, `scrape_queue`, `affiliate_links`.
 
 ```sql
--- tools: main catalog entry (columns added over time, see below)
+-- tools: main catalog entry
 CREATE TABLE tools (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   slug             TEXT        NOT NULL UNIQUE,
   name             TEXT        NOT NULL,
   tagline_pl       TEXT,
   description_pl   TEXT,
-  logo_url         TEXT,                          -- auto-favicon fallback + manual override (2026-07-19)
+  logo_url         TEXT,                          -- auto-favicon fallback + manual override
   website_url      TEXT        NOT NULL,
   category_id      UUID        REFERENCES categories(id),
   pricing_model    TEXT        CHECK (pricing_model IN ('free','freemium','paid','open_source')),
@@ -107,8 +109,8 @@ CREATE TABLE tools (
   ai_act_risk      TEXT        CHECK (ai_act_risk IN ('minimal','limited','high','unacceptable')),
   ai_act_notes     TEXT,
   target_size      TEXT[],
-  best_for_pl      TEXT,                          -- 🆕 2026-07-19: one-sentence target audience, AI-generated
-  ai_verified_at   TIMESTAMPTZ,                   -- 🆕 2026-07-25: last time "Zweryfikuj przez AI" changes were approved (see verify_tool.php below)
+  best_for_pl      TEXT,                          -- one-sentence target audience, AI-generated
+  ai_verified_at   TIMESTAMPTZ,                   -- last time "Zweryfikuj przez AI" changes were approved
   has_pl_ui        BOOLEAN     DEFAULT false,
   has_pl_support   BOOLEAN     DEFAULT false,
   integrations     TEXT[],
@@ -121,20 +123,32 @@ CREATE TABLE tools (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- categories: exact schema confirmed 2026-09-01 (differs from earlier assumptions —
+-- verify against live schema before writing INSERTs, don't assume)
+CREATE TABLE categories (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug             TEXT        NOT NULL,
+  name_pl          TEXT        NOT NULL,           -- required! INSERT without this fails
+  description_pl   TEXT,
+  icon             TEXT,                           -- Tabler Icons naming convention (e.g. 'robot', 'shield-bolt') —
+                                                     -- NOT necessarily what CategoryIcon.astro actually renders;
+                                                     -- frontend has its own hand-written SVG mapping by category name
+  sort_order       INTEGER     DEFAULT 0,
+  created_at       TIMESTAMPTZ DEFAULT now()
+);
 ```
 
-`scrape_queue` mirrors most of the above plus: `raw_name`, `raw_desc`, `raw_json`, `url_hash`, `ai_description`, `ai_category`, `ai_tags`, `ai_rodo`, `ai_pricing_model`, `best_for_pl`, `tool_id`, `error_msg`, `scraped_at`, `processed_at`, and:
-- `stage` — `pending` → `ai_done` → `published`, **or `ai_rejected`** 🆕 (2026-07-19, when AI's `is_real_product` field is `false`)
+**Current 10 categories** (sort_order 1-10): Automatyzacja procesów, Sprzedaż i CRM, Obsługa klienta, Marketing i content, Finanse i księgowość, HR i rekrutacja, Analityka i BI, Prawo i compliance, Zarządzanie projektami, **Cyberbezpieczeństwo AI** (added 2026-09-01).
 
-**⚠️ Gotcha found 2026-07-23:** the `scrape_queue_stage_check` CHECK constraint on this column was never updated when `ai_rejected` was introduced — its allowed-values list only had `scraped`, `ai_pending`, `ai_done`, `mod_pending`, `published`, `rejected`. Every AI-rejected row failed silently at the `PutDatabaseRecord` INSERT step until this was caught (first real case: BetaList's "DataEase AI" tripped `ERROR: violates check constraint`). Fixed via `ALTER TABLE ... DROP CONSTRAINT` + `ADD CONSTRAINT` with `ai_rejected` added to the array. **Lesson: when adding a new `stage`/enum-like value anywhere (NiFi, trigger, PHP), always check `pg_get_constraintdef` for that column first** — updating the application logic alone doesn't update the database-level CHECK, and the failure mode (INSERT silently aborted) can look identical to "the AI just isn't rejecting anything."
+`scrape_queue` mirrors most of `tools` plus: `raw_name`, `raw_desc`, `raw_json`, `url_hash`, `ai_description`, `ai_category`, `ai_tags`, `ai_rodo`, `ai_pricing_model`, `best_for_pl`, `tool_id`, `error_msg`, `scraped_at`, `processed_at`, `source_name` (values: `hacker_news`, `yc_ai`), and:
+- `stage` — `pending` → `ai_done` → `published`, or `ai_rejected` (when AI's `is_real_product` is `false`). **CHECK constraint on this column must be updated whenever a new stage value is introduced** — see gotcha below, this bit us once already.
 
-**Unique differentiators:** `rodo_compliant`, `dpa_available`, `eu_data_hosting`, `ai_act_risk`, `best_for_pl` — no Polish AI catalog tags these.
-
-**⚠️ Important:** `db/migrations/001_initial.sql` mentioned historically was never committed — the `tools` schema was built directly in Supabase Studio. Treat Supabase as the source of truth for schema, not the migrations folder, unless a migration file demonstrably matches current state.
+**Unique differentiators:** `rodo_compliant`, `dpa_available`, `eu_data_hosting`, `ai_act_risk`, `best_for_pl` — no Polish AI catalog tags these. Now surfaced not just as badges but as full educational FAQ explanations (see "Frontend FAQ" section below).
 
 ## Database trigger — `promote_scrape_to_tools()`
 
-**This lives in Supabase (Postgres function/trigger), NOT in this repo.** Easy to miss when searching the codebase for "where does approval actually insert into `tools`" — the PHP "Zatwierdź" button in `admin/index.php` only sets `scrape_queue.stage = 'published'`; this trigger does the actual `INSERT INTO tools`. Current definition (as of 2026-07-19, includes `best_for_pl` and favicon fallback):
+**Lives in Supabase (Postgres function/trigger), NOT in this repo.** The PHP "Zatwierdź" button in `admin/index.php` only sets `scrape_queue.stage = 'published'`; this trigger does the actual `INSERT INTO tools`. Current definition includes `best_for_pl` and favicon fallback:
 
 ```sql
 CREATE OR REPLACE FUNCTION promote_scrape_to_tools()
@@ -175,108 +189,157 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-**Note:** `logo_url` fallback only applies to *new* rows going through this trigger. A one-time backfill (`UPDATE tools SET logo_url = ...`) was run manually for 61 pre-existing tools on 2026-07-19.
+**Note:** favicon fallback only applies to *new* rows via this trigger; a one-time backfill was run manually for pre-existing tools.
 
-## ETL pipeline (NiFi) — two-layer quality filter added 2026-07-19
+**⚠️ Known gap:** `website_url` for entries sourced from Product Hunt sometimes ends up pointing to the PH listing page instead of the tool's real domain (this is a `source_url`/`website_url` data quality issue upstream of the trigger, not a trigger bug). Fixed manually per-case when spotted (e.g. TraceLLM, Cleanlist AI). Worth a spot-check pass periodically.
 
-NiFi 2.9.0 running locally on Windows. Three sources feed `scrape_queue` via daily crons (HN 2:00, BetaList 3:00, Product Hunt 4:00), converging on a shared OpenAI path.
+## ETL pipeline (NiFi) — 4 sources, two-layer quality filter
 
-**HN branch (before merge with BetaList/Product Hunt):**
+NiFi 2.9.0 running locally on Windows. Four sources feed `scrape_queue` via daily crons (HN 2:00, BetaList 3:00, Product Hunt 4:00, **YC-OSS API 5:00**), converging on a shared OpenAI path (YC branch skips one shared filter — see below).
+
+### HN branch (before merge with BetaList/Product Hunt)
 ```
 GenerateFlowFile → InvokeHTTP (topstories) → SplitJson → InvokeHTTP (item details)
-  → EvaluateJsonPath (pre-filter) → RouteOnAttribute "przepusc" (URL domain blocklist:
-    github.com, medium.com, substack.com, dev.to, gist.github, twitter.com, wsj.com,
-    computerworld.com, reuters.com, cnbc.com, theguardian.com, nytimes.com, bbc.com, and more)
+  → EvaluateJsonPath (pre-filter) → RouteOnAttribute "przepusc" (URL domain blocklist)
   → EvaluateJsonPath → RouteOnAttribute "nowe_i_story" (last 24h + type=story)
-  → RouteOnAttribute "show_launch_hn" 🆕 (title starts with "show hn:"/"launch hn:" OR
-    matches YC batch pattern `(?i).*\(yc [a-z][0-9]{2}\).*`) — drastically reduces volume
-    (observed 2/500 in one batch) but high precision (verified: Bribes.fyi, PilotCite)
+  → RouteOnAttribute "show_launch_hn" (title starts with "show hn:"/"launch hn:" OR
+    matches YC batch pattern) — drastically reduces volume but high precision
 ```
 
-**BetaList/Product Hunt branches:** Atom feed → SplitXml → RouteOnContent → EvaluateXPath (needs `local-name()` for namespaced XML) → UpdateAttribute (normalize to shared `hn_*` attribute names) → date filter.
+### BetaList/Product Hunt branches
+Atom feed → SplitXml → RouteOnContent → EvaluateXPath (needs `local-name()` for namespaced XML) → UpdateAttribute (normalize to shared `hn_*` attribute names) → date filter.
 
-**Merge point (all 3 sources) — shared processors:**
+### YC-OSS API branch (added 2026-08-30)
+```
+GenerateFlowFile (YC AI Trigger, cron 5:00)
+  → InvokeHTTP (GET https://yc-oss.github.io/api/tags/artificial-intelligence.json)
+  → SplitJson ($.*)
+  → EvaluateJsonPath (yc_name, yc_website, yc_one_liner, yc_long_description,
+    yc_launched_at, yc_batch, yc_slug)
+  → RouteOnAttribute "nowa_firma" (launched_at within last 90 days:
+    ${yc_launched_at:toNumber():gt(${now():toNumber():divide(1000):minus(7776000)})})
+  → UpdateAttribute:
+      hn_title = ${yc_name}
+      hn_url = ${yc_website}
+      hn_type = story
+      source_context = ${yc_one_liner:replaceAll('[\r\n]+', ' '):replaceAll('"', '')}
+                        ${yc_long_description:replaceAll('[\r\n]+', ' '):replaceAll('"', '')}
+      source_name_override = yc_ai
+  → [connects DIRECTLY to ExecuteSQL dedup, bypassing the shared "pasuje" keyword filter —
+     YC data is already pre-verified as AI via the tag endpoint itself]
+```
+
+**Why this source is higher quality:** every company on the YC list went through real funding — eliminates the "article/essay" hallucination category entirely. `website` field always points to the real domain, not a launch-platform listing page. `one_liner`/`long_description` give the OpenAI prompt real source text to translate instead of guessing from a bare title (dramatically improves description accuracy — see the Linzumi before/after test in project history).
+
+### Merge point (HN + BetaList + Product Hunt only — YC bypasses this) — shared processors
 ```
 RouteOnAttribute "pasuje" (keyword filter: ai/tool/saas/launch/llm/gpt/model/open source)
-  ⚠️ FIXED 2026-07-19: was `contains('ai')`, which matched the substring "ai" inside
-     ANY word (br-AI-n, expl-AI-n, maint-AI-n...), not the standalone word. Was likely
-     the single biggest source of noise in the whole pipeline — confirmed by a real
-     example ("Heavy TV Watching Impact" passed only because of "brain"). Fixed to
-     `matches('(?i).*\bai\b.*')` with a word boundary.
+  Uses `matches('(?i).*\bai\b.*')` with a word boundary — NOT `contains('ai')`, which was
+  a critical historical bug matching the substring "ai" inside ANY word (brAIn, explAIn...).
   → ExecuteSQL (dedup) → RouteOnAttribute (new record?)
 ```
 
-**Shared OpenAI path:**
+### Shared OpenAI path (all 4 sources converge here)
 ```
-ReplaceText (builds OpenAI request body — system prompt, see below)
+ReplaceText (builds OpenAI request body):
+  system prompt includes 10 categories (not 9 — updated 2026-09-01), best_for_pl and
+  is_real_product rules
+  user content: "Nazwa: ${hn_title} URL: ${hn_url} Kontekst: ${source_context:isEmpty():ifElse('brak', ${source_context})}"
+  (source_context only populated for YC branch — HN/BetaList/PH get "brak")
   → InvokeHTTP (OpenAI gpt-4o-mini)
-  → EvaluateJsonPath "ai_response" ($.choices[0].message.content — raw string, not yet parsed)
+  → EvaluateJsonPath "ai_response" ($.choices[0].message.content)
   → EvaluateJsonPath (ai_category, ai_description, ai_name, ai_pricing_model, ai_segment,
-    ai_best_for_pl 🆕, ai_is_real_product 🆕) — re-parses ai_response, extracts scalar fields
-  → ReplaceText (builds INSERT JSON — maps ai_* attributes to DB column names, which do
-    NOT always match 1:1, e.g. ai_name → "name". stage is now conditional: 🆕
-    ${ai_is_real_product:equals('false'):ifElse('ai_rejected','ai_done')})
+    ai_best_for_pl, ai_is_real_product)
+  → ReplaceText (builds INSERT JSON):
+      "source_name":"${source_name_override:isEmpty():ifElse('hacker_news', ${source_name_override})}"
+      (defaults to hacker_news for branches without the override attribute; yc_ai for YC branch)
+      stage: ${ai_is_real_product:equals('false'):ifElse('ai_rejected','ai_done')}
   → PutDatabaseRecord (INSERT scrape_queue, Record Reader: JsonTreeReader)
 ```
 
-**Current system prompt** (single line, no quotes, no `\n` — see quirks):
-```
-Opisz narzedzie/firme w 2 zdaniach. Ton: neutralny, informacyjny, SEO-friendly. Jezyk: polski. Format odpowiedzi tylko JSON bez markdown: { name, description, category, tags, segment, pricing_model, best_for_pl, is_real_product } Zasady dla pola name: - Krotka nazwa produktu lub narzedzia (max 50 znakow) - Bez prefiksu Show HN: i podobnych - Bez podtytulu po myslniku lub dwukropku - Przyklad: Inbox-beam, KVarN, Lathe Zasady dla pola pricing_model: - Wybierz JEDNA wartosc: free, freemium, paid, open_source - open_source: projekt na GitHub bez platnego SaaS - free: narzedzie bez zadnych platnych planow - freemium: darmowy tier + platne plany - paid: tylko platne plany, brak darmowej wersji Zasady dla pola category: - Wybierz JEDNA kategorie z tej listy (pisownia musi byc identyczna): Automatyzacja procesów, Analityka i BI, Finanse i księgowość, HR i rekrutacja, Marketing i content, Obsługa klienta, Prawo i compliance, Sprzedaż i CRM, Zarządzanie projektami - Jesli narzedzie nie pasuje do zadnej - wybierz najblizszą Zasady dla pola best_for_pl: - Jedno krotkie zdanie po polsku, max 60 znakow, bez kropki na koncu - Opisuje dla jakiego typu firmy lub zespolu narzedzie jest najlepsze - Przyklad: Male zespoly sprzedazy w SMB, Dzialy HR w srednich firmach Zasady dla pola is_real_product: - Wartosc boolowska true lub false, bez cudzyslowow - true TYLKO jesli tytul i url opisuja faktyczny, konkretny produkt lub narzedzie ktore mozna odwiedzic i wyprobowac (SaaS, aplikacja, API, biblioteka, platforma) - false jesli to artykul, esej, badanie naukowe, wpis blogowy, dyskusja, ogloszenie lub tresc niezwiazana z konkretnym istniejacym produktem - W razie watpliwosci wybierz false
-```
+**Current system prompt category list (10, as of 2026-09-01):** Automatyzacja procesów, Analityka i BI, Finanse i księgowość, HR i rekrutacja, Marketing i content, Obsługa klienta, Prawo i compliance, Sprzedaż i CRM, Zarządzanie projektami, **Cyberbezpieczeństwo AI**.
 
-**Even with `is_real_product`, expect the model to still generate plausible-sounding name/description/category for non-products** — the field is a signal for filtering, not a guarantee the rest of the output is trustworthy. Real observed example: an essay titled "I argued with the father of open source..." got a full fake product writeup AND correctly `is_real_product: false` in the same response.
+**Even with `is_real_product` and real source_context, expect occasional wrong category/pricing guesses** — this is inherent model uncertainty, not a bug. Confirmed via manual research on multiple tools that both the "old" (pipeline) and "new" (verify_tool.php live-check) values can each be wrong in different cases — there's no single authoritative source, both are AI inferences from limited context. The verification UI's manual accept/reject per field is the correct mitigation, not further prompt engineering (a previous prompt tweak to fix one direction of the free/paid confusion introduced the opposite error elsewhere).
 
-**Known NiFi quirks:**
-- `\n` in ReplaceText Replacement Value → literal `n` (Java `Matcher.appendReplacement` bug) — system prompt must be one line
-- `\"` in Replacement Value loses its backslash — no quotes inside JSON content strings
+### Known NiFi quirks
+- `\n` in ReplaceText Replacement Value → literal `n` — system prompt/content must be one line
+- `\"` in Replacement Value loses its backslash — no raw quotes inside JSON content strings; strip them (`replaceAll('"', '')`) rather than trying to escape
 - `EvaluateJsonPath` can't handle arrays → tags stored as raw JSONB
 - InvokeHTTP caches its connection pool after config changes — **Stop flow → wait ~30s → Start**
-- `nifi.cmd status` can report "Management Server communication failed" even when the process is alive and just slow to fully start — check `java -version` and `logs/nifi-app.log`/`nifi-bootstrap.log` before assuming failure
-- The URL-domain filter and the Show HN/Launch HN filter live **only on the HN branch** (before the 3-source merge). The keyword filter lives **after** the merge and is shared — a filter change in the wrong place can silently block BetaList/Product Hunt entirely
-- `contains('x')` in NiFi Expression Language matches substrings, not whole words — for short strings like "ai" use `matches('(?i).*\bx\b.*')` with word boundaries
+- `nifi.cmd status` can report "Management Server communication failed" even when the process is alive — check `java -version` and logs before assuming failure
+- URL-domain filter and Show HN/Launch HN filter live **only on the HN branch**. Keyword filter ("pasuje") lives **after** the HN/BetaList/PH merge and is shared by those three — but the **YC-OSS branch bypasses it entirely** (connects straight to the dedup step). A filter change in the wrong place can silently block sources.
+- `contains('x')` in NiFi Expression Language matches substrings, not whole words — use `matches('(?i).*\bx\b.*')` with word boundaries
+- Full flow export is a single-line JSON file — `git diff` on `nifi-flows/*.json` always shows "1 line changed" even for large structural edits; this is normal, verify actual content with `grep` for expected attribute/URL names rather than trusting the diff line count
 
 ## Admin panel (`admin/`, PHP + Supabase REST API)
 
-- **`admin/index.php`** — tabs: Kolejka (scrape_queue, stage=ai_done) / **Odrzucone przez AI** 🆕 (stage=ai_rejected, actions: Usuń trwale / Przenieś do kolejki) / Narzędzia (tools, with per-row **"Zweryfikuj przez AI"** button 🆕) / Dodaj wpis (manual add_tool form)
+- **`admin/index.php`** — tabs: Kolejka (scrape_queue, stage=ai_done) / **Odrzucone przez AI** (stage=ai_rejected) / Narzędzia (tools, with per-row **"Zweryfikuj przez AI"** button and per-row inline URL/category/logo editors) / Dodaj wpis (manual add_tool form)
 - **`admin/affiliate.php`** — affiliate_links CRUD, toggle active without reload
-- **`admin/verify_tool.php`** 🆕 (2026-07-19) — POST endpoint, `tool_id` in, `{"old": {...}, "new": {...}}` out:
-  1. Fetch current tool + categories from Supabase
+- **`admin/verify_tool.php`** — POST endpoint, `tool_id` in, `{"old": {...}, "new": {...}}` out:
+  1. Fetch current tool + categories from Supabase (categories interpolated live from DB, not hardcoded)
   2. Live curl-fetch `website_url` (6s timeout, browser UA, follows redirects, hard-fails on HTTP ≥400)
-  3. Extract `<title>`, meta description, body text (script/style/nav/footer stripped, capped ~3000 chars) + `logo_hint` (og:image → favicon fallback)
-  4. Call `gpt-4o-mini` with `response_format: json_object`, categories interpolated live from DB (not hardcoded)
-  5. Resolve AI's category string back to `category_id` server-side; auto-disables the category checkbox client-side with a warning if no exact match
+  3. Extract `<title>`, meta description, body text (script/style/nav/footer stripped, capped ~3000 chars) + `logo_hint`
+  4. Call `gpt-4o-mini` with `response_format: json_object`
+  5. Resolve AI's category string back to `category_id` server-side; **auto-disables the category checkbox client-side with a warning if no exact match** — this correctly caught the AI Act "Bezpieczeństwo IT" hallucination in Sept 2026 before it could be saved as a null category
   6. `rodo_compliant` is **never** sent to or returned from the AI — manual-only field, by design
-  7. `ai_act_risk_suggestion` and `logo_hint` default to **unchecked** in the UI (require deliberate review); description/category/pricing_model/best_for_pl default **checked**
-  8. Wrapped in `try/catch (\Throwable)` (not `\Exception` — `TypeError` doesn't extend it) + `register_shutdown_function` catching fatals try/catch can't intercept, both logging to `error_log()` and `private_html/logs/verify_debug.log`
+  7. `ai_act_risk_suggestion` and `logo_hint` default to **unchecked** in the UI; description/category/pricing_model/best_for_pl default **checked**. `category_ai_act_hint` (see below) also defaults unchecked.
+  8. Wrapped in `try/catch (\Throwable)` + `register_shutdown_function`, logging to `error_log()` and `private_html/logs/verify_debug.log`
 
-**Debugging history (2026-07-19):** First deploy returned a silent `502 Bad Gateway` with zero PHP error logs. Timing checkpoints revealed the whole request completes in 2-3s (not a timeout) and dies between the OpenAI response and building the output. Root cause: `is_array($ai)` passed for both objects and arrays — when the model returned `category` as an array (hedging between two categories) instead of a string, `trim()`/`mb_strtolower()` on it threw an uncaught `TypeError` under `declare(strict_types=1)`, killing the script with no output. Fixed with an `is_string()` guard plus the error handling described above.
+### `extract_logo_hint()` — fixed 2026-09-05
+Original implementation required specific attribute order in `<meta>`/`<link>` tags (`property` before `content`, `rel` before `href`) — HTML doesn't enforce this, so many real sites (especially Next.js-based, common among YC startups) were missed despite having valid tags. **Fixed:** extract the full tag first, then match attributes within it regardless of order. Added `rel="apple-touch-icon"` as a fallback when `icon`/`shortcut icon` is absent. Added a final fallback to `https://www.google.com/s2/favicons?domain={domain}&sz=128` (same domain-extraction logic as `promote_scrape_to_tools()`) when both extractions fail — previously returned `null` with no safety net. Shared helper `resolve_logo_url()` extracted for relative URL resolution, now applied consistently to both favicon and `og:image` (was favicon-only before).
 
-**`ai_verified_at` tracking (2026-07-25):** the Tools tab now shows "Sprawdzono: DD.MM.RRRR" next to the verify button when `tools.ai_verified_at` is set. It's only written when the user actually approves and saves at least one field from the diff modal (not merely on running the check) — written atomically in the same PATCH request as the approved fields, never as a separate call. Cancelling or unchecking everything before saving leaves it untouched. Prevents re-verifying the same tool repeatedly without a reason.
+**Observed pattern even after the fix:** `og:image` frequently resolves successfully but points to a promotional banner (e.g. `og-home-en.jpg`, `/opengraph-image`), not an actual logo. The Google favicon fallback is generally the safer default to accept in the verification UI — reject `og:image`-sourced `logo_hint` suggestions unless visually confirmed.
 
-**Frontend logo placeholder logic** (`CompanyCard.astro`, `[slug].astro`): if `logo_url` is empty, render a colored initial-letter placeholder using the tool's category color (same palette as `CategoryIcon`/`category-colors.ts`) instead of a blank space.
+### `$CATEGORY_AI_ACT_HINTS` (category-based AI Act risk fallback)
+Static map providing a fallback AI Act risk suggestion (labeled "Sugestia wg kategorii — Załącznik III AI Act", with an explicit "not legal advice" disclaimer) when the AI's own page-derived suggestion is empty. Covers 7 of 10 categories with high confidence (HR i rekrutacja=high, Obsługa klienta=limited, most others=minimal). **Deliberately excludes Finanse i księgowość, Prawo i compliance, and Cyberbezpieczeństwo AI** — all three are too heterogeneous internally for a safe category-level default (e.g. a generic SaaS pentesting tool is `minimal` but something managing critical-infrastructure security could be `high` under Annex III).
 
-## SEO conventions
+### Pricing prompt refinement (trial vs. permanent free plan)
+System prompt for `verify_tool.php` includes an explicit rule distinguishing a permanent free tier from a free trial ("free trial", "X days free" ≠ `free`/`freemium`). Added after a real bug where Woodpecker.co (paid, trial-based) was misclassified as `free`. **Caution:** this fix can overcorrect in the other direction — a real case (Linzumi) showed the live-check suggesting `paid` when the actual pricing page had a genuine permanent free tier for solo builders, phrased as "Yours forever, no credit card" rather than the word "Free". Treat pricing_model discrepancies as requiring manual research, not as evidence either side of the diff is more trustworthy.
 
-- URLs: `/narzedzia/[slug]`, `/kategoria/[slug]`
-- Every page: `title`, meta description, OG tags, schema.org `SoftwareApplication`; tool detail pages also have schema.org `FAQPage` JSON-LD 🆕
-- Sitemap auto-generated by Astro (`@astrojs/sitemap`); SSG throughout (no SSR)
+**Frontend logo placeholder logic** (`CompanyCard.astro`, `[slug].astro`): if `logo_url` is empty, render a colored initial-letter placeholder using the tool's category color.
 
-**⚠️ Gotcha found 2026-07-23:** `@astrojs/sitemap` was accidentally removed from `astro.config.mjs`'s `integrations` array in commit `d0639c1` ("refactor: remove unused sitemap integration") — the import looked like dead code (nothing in the codebase references it directly), but it's a build-time side effect that writes `sitemap-*.xml`. From that commit onward, `astro build` silently stopped generating a sitemap at all. The stale `sitemap-0.xml` sitting in `dist/` (16 URLs — home, 9 categories, contact/thanks/premium/privacy, and only 3 tools: Make/n8n/Rossum, the original Tydzień 2 seed data) went undetected for weeks because `dist/` is gitignored, so nothing flagged the regression in git history. This was likely the **primary cause** of poor organic visibility since launch — more impactful than any individual SEO element (badges, FAQ, schema.org), since Google had no complete signal of which tool pages even existed. Fixed by restoring the two lines (import + `integrations: [sitemap()]`); verified live sitemap now has 93 URLs (79 tool pages + the rest). **Lesson: before removing an import that "looks unused," check whether it's actually a build-time side-effect integration (sitemap, robots.txt generators, etc.) rather than something meant to be referenced elsewhere in code.**
+## Frontend FAQ (`[slug].astro`) — expanded 2026-08-31 (commit `6faf053`)
+
+FAQ section now has **6 questions** (was 4): RODO → DPA → EU data hosting → pricing model → AI Act risk → target_size. RODO and AI Act questions now include full plain-language legal explanations (what RODO/DPA/EU-hosting/each AI Act risk level actually means and requires), not just a one-line yes/no — this is deliberate: it's a **general educational explainer per category/risk-level**, the same text for every tool in that bucket, never an AI-generated per-tool legal judgment (that risk was deliberately avoided, same reasoning as the `$CATEGORY_AI_ACT_HINTS` exclusions above).
+
+JSON-LD `FAQPage` schema is generated automatically from the same `faqs` array used for the visible accordion — don't maintain these separately, that was a deliberate fix to avoid future drift between visible content and structured data.
+
+## SEO conventions & fixes
+
+- URLs: `/narzedzia/[slug]`, `/kategoria/[slug]` — canonical form always has a **trailing slash**
+- Every page: `title`, meta description, OG tags, schema.org `SoftwareApplication`; tool detail pages also have `FAQPage` JSON-LD
+- Sitemap auto-generated by Astro (`@astrojs/sitemap`)
+
+**⚠️ Gotcha (fixed, keep in mind for future refactors):** `@astrojs/sitemap` was once accidentally removed from `astro.config.mjs` as a "dead import" — it's actually a build-time side effect (writes `sitemap-*.xml`), invisible to static analysis since nothing directly references it in code. `dist/` being gitignored meant the regression went undetected for weeks. **Lesson: before removing an import that "looks unused," check whether it's a build-time side-effect integration.**
+
+**⚠️ Internal link trailing-slash bug (fixed, commit `9f2c7f1`):** `CompanyCard.astro`, `[slug].astro` (similar-tools section), and the category tiles all built internal links **without** a trailing slash (`/narzedzia/${slug}` instead of `/narzedzia/${slug}/`), while the canonical form has one. Every internal link therefore triggered an unnecessary server redirect that Google discovered before the canonical URL — inflating Search Console's "page has a redirect" count. All 4 link-generation sites now consistently include the trailing slash. **When adding any new internal link to `/narzedzia/` or `/kategoria/`, always include the trailing slash.**
+
+**⚠️ www subdomain never redirected to apex (fixed 2026-08-31, Cloudflare-side, not code):** `www.aifirmy.pl` served full page content directly instead of 301-redirecting to `https://aifirmy.pl` — even though `<link rel="canonical">` correctly pointed to the apex domain. A `<link rel="canonical">` tag is **not** a substitute for an actual redirect; Google has to work harder (and slower) to consolidate signals via canonical alone versus following a clean 301. Fixed via a Cloudflare Redirect Rule (`https://www.*` → `https://${1}`, 301). This is infrastructure-level, not something to "fix" again in Astro — if a future domain/subdomain issue appears, check Cloudflare Redirect Rules and DNS proxy status (orange cloud) before assuming a code bug.
+
+## Analytics reliability — read this before trusting GA4 numbers
+
+**GA4 (`G-3SP1TRXF7M`) reported ~0 active users/events for 3+ consecutive weeks in August 2026 despite real, growing, verified traffic in Search Console.** A full diagnostic session ruled out (in order): insufficient traffic/missing cookie consent, browser extensions, wrong Measurement ID, CSP blocking the request, a Service Worker intercepting fetch, and a code bug in `Layout.astro`/`CookieConsent.astro` (the loading code is structurally correct and verified working — `gtag.js` does load and initialize, confirmed via internal `gtm.dom`/`gtm.load` dataLayer events that only the real downloaded script can produce). The same zero result reproduced on a completely different device and network (phone on cellular data).
+
+**Conclusion: `gtag.js` initializes but the actual collection beacon is never sent** — most likely explanation is an ad blocker operating in "stub" mode (serves a harmless fake script instead of blocking the request outright, which is why the script *appears* to work). This is plausibly representative of aifirmy.pl's actual visitor base (people researching AI tools/RODO/AI Act skew toward ad-blocker usage), not just an artifact of the testing environment.
+
+**Practical implication for any future session:** don't trust GA4 as the primary traffic signal. **Search Console** (server-side click/impression data from Google, unblockable) and **AWStats** (raw Cyberfolks server logs) are the reliable sources. When interpreting AWStats, remember: a large fraction of "hits" are bots (`not viewed` traffic, often far exceeding real visits) and Pablo's/Claude's own admin panel + testing activity — real external search-referral traffic is a small subset, cross-check against Search Console's click count for a sanity check.
 
 ## Code conventions
 
 - File names: `kebab-case`; Components: `PascalCase`; Variables: `camelCase`; SQL: `UPPER_CASE`
 - Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, `debug:`
-- **Repo root has `frontend/` subdirectory** — always `git add frontend/src/...`, never assume paths are relative to repo root without the prefix (this caused at least one failed commit in a past session)
-- **Filenames with `[brackets]`** (e.g. `[slug].astro`) need quotes around the path in PowerShell `git add`, not backslash-escaping
+- **Repo root has `frontend/` subdirectory** — always `git add frontend/src/...`
+- **Filenames with `[brackets]`** (e.g. `[slug].astro`) need quotes around the path in PowerShell `git add`
 - **`admin/` is separate from `frontend/`** — lives at repo root, deployed via a different SCP step in the same GitHub Actions workflow
+- **No shared `Footer.astro` component** — footer markup (including the AI-content disclosure line) is duplicated across 6 page files (`index.astro`, `[slug].astro`, `premium.astro`, `polityka-prywatnosci.astro`, `kontakt.astro`, `dziekujemy.astro`). Any footer change needs to be applied to all 6. Flagged as a refactoring candidate, not yet done.
 
 ## Workflow — two Claude instances
 
 - **Claude.ai (this chat)** = architect and advisor — strategy, planning, decisions, documentation, prompt drafting for Claude Code
 - **Claude Code in VS Code** = executor — code generation, file editing, commits
 - **CLAUDE.md** = bridge between them — must always be up to date
-- **Some infrastructure changes (SQL migrations, NiFi UI config) are done manually by Pablo**, guided by exact SQL/config text from Claude.ai — not executed by Claude Code, since NiFi has no CLI/API access in this setup and SQL changes follow an established "SQL Editor, not Claude Code" convention
+- **SQL migrations and NiFi UI config are done manually by Pablo**, guided by exact SQL/config text from Claude.ai — NiFi has no CLI/API access, and SQL changes follow an established "SQL Editor, not Claude Code" convention
+- **Manual deploy trigger available:** `.github/workflows/deploy.yml` has `workflow_dispatch` alongside `push` — use "Run workflow" from the GitHub Actions tab for DB-only changes that need a rebuild (SSG means DB changes alone don't appear on the live site), instead of `git commit --allow-empty`
 
 ## Environment variables & secrets
 
@@ -287,37 +350,25 @@ OPENAI_API_KEY=sk-...   # NiFi Parameter Context, separate from admin panel's ke
 NODE_ENV=development
 PORT=3000
 ```
+**Note:** local `npm run build` fails without a real `frontend/.env` containing `PUBLIC_SUPABASE_URL`/`PUBLIC_SUPABASE_ANON_KEY` (pages are SSG and query Supabase at build time). When this file isn't available in a session, verify changes with `npx astro check` (type-check, no DB needed) instead, and note in the diff summary that a full build wasn't possible.
 
-**Server-only, never in repo** (all under `private_html/`, same pattern as existing `config/db.php`):
+**Server-only, never in repo** (all under `private_html/`, same pattern as `db.php`):
 - `config/db.php` — admin session password
-- `config/openai.php` 🆕 — `define('OPENAI_API_KEY', 'sk-...')` for `verify_tool.php`. **Required for admin panel to load at all** — `require_once` is unconditional, missing file = 500 on every admin request.
+- `config/openai.php` — `define('OPENAI_API_KEY', 'sk-...')` for `verify_tool.php`. **Required for admin panel to load at all.**
 
-## Current status (as of 2026-07-25)
+## Current status (as of 2026-09-05)
 
-All weeks 1-7 complete, live with paying customers (Stripe + affiliate). **Pakiet poprawek 2 complete** (10/10 tasks) — see `STATUS.md` for full breakdown. Highlights:
-- Frontend: trust badges, FAQ, similar-tools section, `best_for_pl` field, category tiles + custom icons, larger cards, logo fallback system
-- Pipeline: two-layer quality filter (Show HN/Launch HN + `is_real_product`), critical `contains('ai')` substring bug fixed
-- Admin: new "Zweryfikuj przez AI" live-verification feature, new "Odrzucone przez AI" tab
+Live, revenue-generating (Stripe + affiliate), catalog grown from ~90 to ~260+ tools. 4th NiFi source (YC-OSS API) and 10th category (Cyberbezpieczeństwo AI) both shipped and verified. `verify_tool.php` logo detection fixed. Search Console shows a consistent week-over-week traffic increase (see STATUS.md for the trend table); GA4 is known-unreliable (see Analytics section above).
 
-**Known setup quirks (Windows):**
-- Astro v6 + Tailwind v4 install needs `--template minimal --no-git --no-install` (Node.js v24 bug)
-- PowerShell needs `Set-ExecutionPolicy RemoteSigned` before npm
-- ESET blocks `node_modules` under `C:\Users\` — project lives in `C:\Dev\`
-- NiFi `nifi.cmd status` reporting failure doesn't always mean the process crashed — check logs before restarting
+**Immediate next priorities (per the roadmap agreed 2026-08-23):**
+1. Resume growth activities (LinkedIn posts — drafts revised and saved in Notion — and cold outreach), paused since ~July pending catalog growth, which has now happened
+2. Monitor traffic toward the 1000 UV/month AdSense threshold
+3. Continue spot-checking "Zweryfikuj przez AI" results as more YC-sourced tools accumulate, especially watching for category taxonomy gaps (the way Cyberbezpieczeństwo AI was discovered) and pricing_model disagreements (expected, not a bug — resolve per-case via manual research)
 
-**Not yet built / deferred:** dedicated Node/Python backend (not needed), `db/migrations/` as a maintained folder (schema changes mostly made directly in Supabase), descriptive names for two NiFi processors (cosmetic).
-
-**Post-launch fix (2026-07-23):** `scrape_queue_stage_check` CHECK constraint didn't include `ai_rejected` — see the gotcha note under "Database trigger" above. Fixed; first batch of 8 AI-rejected entries now visible in the admin panel's "Odrzucone przez AI" tab. **Open follow-up:** review those 8 for false negatives — at least one ("DataEase AI" from BetaList) looks like a real product that may have been incorrectly flagged as `is_real_product: false`.
-
-**Post-launch fix (2026-07-23, second session — traffic audit):** `@astrojs/sitemap` integration had been silently missing from `astro.config.mjs` since commit `d0639c1` — see the gotcha note under "SEO conventions" above. Sitemap only had 16 URLs (3 tools) instead of ~93 (79 tools) for weeks, likely the primary cause of near-zero organic traffic (GSC showed 4 total clicks, 59/96 pages indexed since launch). Fixed and verified live (93 URLs). Resubmitted to Search Console; effect on indexing/traffic expected over days to a few weeks, not immediate.
-
-**Follow-ups (2026-07-25):**
-- `tools.ai_verified_at` added — tracks last approved AI-verification date per tool (see "Zweryfikuj przez AI" section above)
-- GA4 ↔ Search Console linked directly in Google Analytics UI (Admin → Product links) — configuration only, nothing in repo
-- `.github/workflows/deploy.yml` gained a `workflow_dispatch` trigger alongside `push` — enables one-click manual deploy from the Actions tab (replaces the `git commit --allow-empty` trick for DB-only changes, and avoids the risk of accidentally re-running a stale old workflow run instead of building current `main`). A PHP-triggered deploy button (via GitHub API) was considered and deliberately rejected — it would require storing a GitHub Personal Access Token on the Cyberfolks server, widening the admin panel's attack surface beyond the existing OpenAI key.
+**Deferred, not forgotten:** newsletter, PDF industry report, additional affiliate programs, AI-written articles section (deliberately paused — see Notion for the full risk analysis: higher error cost than short tool descriptions, copyright exposure, clearer AI Act Art. 50(4) applicability, and it doesn't address the actual current bottleneck of domain authority/distribution).
 
 ## Documentation rules
 
 - Every important technical decision → entry in `DECISIONS.md` (ADR format)
 - Every significant session → entry in `CHANGELOG.md` and/or Notion status page
-- Watch for doc/reality drift — this session found two: `promote_scrape_to_tools()` living in Supabase (not repo) was easy to miss when searching for approval logic, and the "keyword filter" described in older docs didn't match its actual (buggy) implementation. When in doubt, verify against the live trigger/processor definition rather than trusting the doc.
+- **Watch for doc/reality drift.** Confirmed instances so far: `promote_scrape_to_tools()` living in Supabase (not repo); the "keyword filter" once described in docs didn't match its buggy actual implementation (`contains` vs. word-boundary match); the `categories` table schema (has `name_pl` NOT NULL, not just `slug`) was assumed incorrectly in an earlier memory note until directly queried. **When in doubt, verify against the live database schema / trigger / NiFi processor definition rather than trusting a doc or a prior assumption — this has been wrong more than once.**

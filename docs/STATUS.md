@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-07-18
+> Ostatnia aktualizacja: 2026-09-05
 
 ---
 
@@ -7,218 +7,154 @@
 
 | Element | Status |
 |---|---|
-| **Faza** | Projekt live — backlog i growth, pierwsza płatność afiliacyjna aktywna |
-| **Domena** | ✅ aifirmy.pl (Cyberfolks) |
+| **Faza** | Projekt live, generujący przychód. Katalog urósł z ~90 do ~260+ narzędzi. Ruch organiczny rośnie tydzień do tygodnia. 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. |
+| **Domena** | ✅ aifirmy.pl (Cyberfolks) + www→apex redirect (Cloudflare) |
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
-| **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1) |
-| **Pipeline NiFi** | ✅ 3 źródła: HN + BetaList + Product Hunt, cron 2:00/3:00/4:00 |
-| **Frontend** | ✅ Wdrożony, GitHub Actions auto-deploy |
-| **Cloudflare** | ✅ SSL Full, CDN, DNS |
-| **Panel admina** | ✅ PHP + Supabase REST API + soft delete |
+| **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii |
+| **Pipeline NiFi** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API, dwuwarstwowy filtr jakości |
+| **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure |
+| **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
+| **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony) |
 | **Monetyzacja** | ✅ Stripe Live mode, checkout + webhook, email po zakupie |
-| **Affiliate** | ✅ ClickUp/PartnerStack aktywny, link + disclosure na produkcji |
-| **Analytics** | ✅ Google Analytics 4 + Google Search Console |
+| **Affiliate** | ✅ ClickUp/PartnerStack aktywny |
+| **Analytics** | ✅ Search Console (główne źródło prawdy) + AWStats; ⚠️ GA4 niewiarygodne (patrz niżej) |
 
 ---
 
-## ✅ Tydzień 1 — Strategia i nisza
+## ✅ Tydzień 1-7 (do lipca 2026) — fundament
 
-- Nisza: katalog narzędzi AI dla polskiego B2B, opisy po polsku, zgodność z RODO i AI Act, ceny w PLN
-- 9 kategorii: Automatyzacja, Sprzedaż/CRM, Obsługa klienta, Marketing/content, Finanse, HR, Analityka/BI, Prawo/compliance, Zarządzanie projektami
-- Lista 100 narzędzi (nazwa, kategoria, model cenowy, RODO, AI Act, URL)
-- Analiza konkurencji (aiport.pl, smartnetstudio.pl, ainarzedziapolska.lovable.app) — brak tagu RODO/AI Act u nikogo
-- Stack technologiczny ustalony (ADR-001 do ADR-008)
-- Repo `aifirmy-pl` na GitHubie
+Strategia i nisza, baza danych (6→7 tabel), pipeline NiFi (3 źródła: HN/BetaList/Product Hunt), frontend Astro, monetyzacja Stripe, linki afiliacyjne (ClickUp/PartnerStack). Szczegóły w historii poniżej i w Notion.
 
 ---
 
-## ✅ Tydzień 2 — Baza danych
+## ✅ Pakiet poprawek 2 (lipiec 2026) — UX, jakość pipeline'u, panel admina
 
-- 6 tabel na Supabase free (eu-central-1, Frankfurt): `tools`, `categories`, `tags`, `tool_tags`, `premium_listings`, `scrape_queue`
-- Indeksy GIN, trigger `updated_at`, full-text search po polsku
-- Seed: 9 kategorii, 10 tagów, 3 zatwierdzone wpisy (Make, n8n, Rossum)
-- Keep-alive: GitHub Actions cron w repo `aifirmy-ping` (ping co 5 dni)
-- Trigger `promote_scrape_to_tools()` — automatyczne przenoszenie z `scrape_queue` do `tools` po zmianie stage na `published`
-
-**Kluczowe decyzje:**
-- Cyberfolks ma tylko MariaDB (brak JSONB, text[], GIN) → Supabase PostgreSQL (ADR-007)
-- Panel admin: Supabase Studio → zastąpiony PHP panel (ADR-006)
+10/10 zadań zamkniętych: trust badge RODO/AI Act, FAQ szablonowe, sekcja "Podobne narzędzia", pole `best_for_pl`, kafle kategorii, ikony kategorii, większy panel karty, logo (favicon fallback), funkcja "Zweryfikuj przez AI", dwuwarstwowy filtr jakości pipeline'u (Show HN/Launch HN + `is_real_product`). Pełne szczegóły w Notion.
 
 ---
 
-## ✅ Tydzień 3 — Pipeline NiFi
+## ✅ Sierpień 2026 — naprawy fundamentu SEO i danych
 
-**Gotowy flow end-to-end (3 źródła, po optymalizacji):**
+**Martwa sitemapa (23.07)** — `@astrojs/sitemap` przypadkowo usunięty w `d0639c1`, sitemapa miała tylko 16 URL-i (seed z Tygodnia 2) zamiast ~90+. Naprawione, prawdopodobnie główna przyczyna słabej widoczności od startu.
 
+**CHECK constraint blokował `ai_rejected` (23.07)** — kolumna `stage` w `scrape_queue` nie dopuszczała nowej wartości `ai_rejected`, wpisy odrzucane przez AI nie zapisywały się w ogóle. Naprawione przez `ALTER TABLE ... DROP/ADD CONSTRAINT`.
+
+**Linki wewnętrzne bez ukośnika** — `CompanyCard.astro`, `[slug].astro`, kafle kategorii budowały linki bez trailing slash, generując zbędne przekierowania wykrywane przez Google jako "strona zawiera przekierowanie" (commit `9f2c7f1`). Naprawione we wszystkich 4 miejscach.
+
+**Brak przekierowania www→apex (31.08)** — `www.aifirmy.pl` serwował treść bezpośrednio zamiast przekierować do wersji kanonicznej (mimo poprawnego `<link rel="canonical">`). Naprawione regułą Cloudflare Redirect Rules (301, `https://www.*` → `https://${1}`).
+
+**Zgodność z AI Act — disclosure treści AI-generowanej** — sprawdzony stan prawny (polska ustawa o systemach AI, Dz.U. 2026 poz. 1003; obowiązki przejrzystości z art. 50 UE AI Act w mocy od 2.08.2026). Dodany disclaimer w stopce wszystkich stron + sekcja w polityce prywatności, niezależnie od pewności czy wyjątek "ludzka weryfikacja redakcyjna" formalnie chroni pipeline.
+
+**Rozszerzone FAQ o RODO/DPA/EU hosting/AI Act (31.08, commit `6faf053`)** — dotychczasowe krótkie odpowiedzi FAQ zastąpione pełnymi wyjaśnieniami prawnymi (co oznacza RODO/DPA/przetwarzanie w UE w praktyce, pełny opis obowiązków dla każdego z 4 poziomów ryzyka AI Act). JSON-LD generowany automatycznie z tej samej tablicy `faqs` co widoczna treść — eliminuje ryzyko rozjazdu.
+
+---
+
+## ✅ Nowe źródło NiFi — YC-OSS API (30.08.2026)
+
+**Kontekst:** pipeline HN/BetaList/Product Hunt dawał od tygodni słaby sygnał — typowo 1-3 zatwierdzone wpisy na 10-15 w kolejce, powtarzające się halucynacje (nieistniejące modele typu "GPT-5.5-Cyber"), generyczne opisy bez konkretnego produktu.
+
+**Źródło:** yc-oss/api — niezależny, aktywnie utrzymywany projekt udostępniający pełną bazę firm Y Combinator jako statyczne pliki JSON, budowany z oficjalnego indeksu Algolia (nie scraping — zero ryzyka ToS). Endpoint: `https://yc-oss.github.io/api/tags/artificial-intelligence.json` (~900+ firm z tagiem AI).
+
+**Dlaczego to działa lepiej:** każda firma przeszła realny proces finansowania YC (eliminuje kategorię "artykuł/esej" halucynacji), pole `website` zawsze wskazuje na prawdziwą domenę (nie na stronę launch-platformy), pola `one_liner`/`long_description` dają OpenAI prawdziwy tekst źródłowy zamiast zgadywania z samej nazwy.
+
+**Architektura nowej gałęzi:**
 ```
-[Źródło 1 — Hacker News, cron 2:00]
-GenerateFlowFile
-  → InvokeHTTP (HN topstories — 500 ID)
-  → SplitJson (1 flowfile per ID)
-  → InvokeHTTP (HN item details)
-  → EvaluateJsonPath (pre-filter: hn_url, hn_type)
-  → RouteOnAttribute (filtr URL — blokuje GitHub, newsy, blogi)
-  → EvaluateJsonPath (hn_time, hn_type, hn_url, hn_title...)
-  → RouteOnAttribute (filtr daty — ostatnie 24h)
-  → RouteOnAttribute (filtr słów kluczowych — AI, tool, SaaS, LLM...)
-  → ExecuteSQL (deduplikacja)
-  → RouteOnAttribute (nowy rekord?)
-  → [wspólna ścieżka OpenAI]
-
-[Źródło 2 — BetaList, cron 3:00]
-GenerateFlowFile (BetaList trigger)
-  → InvokeHTTP (https://feeds.feedburner.com/BetaList)
-  → SplitXml (depth=1)
-  → RouteOnContent (tylko <entry>)
-  → EvaluateXPath (bl_title, bl_url, bl_description, bl_published)
-  → UpdateAttribute (normalizacja → hn_title, hn_url, hn_time, hn_type=story)
-  → RouteOnAttribute (filtr daty)
-  → [wspólna ścieżka OpenAI]
-
-[Źródło 3 — Product Hunt, cron 4:00]
-GenerateFlowFile (PH trigger)
-  → InvokeHTTP (https://www.producthunt.com/feed)
-  → SplitXml (depth=1)
-  → RouteOnContent (tylko <entry>)
-  → EvaluateXPath (tytuł, url, opis, data)
-  → UpdateAttribute (normalizacja → hn_title, hn_url, hn_time, hn_type=story)
-  → RouteOnAttribute (filtr — hn_type=story)
-  → [wspólna ścieżka OpenAI]
-
-[Wspólna ścieżka OpenAI]
-  → InvokeHTTP (OpenAI gpt-4o-mini — opis PL, kategoria, segment, pricing_model, name)
-  → EvaluateJsonPath (ai_description, ai_category, ai_name, ai_pricing_model)
-  → PutDatabaseRecord (INSERT → scrape_queue, stage=ai_done)
+GenerateFlowFile (YC AI Trigger, cron 5:00)
+  → InvokeHTTP (GET tags/artificial-intelligence.json)
+  → SplitJson ($.*)
+  → EvaluateJsonPath (yc_name, yc_website, yc_one_liner, yc_long_description, yc_launched_at, yc_batch, yc_slug)
+  → RouteOnAttribute (nowa_firma: launched_at w ostatnich 90 dniach)
+  → UpdateAttribute (hn_title=yc_name, hn_url=yc_website, hn_type=story,
+     source_context=one_liner+long_description oczyszczone, source_name_override=yc_ai)
+  → [bezpośrednio do ExecuteSQL/deduplikacji, z pominięciem wspólnego filtra słów kluczowych]
 ```
 
-**Optymalizacja kosztów:**
-- Model: `gpt-4o` → `gpt-4o-mini` (koszt 20× niższy)
-- Filtry: data + słowa kluczowe + deduplikacja SQL
-- Klucz OpenAI w Parameter Context NiFi (sensitive, nie hardcoded)
-- `nifi-flows/` wykluczone z git (zawiera sekrety)
+**Dwa bugi znalezione i naprawione podczas budowy:**
+1. `source_name` zahardkodowane na `"hacker_news"` we wspólnym `ReplaceText` — wszystkie źródła zapisywałyby się pod tą samą etykietą. Naprawa: `${source_name_override:isEmpty():ifElse('hacker_news', ${source_name_override})}`.
+2. Znaki nowej linii i cudzysłowy w `yc_long_description` łamały JSON do OpenAI (400 Bad Request). Naprawa: `replaceAll('[\r\n]+', ' '):replaceAll('"', '')` przed zbudowaniem `source_context`.
 
-**Kolumny scrape_queue (rozszerzone):**
-- `name` — nazwa narzędzia z AI (nie raw HN title)
-- `ai_pricing_model` — free/freemium/paid/open_source z AI
-- `ai_category` — ograniczone do 9 kategorii z listy
-
-**Quirki:**
-- NiFi ReplaceText: `\n` → literalne `n`, cudzysłowy gubią backslash — prompt musi być jedną linią bez cudzysłowów
-- `EvaluateJsonPath` nie obsługuje tablic → tagi w `ai_response` jako JSONB
-- Product Hunt i BetaList — Atom XML z namespace, XPath wymaga `local-name()` lub bez namespace
-- Autostart NiFi przez Windows Task Scheduler (nie Windows Service — NiFi 2.x nie obsługuje `nifi.cmd install`)
-
-**⚠️ Znany problem jakości (otwarty, nierozwiązany):**
-Krok OpenAI generujący opisy często halucynuje nazwy produktów i opisy z tytułów HN, które nie są realnymi produktami (eseje, benchmarki, artykuły akademickie), oraz wymyśla nieistniejące nazwy modeli. Dodanie BetaList i Product Hunt jako dodatkowych źródeł (Tydzień 6) nie rozwiązało problemu u źródła HN — filtr 7a (blokada GitHub/newsów/blogów) ograniczył część szumu, ale nie eliminuje w pełni. TODO zapisane w runbooku moderacji: potrzebne kolejne źródło o wyższym stosunku sygnału do szumu niż HN (np. dedykowane RSS launch-oriented). Show HN / Launch HN z identyfikatorem batcha YC pozostają najbardziej wiarygodnym sygnałem prawdziwego produktu.
+**Wynik pierwszego uruchomienia:** 80 firm przeszło filtr 90-dniowy, cała partia przetworzona przez pełny pipeline.
 
 ---
 
-## ✅ Tydzień 4 — Frontend
+## ✅ Nowa kategoria — "Cyberbezpieczeństwo AI" (01.09.2026)
 
-- Astro 6 + Tailwind CSS v4, build statyczny
-- Strony: `/`, `/narzedzia/[slug]`, `/kategoria/[slug]`, `/premium`, `/kontakt`, `/dziekujemy`, `/polityka-prywatnosci`
-- Dane z Supabase REST API (`@supabase/supabase-js`)
-- Sitemap: `/sitemap-index.xml` (integracja `@astrojs/sitemap`)
-- Schema.org SoftwareApplication na stronach detalu
-- Deploy: GitHub Actions (auto-deploy po każdym git push)
-- Cloudflare: SSL Full strict, CDN, nameservery
+Weryfikacja AI świeżych wpisów z YC ujawniła systemową lukę: 3 potwierdzone narzędzia cyberbezpieczeństwa/AI security (**Trident**, **Fabraix**, **Sentrint**) błędnie zaklasyfikowane w "Prawo i compliance", bo katalog nie miał odpowiedniej kategorii. AI poprawnie próbowało zasugerować "Bezpieczeństwo IT" — panel słusznie odrzucił nieistniejącą kategorię (zabezpieczenie z Zadania 9 zadziałało).
 
-**Frontend — poprawki po T5.5:**
-- Tytuły stron: separator zmieniony z `|` na `—`, usunięta duplikacja "aifirmy.pl | aifirmy.pl"
-- Strona detalu `/narzedzia/[slug]` — dodane tagi (tool_tags JOIN tags), logo, kategoria, pricing badge
-- Strona kategorii — odmiana liczby wpisów (1 wpis / 2-4 wpisy / 5+ wpisów)
-- OG image: `og-default.png` (1200×630px, granat + indigo)
-- Badge "Polecane" + indigo tło dla wpisów z aktywnym premium_listings
-- Sortowanie premium wpisów na górze listy (index + kategoria)
+**Wdrożone:**
+- SQL: `INSERT INTO categories (slug, name_pl, icon, sort_order) VALUES ('cyberbezpieczenstwo-ai', 'Cyberbezpieczeństwo AI', 'shield-bolt', 10)`
+- NiFi: dopisana 10. kategoria do listy w prompcie OpenAI
+- Frontend: kolor `slate` (jedyny nieużyty z 9), nowa ikona (tarcza z wykrzyknikiem, geometrycznie odróżniona od tarczy-checka dla "Prawo i compliance"), zaktualizowany `categoryHoverBorder` w `index.astro`
+- Migracja: Trident, Fabraix, Sentrint przeniesione. **Palisade sprawdzone i wykluczone** — mimo nazwy sugerującej obronność, to faktycznie AI-sprzedawca dla marketplace'ów, poprawnie w "Sprzedaż i CRM"
 
-**Quirki LiteSpeed na Cyberfolks:**
-- SCP wgrywa pliki z uprawnieniami 700 → GitHub Actions naprawia przez `find ... chmod 755/644`
-- URL panelu admina tylko z rozszerzeniem: `/admin/index.php`
+**Nauka:** nazwa narzędzia nie jest wiarygodnym sygnałem kategorii — zawsze weryfikować przez AI, nie zgadywać (Erinys, mimo mitologicznej nazwy, to legalne narzędzie dla kancelarii prawnych — poprawnie sklasyfikowane od początku).
 
 ---
 
-## ✅ Tydzień 5 — Monetyzacja i panel
+## ✅ Poprawka wyszukiwania logo w `verify_tool.php` (05.09.2026)
 
-**Panel admina PHP:**
-- URL: `https://aifirmy.pl/admin/index.php`
-- Logowanie hasłem (sesja PHP, hasło w `private_html/config/db.php`)
-- Kolejka wpisów z pełnym opisem AI — przyciski Zatwierdź/Odrzuć/Usuń
-- Soft delete: PATCH status=rejected przez Supabase REST API (bez reload DOM)
-- Lista narzędzi, formularz dodawania ręcznego
-- Połączenie przez Supabase REST API (curl) — brak pdo_pgsql na Cyberfolks
+**Problem:** `extract_logo_hint()` wymagała konkretnej kolejności atrybutów w tagu (`property` przed `content`, `rel` przed `href`) — HTML nie wymusza tej kolejności, więc strony Next.js/nowoczesnych frameworków (częste wśród startupów YC) nie były wykrywane mimo poprawnego tagu. Brak fallbacku gdy ekstrakcja zawiedzie.
 
-**Stripe — Live mode:**
-- `admin/checkout.php` — tworzy Stripe Checkout Session, redirect
-- `frontend/public/stripe/webhook.php` — obsługuje eventy:
-  - `checkout.session.completed` → INSERT do `premium_listings` + email
-  - `customer.subscription.deleted` → UPDATE `ends_at = now()`
-- Email po zakupie: PHPMailer przez SMTP Cyberfolks (`s103.cyber-folks.pl:587`)
-  - Admin: powiadomienie na `kontakt@aifirmy.pl`
-  - Klient: potwierdzenie zakupu
-- Live Price IDs (4 pakiety: 49/99/199/299 zł/mc) — wszystkie 4 zweryfikowane, INSERT do `premium_listings` działa poprawnie
-- Webhook URL: `/stripe/webhook.php` (poza `/admin/` — Cloudflare WAF blokuje POST do /admin/)
-
-**Konta pocztowe:**
-- `kontakt@aifirmy.pl` ✅
-- `noreply@aifirmy.pl` ✅
-
-**SEO:**
-- Google Search Console — zweryfikowane, sitemap przesłany (16 stron)
-- Google Analytics 4 — G-3SP1TRXF7M, skrypt w Layout.astro (ładowanie warunkowe po cookie consent)
+**Naprawa:** ekstrakcja całego tagu `<meta>`/`<link>` jednym regexem, potem dopasowanie atrybutów niezależnie od kolejności; dodane sprawdzanie `rel="apple-touch-icon"`; dodany fallback na `google.com/s2/favicons` (spójny z logiką triggera `promote_scrape_to_tools()`); wydzielona współdzielona funkcja `resolve_logo_url()`. Zweryfikowane na żywo (Studio pokazuje teraz poprawny favicon fallback).
 
 ---
 
-## ✅ Tydzień 6 — Growth
+## 📋 Obserwacje z sesji weryfikacji AI (wrzesień 2026)
 
-- ✅ Google Analytics 4 — aktywne
-- ✅ Google Search Console — sitemap przesłany
-- ✅ BetaList jako drugie źródło NiFi
-- ✅ Product Hunt RSS jako trzecie źródło NiFi
-- ✅ Email po zakupie — PHPMailer SMTP
-- ✅ Wyróżnienie premium na frontendzie (badge "Polecane", sortowanie)
-- ✅ Obsługa anulowania subskrypcji (customer.subscription.deleted)
-- ✅ Konta pocztowe: kontakt@ i noreply@aifirmy.pl
-- ✅ Stripe Live mode — pierwsza płatność 49 zł
-- ✅ Cookie consent banner + polityka prywatności (`/polityka-prywatnosci`)
-- ✅ Formularz kontaktowy — naprawiony, wiadomości docierają na kontakt@aifirmy.pl
+Systematyczne sprawdzenie ~10 świeżych wpisów przez "Zweryfikuj przez AI" ujawniło:
+
+- **Wzorzec `og:image` jako baner, nie logo** — w praktycznie każdym sprawdzonym przypadku sugerowane `logo_hint` to promocyjny baner (np. `og-home-en.jpg`, `opengraph-image`), nie czyste logo. Favicon fallback pozostaje bezpieczniejszym domyślnym wyborem.
+- **Model cenowy freemium↔paid — nie systemowy bug.** Zbadane na 7 przykładach: obie strony porównania (dane z YC vs live strona) myliły się na przemian — ręczna weryfikacja przez wyszukiwarkę pokazała, że raz stara wartość była bliższa prawdzie, raz nowa. Wniosek: to inherentna niepewność obu źródeł, nie coś do naprawienia jednym promptem — mechanizm porównania działa zgodnie z zamierzeniem (wymaga ręcznej decyzji za każdym razem).
+- **website_url wskazujący na Product Hunt zamiast realnej domeny** — powracający problem jakości danych dla wpisów sourced z PH; wymaga ręcznej korekty per przypadek (TraceLLM, Cleanlist AI naprawione).
+- **Realna poprawka kategorii zatwierdzona:** Zomma (Automatyzacja procesów → Finanse i księgowość) — narzędzie wertykalnie dedykowane finansom, precyzyjniejsza kategoria.
 
 ---
 
-## ✅ Tydzień 7 — Linki afiliacyjne (lipiec 2026)
+## 🐛 Dogłębna diagnoza "GA4 pokazuje zero" (sierpień 2026, 3+ tygodnie)
 
-**Kontekst:** pierwsza okazja monetyzacji przez program partnerski — ClickUp przez PartnerStack.
+Search Console pokazywał konsekwentny wzrost ruchu, ale GA4 uparcie pokazywał 0 aktywnych użytkowników/zdarzeń. Pełna diagnoza wykluczyła po kolei: mały ruch/brak zgody na cookies, rozszerzenia przeglądarki, błędny Measurement ID, CSP, Service Worker, bug w kodzie (`gtag.js` faktycznie się ładuje i wykonuje — potwierdzone przez wewnętrzne zdarzenia `gtm.dom`/`gtm.load`), sieć/urządzenie domowe (zero również na telefonie, inna sieć).
 
-**Zrobione:**
-- ✅ Nowa tabela `affiliate_links` w Supabase (relacja do `tools`, trigger `updated_at` reużywa istniejącą funkcję `set_updated_at()`)
-- ✅ Migracja `db/migrations/001_affiliate_links.sql`
-- ✅ Panel `admin/affiliate.php` — CRUD + toggle aktywności bez przeładowania strony, wzorowany 1:1 na `admin/index.php`
-- ✅ Frontend `[slug].astro` — CTA przełącza się na `affiliate_url` + wyświetla `disclosure_text`, gdy aktywny link istnieje
-- ✅ Aplikacja do programu ClickUp Affiliate złożona i **zaakceptowana tego samego dnia** (Tier 2 Polska, cookie 180 dni, flat fee per country geo-based, nowe aktywacje włącznie z darmowymi planami, last touch attribution)
-- ✅ Rzeczywisty link afiliacyjny aktywny: `https://try.web.clickup.com/x86tvl83r5tw`, wpisany do panelu dla "Brain² by ClickUp"
-- ✅ Naprawiona luka: strona główna i strony kategorii (`CompanyCard.astro`) linkowały bezpośrednio na `website_url`, pomijając affiliate link — rozszerzono logikę z `[slug].astro` na komponent karty (commit `6515c3f`). Karta pokazuje ⓘ tooltip z disclosure, CTA używa `affiliateUrl ?? url`
-- ✅ Zweryfikowane na żywo na produkcji (zrzut ekranu potwierdza kartę z linkiem "Strona →" + tooltip disclosure)
-- ✅ ADR-009 dopisany do `DECISIONS.md`, `ARCHITECTURE.md`, `CLAUDE.md`
+**Ostateczna diagnoza:** `gtag.js` inicjalizuje się, ale beacon z danymi nigdy nie jest wysyłany — najbardziej prawdopodobne wytłumaczenie to bloker reklam działający w trybie "stub" (podmienia prawdziwy plik na nieszkodliwą atrapę). Grupa docelowa aifirmy.pl (osoby zainteresowane RODO/AI Act) demograficznie pokrywa się z użytkownikami blokerów reklam.
 
-**Temat ADR-009 uznany za zamknięty.** Jedyne co zostało — poza zakresem Claude:
-- ❌ Podpięcie wypłat w PartnerStack (Stripe/PayPal) — ręczne zadanie Pabla
+**Weryfikacja niezależnym źródłem — AWStats:** potwierdza realny, mały ale rosnący ruch z wyszukiwarek (24→32 hity/miesiąc), aktywne regularne crawlowanie Googlebota (493 hity/miesiąc), oraz — pożytecznie — potwierdza liczbę błędów 502/500 (spójne z sesjami debugowania `verify_tool.php`) i przekierowań 301.
+
+**Wniosek: nie jest to bug do naprawienia. Search Console + AWStats pozostają głównym źródłem prawdy o ruchu**, nie GA4. Rozważyć Cloudflare Web Analytics jako uzupełnienie w przyszłości (rzadziej blokowany, opcjonalne).
+
+---
+
+## 📈 Trend ruchu (Search Console, kontrole cotygodniowe)
+
+| Data | Kliknięcia | Zindeksowane strony |
+|---|---|---|
+| ~23.07 | 4 | 59 |
+| ~30.07 | 5 | 142 |
+| ~06.08 | 8 | 144-155 |
+| 23.08 | 12 | 198 |
+| ~30.08 | 15 | 198 |
+
+Konsekwentny, przyspieszający wzrost. Ciekawy wzorzec: strony narzędzi z tytułem zawierającym starą + nową nazwę po rebrandingu (np. "Brevo (dawniej Sendinblue)") notują nieproporcjonalnie duży wzrost wyświetleń — możliwy sygnał do świadomego stosowania przy innych narzędziach po zmianie nazwy.
+
+**Pierwszy zaobserwowany zewnętrzny backlink** (23.08): `piperic.com` linkuje do wpisu o Descript.
 
 ---
 
 ## 📋 Backlog
 
-### 🔴 Techniczne — priorytet
-- [ ] **Jakość pipeline'u** — HN generuje zbyt dużo halucynacji (nieistniejące produkty/nazwy modeli z artykułów i esejów). Potrzebne dodatkowe źródło o wyższym SNR niż HN, lub zaostrzenie filtrów przed krokiem OpenAI. TODO zapisane w runbooku moderacji.
+### 🗺️ Plan działań (ustalony 23.08, wciąż aktualny)
 
-### 🟡 Growth (zawieszone ~miesiąc, do wznowienia gdy katalog urośnie)
-- [ ] LinkedIn — 2 posty (drafty gotowe: RODO/AI Act + 5 narzędzi AI)
-- [ ] Cold outreach do 20 firm z listy 100 narzędzi
+1. ✅ Nowe źródła NiFi (Priorytet #1) — zrobione (YC-OSS API)
+2. **Faza 1 — Wznowienie growth** — LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 260+ narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
+3. **Faza 2 — Monetyzacja etap 2** — AdSense po przekroczeniu 1000 UV/mc (obecnie realny ruch zewnętrzny wciąż daleko od progu); rozważyć 2-3 kolejne programy afiliacyjne
+4. **Faza 3** — Newsletter, raport branżowy PDF (po ustabilizowaniu ruchu/bazy odbiorców)
+5. **Faza 4 — Artykuły o AI** — świadomie odłożone (ryzyko szkodliwości błędów, praw autorskich, art. 50 ust. 4 AI Act, koszt czasowy); wrócić gdy ruch i jakość pipeline'u dojrzeją
 
-### 🔵 Później
+### 🟡 Inne otwarte punkty
 - [ ] Podpięcie wypłat Stripe/PayPal w PartnerStack (ręcznie, Pablo)
-- [ ] AdSense gdy ruch > 1000 UV/mc
-- [ ] Newsletter
-- [ ] Konta pocztowe: premium@ i newsletter@ (gdy potrzebne)
-- [ ] Raport branżowy PDF
+- [ ] Newsletter, raport branżowy PDF, konta premium@/newsletter@
+- [ ] Rozważyć rozszerzenie YC-OSS o dodatkowe tagi (`saas.json`, `b2b.json`) jeśli sam tag AI okaże się za wąski/za szeroki
+- [ ] Rozważyć zawężenie okna `launched_at` z 90 do 30 dni po ocenie jakości pierwszej partii
+- [ ] Refaktoryzacja stopki do współdzielonego komponentu `Footer.astro` (obecnie zduplikowana w 6 plikach)
+- [ ] Regularnie przeglądać "Odrzucone przez AI" pod kątem fałszywych negatywów
 
 ---
 
@@ -226,34 +162,19 @@ Krok OpenAI generujący opisy często halucynuje nazwy produktów i opisy z tytu
 
 | Warstwa | Technologia | Uwagi |
 |---|---|---|
-| Frontend | Astro 6 + Tailwind CSS v4 | Statyczny SSG, auto-deploy |
-| ETL / Scraping | Apache NiFi 2.9.0 | Lokalnie Windows, 3 źródła, cron 2:00/3:00/4:00 |
-| AI opisy | OpenAI gpt-4o-mini | ~$0.15/mc po optymalizacji |
-| Baza danych | Supabase PostgreSQL free | eu-central-1, Frankfurt |
-| Admin panel | PHP + Supabase REST API | /admin/index.php, /admin/affiliate.php |
+| Frontend | Astro 6 + Tailwind CSS v4 | SSG, 10 ikon kategorii SVG duotone |
+| ETL / Scraping | Apache NiFi 2.9.0 | Lokalnie Windows, **4 źródła** (HN/BetaList/Product Hunt/YC-OSS API), dwuwarstwowy filtr jakości |
+| AI opisy (pipeline) | OpenAI gpt-4o-mini | Zwraca best_for_pl, is_real_product; YC branch ma dodatkowy source_context |
+| AI weryfikacja (admin) | OpenAI gpt-4o-mini | `response_format: json_object`, kategoria AI Act hint dla 7/10 kategorii, logo fix wdrożony |
+| Baza danych | Supabase PostgreSQL free | eu-central-1; 10 kategorii; trigger `promote_scrape_to_tools()` |
+| Admin panel | PHP + Supabase REST API | /admin/index.php, /admin/affiliate.php, /admin/verify_tool.php |
 | Hosting | Cyberfolks (LiteSpeed) | Frontend + PHP admin + webhook |
-| CDN / ochrona | Cloudflare | SSL Full, CDN aktywny |
-| CI/CD | GitHub Actions | Auto-deploy + keep-alive ping |
+| CDN / ochrona | Cloudflare | SSL Full, Redirect Rules (www→apex) |
+| CI/CD | GitHub Actions | Auto-deploy, workflow_dispatch, SCP całego admin/ |
 | Płatności | Stripe (live mode) | checkout.php + webhook.php |
-| Affiliate | PartnerStack (ClickUp) | affiliate_links table + admin/affiliate.php |
-| Email | PHPMailer + Cyberfolks SMTP | kontakt@aifirmy.pl, port 587 |
-| Analytics | Google Analytics 4 | G-3SP1TRXF7M |
-
----
-
-## 🔧 Środowisko developerskie
-
-| Narzędzie | Status |
-|---|---|
-| Claude Code w VS Code | ✅ połączony z kontem Pro |
-| Repo aifirmy-pl | ✅ github.com/siwy126Pablo/aifirmy-pl |
-| CLAUDE.md | ✅ aktualny, synchronizowany z claude.ai |
-| Lokalizacja projektu | ✅ `C:\Dev\aifirmy-pl` (przeniesiony z C:\Users\pawel\Praca z powodu ESET) |
-
-**Workflow:**
-- Claude.ai = architekt i doradca (strategia, decyzje, planowanie)
-- Claude Code w VS Code = wykonawca (kod, pliki, commity)
-- CLAUDE.md = pomost między nimi
+| Affiliate | PartnerStack (ClickUp) | affiliate_links + admin/affiliate.php |
+| Email | PHPMailer + Cyberfolks SMTP | kontakt@aifirmy.pl |
+| Analytics | Search Console (primary) + AWStats | GA4 aktywny ale niewiarygodny (adblocki) |
 
 ---
 
@@ -261,16 +182,24 @@ Krok OpenAI generujący opisy często halucynuje nazwy produktów i opisy z tytu
 
 | Problem | Rozwiązanie |
 |---|---|
-| NiFi ReplaceText: `\n` → literalne `n` | System message jako jedna linia bez przełamań |
-| NiFi ReplaceText: `\"` gubi backslash | Usuń cudzysłowy z system message |
+| NiFi ReplaceText: `\n` → literalne `n`, `\"` gubi backslash | System message jedną linią, bez cudzysłowów |
 | InvokeHTTP connection pool cache | Stop flow 30s → Start po zmianie konfiguracji |
-| ESET blokuje node_modules | Projekt w `C:\Dev\` zamiast `C:\Users\` |
-| Cloudflare WAF blokuje POST /admin/ | Webhook w `/stripe/webhook.php` poza /admin/ |
-| Supabase Direct Connection wymaga IPv6 | Używać Session Pooler (port 5432) |
-| Cyberfolks brak pdo_pgsql | Supabase REST API przez curl w PHP |
-| LiteSpeed chmod po SCP | `find ... chmod 755/644` w GitHub Actions |
-| NiFi Atom feed namespace | XPath z `local-name()` np. `//*[local-name()='title']` |
-| Pipeline OpenAI halucynuje produkty z nie-produktowych HN title'i | Nierozwiązane — potrzebne dodatkowe źródło/filtr (patrz Backlog 🔴) |
+| `nifi.cmd status` fałszywy alarm | Sprawdzić `java -version`, logi przed założeniem awarii |
+| Repo ma prefiks `frontend/` dla kodu Astro | Zawsze `git add frontend/src/...` |
+| PowerShell + nazwy plików z `[...]` | Cudzysłowy wokół ścieżki w `git add` |
+| `contains('x')` w NiFi EL dla krótkich słów | Podciąg, nie całe słowo — użyj `matches('(?i).*\bx\b.*')` |
+| PHP `strict_types` + niepewny JSON z AI | `is_string()` guard przed `trim()`/`mb_strtolower()` |
+| PHP `try/catch (Exception)` nie łapie `TypeError` | Łapać `\Throwable` |
+| Cichy 502 bez logów PHP | Checkpointy czasowe + `register_shutdown_function` |
+| Nowa wartość enum w NiFi/triggerze bez CHECK constraint | Zawsze zweryfikować `pg_get_constraintdef` przed dodaniem nowej wartości |
+| Usunięcie "nieużywanego" importu bez sprawdzenia efektów ubocznych | `@astrojs/sitemap` wyglądał martwo, generował pliki jako efekt uboczny builda |
+| `grep -c` na zminifikowanym pliku w jednej linii | Liczy pasujące LINIE nie wystąpienia — użyj `grep -o ... \| wc -l` |
+| Weryfikacja zmian zaraz po deployu | Dodaj `?cachebust=X`, Cloudflare cache potrzebuje chwili nawet po Purge |
+| Regex w PHP wymagający konkretnej kolejności atrybutów HTML | HTML nie wymusza kolejności — ekstrahuj cały tag, potem dopasuj atrybuty osobno |
+| Brak www→apex redirect mimo poprawnego `<link rel="canonical">` | Canonical tag nie zastępuje twardego 301 — potrzebna osobna reguła CDN/serwera |
+| Cloudflare "DNS may not be proxying" ostrzeżenie mimo poprawnej konfiguracji | Zweryfikować bezpośrednio w DNS → Records przed zaufaniem ostrzeżeniu UI |
+| GA4 pokazuje zero mimo realnego ruchu | Sprawdzić czy `gtag.js` faktycznie wysyła beacon (nie tylko czy się ładuje) — może być blokowany w trybie "stub" przez adblocki; Search Console/AWStats jako niezależna weryfikacja |
+| `git push` rejected (fetch first) przy pracy na 2 komputerach | Standardowe: `git pull --rebase && git push`; zawsze `git log --oneline` na remote przed dalszą pracą jeśli coś niepokoi |
 
 ---
 
@@ -286,8 +215,8 @@ Krok OpenAI generujący opisy często halucynuje nazwy produktów i opisy z tytu
 | Notion — projekt | https://www.notion.so/aifirmy-pl-Katalog-AI-i-SaaS-373b4cccb4af81bb9ec5ef0a5ca32318 |
 | Notion — status sesji | https://app.notion.com/p/374b4cccb4af8103afbbc353f9fd300e |
 | Notion — runbook | https://app.notion.com/p/377b4cccb4af818ab4a8efb3248426c3 |
+| Notion — drafty LinkedIn | https://app.notion.com/p/3c5b4cccb4af81a08f4cd24070dffab9 |
+| AWStats (Cyberfolks) | https://s103.cyber-folks.pl:2223/CMD_AWSTATS/aifirmy.pl/index.html |
 | Keep-alive repo | https://github.com/siwy126Pablo/aifirmy-ping |
 | Stripe Dashboard | https://dashboard.stripe.com |
 | PartnerStack | https://partnerstack.com |
-| Google Analytics | https://analytics.google.com |
-| Google Search Console | https://search.google.com/search-console |
