@@ -1,112 +1,124 @@
 ---
-import { categoryColors, categoryColorFallback } from '../lib/category-colors';
+import { categoryColors, categoryColorFallback, aiActRiskColors } from '../lib/category-colors';
 
 interface Props {
   name: string;
   description: string;
   category: string;
-  pricing: 'free' | 'freemium' | 'paid';
+  pricing: 'free' | 'freemium' | 'paid' | 'open_source';
   url: string;
   slug: string;
   isPremium?: boolean;
   affiliateUrl?: string | null;
   disclosureText?: string | null;
   rodoCompliant?: boolean;
+  euDataHosting?: boolean;
   aiActRisk?: 'minimal' | 'limited' | 'high' | 'unacceptable' | null;
   logoUrl?: string | null;
   bestForPl?: string | null;
 }
 
-const { name, description, category, pricing, url, slug, isPremium = false, affiliateUrl, disclosureText, rodoCompliant = false, aiActRisk = null, logoUrl = null, bestForPl = null } = Astro.props;
+const {
+  name,
+  description,
+  category,
+  pricing,
+  url,
+  slug,
+  isPremium = false,
+  affiliateUrl,
+  disclosureText,
+  rodoCompliant = false,
+  euDataHosting = false,
+  aiActRisk = null,
+  logoUrl = null,
+  bestForPl = null,
+} = Astro.props;
 
 const placeholderColor = categoryColors[category] ?? categoryColorFallback;
 
 const ctaUrl = affiliateUrl ?? url;
 
 const pricingLabel: Record<Props['pricing'], string> = {
-  free: 'Bezpłatne',
+  free: 'Darmowe',
   freemium: 'Freemium',
   paid: 'Płatne',
-};
-
-const pricingColor: Record<Props['pricing'], string> = {
-  free: 'bg-green-100 text-green-700',
-  freemium: 'bg-blue-100 text-blue-700',
-  paid: 'bg-orange-100 text-orange-700',
-};
-
-const aiActColor: Record<string, string> = {
-  minimal: 'bg-green-100 text-green-700',
-  limited: 'bg-yellow-100 text-yellow-700',
-  high: 'bg-red-100 text-red-700',
-  unacceptable: 'bg-red-200 text-red-900',
+  open_source: 'Open source',
 };
 ---
 
-<article class={`relative flex flex-col gap-3 rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md ${isPremium ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
+<article class={`relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:-translate-y-0.5 ${isPremium ? 'border-indigo-300 bg-indigo-50 hover:border-indigo-400' : 'border-gray-200 bg-white hover:border-indigo-300'}`}>
   {isPremium && (
-    <span class="absolute right-0 top-0 rounded-bl-lg rounded-tr-xl bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">
+    <span class="absolute right-0 top-0 rounded-bl-lg rounded-tr-2xl bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">
       Polecane
     </span>
   )}
-  <div class="flex items-start justify-between gap-2">
-    <div class="flex min-w-0 items-center gap-3">
-      {logoUrl ? (
-        <img src={logoUrl} alt={`Logo ${name}`}
-          class="h-10 w-10 shrink-0 rounded-lg border border-gray-100 object-contain" />
-      ) : (
-        <span class={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold ${placeholderColor.bg} ${placeholderColor.text}`}>
-          {name.charAt(0).toUpperCase()}
+  {aiActRisk && (
+    <span class={`absolute right-3 ${isPremium ? 'top-9' : 'top-3'} rounded-full px-2 py-0.5 text-xs font-medium ${aiActRiskColors[aiActRisk].bg} ${aiActRiskColors[aiActRisk].text}`}>
+      {aiActRiskColors[aiActRisk].label}
+    </span>
+  )}
+
+  <div class="flex items-center gap-3 pr-20">
+    {logoUrl ? (
+      <img src={logoUrl} alt={`Logo ${name}`}
+        class="h-10 w-10 shrink-0 rounded-lg border border-gray-100 object-contain" />
+    ) : (
+      <span class={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold ${placeholderColor.bg} ${placeholderColor.text}`}>
+        {name.charAt(0).toUpperCase()}
+      </span>
+    )}
+    <div class="min-w-0">
+      <h2 class="truncate text-lg font-semibold text-gray-900">{name}</h2>
+      {category && (
+        <span class={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${placeholderColor.bg} ${placeholderColor.text}`}>
+          {category}
         </span>
       )}
-      <h2 class="truncate text-lg font-semibold text-gray-900">{name}</h2>
     </div>
-    <span class={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${pricingColor[pricing]}`}>
+  </div>
+
+  {bestForPl && (
+    <p class="text-xs italic text-gray-400">Najlepsze dla: {bestForPl}</p>
+  )}
+
+  <p class="line-clamp-3 text-sm text-gray-600">{description}</p>
+
+  <div class="flex flex-wrap gap-1.5">
+    {rodoCompliant && (
+      <span class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
+        ✓ RODO
+      </span>
+    )}
+    {euDataHosting && (
+      <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+        Hosting UE
+      </span>
+    )}
+    <span class="rounded-full border border-gray-300 px-2 py-0.5 text-[11px] font-medium text-gray-600">
       {pricingLabel[pricing]}
     </span>
   </div>
 
-  {bestForPl && (
-    <p class="-mt-2 text-xs italic text-gray-400">Najlepsze dla: {bestForPl}</p>
-  )}
-
-  {(rodoCompliant || aiActRisk) && (
-    <div class="flex flex-wrap gap-1.5">
-      {rodoCompliant && (
-        <span class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
-          ✓ RODO
-        </span>
-      )}
-      {aiActRisk && (
-        <span class={`rounded-full px-2 py-0.5 text-[11px] font-medium ${aiActColor[aiActRisk]}`}>
-          AI Act: {aiActRisk}
-        </span>
-      )}
-    </div>
-  )}
-
-  <p class="line-clamp-6 text-sm text-gray-600">{description}</p>
-
-  <div class="mt-auto flex items-center justify-between pt-1">
-    <span class="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{category}</span>
-    <div class="flex gap-3 text-sm">
-      <a
-        href={`/narzedzia/${slug}/`}
-        class="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
-      >
-        Szczegóły
-      </a>
+  <div class="mt-auto flex flex-col gap-1.5 pt-1">
+    <a
+      href={`/narzedzia/${slug}/`}
+      class="block w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+    >
+      Zobacz szczegóły →
+    </a>
+    <div class="flex items-center justify-center gap-1.5">
       <a
         href={ctaUrl}
         target="_blank"
         rel="noopener noreferrer"
-        class="text-gray-400 hover:text-gray-600 hover:underline"
+        class="text-xs text-gray-400 hover:text-gray-600 hover:underline"
       >
-        Strona →
+        Strona producenta ↗
       </a>
       {affiliateUrl && (
         <span
-          class="cursor-help text-gray-300 hover:text-gray-500"
+          class="cursor-help text-xs text-gray-300 hover:text-gray-500"
           title={disclosureText ?? 'Link afiliacyjny — możemy otrzymać prowizję.'}
           aria-label={disclosureText ?? 'Link afiliacyjny — możemy otrzymać prowizję.'}
         >
