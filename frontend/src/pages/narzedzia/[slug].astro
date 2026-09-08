@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { supabase } from '../../lib/supabase';
-import { categoryColors, categoryColorFallback } from '../../lib/category-colors';
+import { categoryColors, categoryColorFallback, aiActRiskColors, pricingLabels, type PricingModel } from '../../lib/category-colors';
 
 export async function getStaticPaths() {
   const { data: tools } = await supabase
@@ -17,21 +17,7 @@ export async function getStaticPaths() {
 
 const { tool } = Astro.props;
 
-const pricingLabel: Record<string, string> = {
-  free: 'Bezpłatne',
-  freemium: 'Freemium',
-  paid: 'Płatne',
-  open_source: 'Open Source'
-};
-
-const pricingColor: Record<string, string> = {
-  free: 'bg-green-100 text-green-700',
-  freemium: 'bg-blue-100 text-blue-700',
-  paid: 'bg-orange-100 text-orange-700',
-  open_source: 'bg-purple-100 text-purple-700',
-};
-
-const pricing = tool.pricing_model ?? 'free';
+const pricing = (tool.pricing_model ?? 'free') as PricingModel;
 const categoryName = tool.categories?.name_pl ?? '';
 const categorySlug = tool.categories?.slug ?? '';
 const placeholderColor = categoryColors[categoryName] ?? categoryColorFallback;
@@ -87,13 +73,6 @@ function truncate(text: string, max: number) {
   return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 }
 
-const aiActBadgeColor: Record<string, string> = {
-  minimal: 'bg-green-100 text-green-700',
-  limited: 'bg-yellow-100 text-yellow-700',
-  high: 'bg-red-100 text-red-700',
-  unacceptable: 'bg-red-200 text-red-900',
-};
-
 const pricingExplanation: Record<string, string> = {
   free: 'oznacza to, że korzystanie z narzędzia jest całkowicie bezpłatne.',
   freemium: 'oznacza to, że podstawowa wersja jest darmowa, a zaawansowane funkcje wymagają płatnej subskrypcji.',
@@ -148,7 +127,7 @@ const faqs = [
   },
   {
     question: `Jaki jest model cenowy ${tool.name}?`,
-    answer: `${pricingLabel[pricing]} — ${pricingExplanation[pricing] ?? ''}`,
+    answer: `${pricingLabels[pricing]} — ${pricingExplanation[pricing] ?? ''}`,
   },
   ...(tool.ai_act_risk
     ? [{
@@ -198,65 +177,118 @@ const faqSchema = JSON.stringify({
 
   <div class="min-h-screen bg-gray-50">
 
-    <main class="mx-auto max-w-3xl px-4 py-10">
+    <main class="mx-auto max-w-5xl px-4 py-10">
 
       <a href="/" class="mb-8 inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600">
         ← Powrót do katalogu
       </a>
 
-      <article class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-        {tool.logo_url ? (
-          <img src={tool.logo_url} alt={`Logo ${tool.name}`}
-            class="mb-4 h-14 w-14 rounded-xl object-contain border border-gray-100" />
-        ) : (
-          <span class={`mb-4 flex h-14 w-14 items-center justify-center rounded-xl text-2xl font-semibold ${placeholderColor.bg} ${placeholderColor.text}`}>
-            {tool.name?.charAt(0).toUpperCase()}
+        <article class="relative rounded-2xl border border-gray-200 bg-white p-8 shadow-sm lg:col-span-2">
+
+          <span class="absolute right-6 top-6 rounded-full border border-gray-300 px-3 py-1 text-sm font-medium text-gray-600">
+            {pricingLabels[pricing]}
           </span>
-        )}
 
-        <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
-          <h1 class="text-3xl font-bold text-gray-900">{tool.name}</h1>
-          <span class={`rounded-full px-3 py-1 text-sm font-medium ${pricingColor[pricing]}`}>
-            {pricingLabel[pricing]}
-          </span>
-        </div>
+          {tool.logo_url ? (
+            <img src={tool.logo_url} alt={`Logo ${tool.name}`}
+              class="mb-4 h-14 w-14 rounded-xl object-contain border border-gray-100" />
+          ) : (
+            <span class={`mb-4 flex h-14 w-14 items-center justify-center rounded-xl text-2xl font-semibold ${placeholderColor.bg} ${placeholderColor.text}`}>
+              {tool.name?.charAt(0).toUpperCase()}
+            </span>
+          )}
 
-        {tool.best_for_pl && (
-          <p class="-mt-4 mb-4 text-sm italic text-gray-500">Najlepsze dla: {tool.best_for_pl}</p>
-        )}
+          <h1 class="mb-2 pr-28 text-3xl font-medium text-gray-900">{tool.name}</h1>
 
-        {(tool.rodo_compliant || tool.ai_act_risk) && (
-          <div class="mb-4 flex flex-wrap gap-1.5">
-            {tool.rodo_compliant && (
-              <span class="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-                ✓ RODO
-              </span>
-            )}
-            {tool.ai_act_risk && (
-              <span class={`rounded-full px-2 py-0.5 text-xs font-medium ${aiActBadgeColor[tool.ai_act_risk]}`}>
-                AI Act: {tool.ai_act_risk}
+          {categoryName && (
+            <a
+              href={`/kategoria/${categorySlug}/`}
+              class={`mb-3 inline-block rounded-full px-2.5 py-1 text-xs font-medium ${placeholderColor.bg} ${placeholderColor.text} hover:opacity-80`}
+            >
+              {categoryName}
+            </a>
+          )}
+
+          {tool.best_for_pl && (
+            <p class="mb-4 text-base italic text-gray-500">Dla: {tool.best_for_pl}</p>
+          )}
+
+          {tool.tagline_pl && (
+            <p class="mb-4 text-lg font-medium text-gray-700">{tool.tagline_pl}</p>
+          )}
+
+          <p class="mb-8 text-base leading-relaxed text-gray-600">
+            {tool.description_pl}
+          </p>
+
+          <a
+            href={ctaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-indigo-700 sm:w-auto"
+          >
+            Odwiedź stronę {tool.name} →
+          </a>
+
+          <div class="mt-2 flex items-center gap-1.5">
+            <a
+              href={ctaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-xs text-gray-400 hover:text-gray-600 hover:underline"
+            >
+              Strona producenta ↗
+            </a>
+            {activeAffiliateLink && (
+              <span
+                class="cursor-help text-xs text-gray-300 hover:text-gray-500"
+                title={activeAffiliateLink.disclosure_text ?? 'Link afiliacyjny — możemy otrzymać prowizję.'}
+                aria-label={activeAffiliateLink.disclosure_text ?? 'Link afiliacyjny — możemy otrzymać prowizję.'}
+              >
+                ⓘ
               </span>
             )}
           </div>
-        )}
 
-        {categoryName && (
-          <p class="mb-6 text-sm text-gray-400">
-            Kategoria:&nbsp;
-            <a href={`/kategoria/${categorySlug}/`} class="font-medium text-indigo-600 hover:underline">
-              {categoryName}
-            </a>
-          </p>
-        )}
+        </article>
 
-        {tool.tagline_pl && (
-          <p class="mb-4 text-lg font-medium text-gray-700">{tool.tagline_pl}</p>
-        )}
+        <aside class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">W skrócie</h2>
+          <dl class="space-y-4">
+            {categoryName && (
+              <div>
+                <dt class="text-xs text-gray-400">Kategoria</dt>
+                <dd class="text-sm text-gray-700">{categoryName}</dd>
+              </div>
+            )}
+            <div>
+              <dt class="text-xs text-gray-400">Cena</dt>
+              <dd class="text-sm text-gray-700">{pricingLabels[pricing]}</dd>
+            </div>
+            {tool.ai_act_risk && (
+              <div>
+                <dt class="mb-1 text-xs text-gray-400">AI Act</dt>
+                <dd>
+                  <span class={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${aiActRiskColors[tool.ai_act_risk].bg} ${aiActRiskColors[tool.ai_act_risk].text}`}>
+                    {aiActRiskColors[tool.ai_act_risk].shortLabel}
+                  </span>
+                </dd>
+              </div>
+            )}
+            {tool.eu_data_hosting && (
+              <div>
+                <dt class="text-xs text-gray-400">Lokalizacja danych</dt>
+                <dd class="text-sm text-gray-700">Unia Europejska</dd>
+              </div>
+            )}
+          </dl>
+        </aside>
 
-        <p class="mb-8 text-base leading-relaxed text-gray-600">
-          {tool.description_pl}
-        </p>
+      </div>
+
+      <article class="mt-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
 
         <div class="mb-8 flex flex-wrap gap-3 text-sm text-gray-500">
           {tool.rodo_compliant && (
@@ -300,21 +332,8 @@ const faqSchema = JSON.stringify({
           </div>
         </div>
 
-        <a
-          href={ctaUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
-        >
-          Odwiedź stronę →
-        </a>
-
-        {activeAffiliateLink && (
-          <p class="mt-2 text-xs text-gray-500">{activeAffiliateLink.disclosure_text}</p>
-        )}
-
         {similarTools.length > 0 && (
-          <div class="mt-10">
+          <div>
             <h2 class="mb-3 text-xl font-semibold text-gray-900">Podobne narzędzia</h2>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {similarTools.map((t: any) => (

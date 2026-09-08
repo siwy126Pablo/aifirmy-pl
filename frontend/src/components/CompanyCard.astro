@@ -1,11 +1,11 @@
 ---
-import { categoryColors, categoryColorFallback, aiActRiskColors } from '../lib/category-colors';
+import { categoryColors, categoryColorFallback, aiActRiskColors, pricingLabels, type PricingModel } from '../lib/category-colors';
 
 interface Props {
   name: string;
   description: string;
   category: string;
-  pricing: 'free' | 'freemium' | 'paid' | 'open_source';
+  pricing: PricingModel;
   url: string;
   slug: string;
   isPremium?: boolean;
@@ -38,13 +38,6 @@ const {
 const placeholderColor = categoryColors[category] ?? categoryColorFallback;
 
 const ctaUrl = affiliateUrl ?? url;
-
-const pricingLabel: Record<Props['pricing'], string> = {
-  free: 'Darmowe',
-  freemium: 'Freemium',
-  paid: 'Płatne',
-  open_source: 'Open source',
-};
 ---
 
 <article class={`relative flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:-translate-y-0.5 ${isPremium ? 'border-indigo-300 bg-indigo-50 hover:border-indigo-400' : 'border-gray-200 bg-white hover:border-indigo-300'}`}>
@@ -98,7 +91,7 @@ const pricingLabel: Record<Props['pricing'], string> = {
       </span>
     )}
     <span class="rounded-full border border-gray-300 px-2 py-0.5 text-[11px] font-medium text-gray-600">
-      {pricingLabel[pricing]}
+      {pricingLabels[pricing]}
     </span>
   </div>
 

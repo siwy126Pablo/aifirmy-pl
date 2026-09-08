@@ -13,9 +13,18 @@ export const categoryColors: Record<string, { bg: string; text: string }> = {
 
 export const categoryColorFallback = { bg: 'bg-gray-100', text: 'text-gray-600' };
 
-export const aiActRiskColors: Record<string, { bg: string; text: string; label: string }> = {
-  minimal: { bg: 'bg-green-100', text: 'text-green-800', label: 'AI Act: minimalny' },
-  limited: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'AI Act: ograniczony' },
-  high: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'AI Act: wysoki' },
-  unacceptable: { bg: 'bg-red-100', text: 'text-red-800', label: 'AI Act: niedopuszczalny' },
+export const aiActRiskColors: Record<string, { bg: string; text: string; label: string; shortLabel: string }> = {
+  minimal: { bg: 'bg-green-100', text: 'text-green-800', label: 'AI Act: minimalny', shortLabel: 'Minimalny' },
+  limited: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'AI Act: ograniczony', shortLabel: 'Ograniczony' },
+  high: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'AI Act: wysoki', shortLabel: 'Wysoki' },
+  unacceptable: { bg: 'bg-red-100', text: 'text-red-800', label: 'AI Act: niedopuszczalny', shortLabel: 'Niedopuszczalny' },
+};
+
+export type PricingModel = 'free' | 'freemium' | 'paid' | 'open_source';
+
+export const pricingLabels: Record<PricingModel, string> = {
+  free: 'Darmowe',
+  freemium: 'Freemium',
+  paid: 'Płatne',
+  open_source: 'Open source',
 };
