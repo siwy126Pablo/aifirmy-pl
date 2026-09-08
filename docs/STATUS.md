@@ -12,7 +12,7 @@
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
 | **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii |
 | **Pipeline NiFi** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API, dwuwarstwowy filtr jakości |
-| **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure |
+| **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
 | **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony) |
 | **Monetyzacja** | ✅ Stripe Live mode, checkout + webhook, email po zakupie |
@@ -96,6 +96,18 @@ Weryfikacja AI świeżych wpisów z YC ujawniła systemową lukę: 3 potwierdzon
 **Problem:** `extract_logo_hint()` wymagała konkretnej kolejności atrybutów w tagu (`property` przed `content`, `rel` przed `href`) — HTML nie wymusza tej kolejności, więc strony Next.js/nowoczesnych frameworków (częste wśród startupów YC) nie były wykrywane mimo poprawnego tagu. Brak fallbacku gdy ekstrakcja zawiedzie.
 
 **Naprawa:** ekstrakcja całego tagu `<meta>`/`<link>` jednym regexem, potem dopasowanie atrybutów niezależnie od kolejności; dodane sprawdzanie `rel="apple-touch-icon"`; dodany fallback na `google.com/s2/favicons` (spójny z logiką triggera `promote_scrape_to_tools()`); wydzielona współdzielona funkcja `resolve_logo_url()`. Zweryfikowane na żywo (Studio pokazuje teraz poprawny favicon fallback).
+
+---
+
+## ✅ Redesign karty katalogowej i hero strony detalu (08.09.2026)
+
+**Kontekst:** karta katalogowa (`CompanyCard.astro`) i strona detalu narzędzia rozjechały się wizualnie — AI Act pokazywany w trzech różnych stylach na samej stronie detalu (żaden z PL etykietą), `pricing_model` konkurował wizualnie z sygnałem ryzyka, kategoria bez spójnego stylu z resztą katalogu.
+
+**Zrobione:** pięć commitów (`693bf92`, `f53c90c`, `1b7e7f5`, `b3e4c41`, `f9f5e53`) — pełny redesign karty (kolorowy AI Act, neutralny pricing, hierarchia CTA) i hero+sidebar strony detalu, z jednym współdzielonym źródłem kolorów/etykiet (`category-colors.ts`: `aiActRiskColors`, `pricingLabels`) zamiast trzech niezależnych kopii.
+
+**Otwarte:** stary dolny pasek trust-badges na stronie detalu (surowy `AI Act: minimal`) nietknięty do czasu Prompt B; dwa punkty do weryfikacji w kodzie (kolor "Kategoria" w sidebarze, layout CTA bez affiliate linku) — patrz `CHANGELOG.md` [v0.10] po pełną listę.
+
+**Nauka:** przy redesignie komponentu współdzielonego (karta) warto od razu audytować inne miejsca renderujące te same dane (`[slug].astro`) zamiast zakładać że są już spójne — tu nie były, mimo że wyglądały podobnie na pierwszy rzut oka.
 
 ---
 

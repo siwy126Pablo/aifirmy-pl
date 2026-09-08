@@ -298,6 +298,21 @@ System prompt for `verify_tool.php` includes an explicit rule distinguishing a p
 
 **Frontend logo placeholder logic** (`CompanyCard.astro`, `[slug].astro`): if `logo_url` is empty, render a colored initial-letter placeholder using the tool's category color.
 
+**Shared badge styling (added 2026-09-08):** `aiActRiskColors` (colors + PL
+label + `shortLabel`) and `pricingLabels`/`PricingModel` now live in
+`frontend/src/lib/category-colors.ts` as the single source of truth,
+imported by both `CompanyCard.astro` and `narzedzia/[slug].astro`. Before
+this, `[slug].astro` had its own independent (and inconsistent) copies —
+if either file starts diverging again, check this file first before
+writing a new local mapping.
+
+**Affiliate disclosure — two intentionally different patterns:**
+`CompanyCard.astro` shows disclosure as a hover tooltip (ⓘ icon) — tight
+card space justifies this. `[slug].astro` shows it as always-visible text
+under the CTA — hover tooltips don't work on touch devices, and the detail
+page has room. Don't "fix" one to match the other; this split is
+deliberate.
+
 ## Frontend FAQ (`[slug].astro`) — expanded 2026-08-31 (commit `6faf053`)
 
 FAQ section now has **6 questions** (was 4): RODO → DPA → EU data hosting → pricing model → AI Act risk → target_size. RODO and AI Act questions now include full plain-language legal explanations (what RODO/DPA/EU-hosting/each AI Act risk level actually means and requires), not just a one-line yes/no — this is deliberate: it's a **general educational explainer per category/risk-level**, the same text for every tool in that bucket, never an AI-generated per-tool legal judgment (that risk was deliberately avoided, same reasoning as the `$CATEGORY_AI_ACT_HINTS` exclusions above).

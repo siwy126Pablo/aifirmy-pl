@@ -211,6 +211,29 @@
 
 ---
 
+## [v0.10] — 2026-09-08 (redesign karty katalogowej i strony detalu)
+
+### Zrobione
+- ✅ `693bf92` — redesign `CompanyCard.astro`: kolorowy pill AI Act (`aiActRiskColors`, pomijany gdy null), pill kategorii, warunkowy badge "Hosting UE", neutralny badge `pricing_model` (w tym `open_source`), opis `line-clamp-3`, nowa hierarchia CTA (dominujący przycisk → `/narzedzia/[slug]/`, drugorzędny link zewnętrzny z tooltipem ⓘ disclosure)
+- ✅ `f53c90c` — poprawka wyrównania: `line-clamp-4`, kontener "Najlepsze dla" z zarezerwowaną wysokością (`min-h-4`) niezależnie od tego czy `best_for_pl` jest puste — karty w tym samym rzędzie grid przestały się różnić wysokością
+- ✅ `1b7e7f5` — `line-clamp-4` → `line-clamp-6` (decyzja po weryfikacji na żywo — więcej widocznego tekstu)
+- ✅ `b3e4c41` — redesign hero + nowy sidebar "W skrócie" na `[slug].astro`: import współdzielonego `aiActRiskColors`/`pricingLabels` z `category-colors.ts` (wcześniej: dwa niezależne, sprzeczne mappingi na tej stronie + trzecia kopia w `CompanyCard`), większy CTA, pill kategorii z trailing slash
+- ✅ `f9f5e53` — cofnięcie disclosure afiliacyjnego na stronie detalu z tooltipa (hover) z powrotem na zawsze widoczny tekst pod CTA — tooltip niewidoczny na dotyku, strona detalu ma miejsce na widoczny tekst (karta katalogowa zostaje przy tooltipie, tam to uzasadnione ciasnotą)
+
+### Odkrycia / problemy
+- **Audyt spójności ujawnił, że `[slug].astro` nigdy nie było w zakresie redesignu karty** — miało dwa własne, sprzeczne mappingi kolorów AI Act (żaden nie używał PL etykiet, jeden w ogóle bez kolorowania wg ryzyka) i osobny, kolorowy badge `pricing_model` wizualnie konkurujący z sygnałem ryzyka — dokładnie to, czego świadomie unikaliśmy przy redesignie karty
+- Tooltip disclosure (hover/`title`) nie działa na urządzeniach dotykowych — realne ryzyko przy stronie z większym ruchem niż karta; karta zostaje przy tooltipie (uzasadnione ciasnotą), strona detalu wraca do widocznego tekstu
+- Refaktor przy okazji: `aiActRiskColors` zyskał `shortLabel` (sam poziom, bez prefiksu "AI Act:") do użytku w sidebarze; `pricingLabels`/`PricingModel` wydzielone z lokalnej kopii w `CompanyCard.astro` do `category-colors.ts` — jedno źródło prawdy dla obu plików
+
+### Zmieniam podejście do
+- Disclosure afiliacyjny: różne wzorce świadomie w dwóch miejscach — tooltip ⓘ na karcie (ciasnota), widoczny tekst na stronie detalu (jest miejsce, większy ruch, dotyk)
+
+### Następny krok (otwarte na start kolejnej sesji)
+- **Do zweryfikowania w kodzie (niepotwierdzone, tylko z wizualnego zrzutu produkcji):**
+  1. "Kategoria" w sidebarze "W skrócie" wygląda kolorowo na produkcji — spec zakładał zwykły neutralny tekst (kolor już jest w pillu w hero, sidebar miał być neutralnym podsumowaniem)
+  2. Layout CTA + "Strona producenta ↗" przy braku aktywnego affiliate linku (np. Decawork) — na zrzucie wygląda jakby siedziały w jednej linii zamiast być spięte pionowo; może to tylko kompresja zrzutu, wymaga potwierdzenia w kodzie/DOM
+- **Prompt B (zaplanowany, nie zaczęty):** pasek "Zgodność i dane" (RODO/DPA jako tile'e), usunięcie starego dolnego paska trust-badges z surowym `AI Act: minimal` (obecnie duplikuje nowy pill w sidebarze, kontrast teraz bardziej rażący niż przed redesignem hero), powiększenie "Podobne narzędzia" (obecnie małe/ciasne, reużycie stylu `CompanyCard`)
+
 ```
 ## [v0.X] — [data]
 
