@@ -78,11 +78,13 @@ const pricingLabel: Record<Props['pricing'], string> = {
     </div>
   </div>
 
-  {bestForPl && (
-    <p class="text-xs italic text-gray-400">Najlepsze dla: {bestForPl}</p>
-  )}
+  <div class="min-h-4">
+    {bestForPl && (
+      <p class="truncate text-xs italic text-gray-400">Najlepsze dla: {bestForPl}</p>
+    )}
+  </div>
 
-  <p class="line-clamp-3 text-sm text-gray-600">{description}</p>
+  <p class="line-clamp-4 text-sm text-gray-600">{description}</p>
 
   <div class="flex flex-wrap gap-1.5">
     {rodoCompliant && (
