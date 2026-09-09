@@ -234,6 +234,28 @@
   2. Layout CTA + "Strona producenta ↗" przy braku aktywnego affiliate linku (np. Decawork) — na zrzucie wygląda jakby siedziały w jednej linii zamiast być spięte pionowo; może to tylko kompresja zrzutu, wymaga potwierdzenia w kodzie/DOM
 - **Prompt B (zaplanowany, nie zaczęty):** pasek "Zgodność i dane" (RODO/DPA jako tile'e), usunięcie starego dolnego paska trust-badges z surowym `AI Act: minimal` (obecnie duplikuje nowy pill w sidebarze, kontrast teraz bardziej rażący niż przed redesignem hero), powiększenie "Podobne narzędzia" (obecnie małe/ciasne, reużycie stylu `CompanyCard`)
 
+## [v0.11] — 2026-09-09 (dokończenie strony detalu + krytyczny bug deployu)
+
+### Zrobione
+- ✅ `7825cba` — pasek "Zgodność i dane" (RODO/DPA/Interfejs PL jako neutralne tile'e) na `[slug].astro`, usunięcie zdublowanego surowego badge `AI Act: {enum}` z starego paska trust-badges (potwierdzone grep-em w całym `frontend/src` — zero wystąpień)
+- ✅ `452e947` — powiększenie kart "Podobne narzędzia": zapytanie rozszerzone o realny join `categories(name_pl)`, lżejsza karta wizualnie spójna z `CompanyCard` bez zmyślonych badge'y dla danych, których zapytanie nie pobiera
+- ✅ `2b6497c` — usunięcie zdublowanego linku "Strona producenta" w hero `[slug].astro` — prowadził do tego samego adresu co główny przycisk CTA (błąd projektowy odkryty podczas przeglądu, nie w oryginalnym planie Prompt A)
+- ✅ Ręczne czyszczenie 40 osieroconych stron narzędzi na serwerze (`rm -rf` przez SSH, backup w `~/backup-orphaned-20260909/`), zweryfikowane 200→404 przez Chrome
+- ✅ `d62e41c` — naprawa `deploy.yml`: nowy krok czyszczący (`Clean up orphaned narzedzia pages`) usuwający z serwera katalogi `narzedzia/{slug}/`, które zniknęły z buildu — manifest slugów wgrywany poza webroot, porównanie przez `grep -qxF`, zabezpieczenie przed pustym/wadliwym manifestem (próg min. 10 linii), `set -euo pipefail`, `rm -rf --`. Zweryfikowane na żywym deployu (run #152, zielony) bez regresji na 10 sprawdzonych żywych i 10 usuniętych narzędziach.
+
+### Odkrycia / problemy
+- **Krytyczny bug w `deploy.yml`:** `appleboy/scp-action` używa zwykłego SCP — nadpisuje pliki, nigdy nie usuwa tych, które zniknęły z `dist/`. Każde narzędzie, które kiedykolwiek zmieniło status z `approved`, zostaje jako żywa, publicznie dostępna strona na serwerze na zawsze, niezależnie od tego czy zmiana statusu była słuszna czy przez pomyłkę.
+- **Skala:** 40 z 41 narzędzi ze statusem `!= approved` w `tools` miało wciąż żywą stronę (200) na produkcji — w tym halucynacje z pipeline'u z lipca (Siri AI, Apple Core AI Framework, OpenAI, kilkanaście surowych tytułów "Show HN: ...").
+- **SEO bez szkód:** Google Search Console (Inspekcja URL) potwierdza dla sprawdzonych przypadków (`openai`, `siri-ai`) — "Adres URL jest Google nieznany". Nigdy nie odkryte, bo sitemapa jest budowana z tego samego zapytania co strony — nic do zgłoszenia w Search Console.
+- Diagnostyka: `cf-cache-status: DYNAMIC` wykluczył Cloudflare jako przyczynę; świeży pełny rebuild w GitHub Actions nic nie zmienił (bo build nigdy nie generuje pliku dla strony poza `getStaticPaths()` — SCP nie ma czego wgrać).
+
+### Zmieniam podejście do
+- Naprawa `deploy.yml` (dodanie mirror/`--delete`) świadomie odłożona na osobną sesję — zmiana z realnym ryzykiem (możliwość usunięcia czegoś poza zasięgiem, np. `private_html/config/` z sekretami), nie robić pod presją czasu na koniec długiej sesji.
+- Naprawa `deploy.yml` jednak zrobiona tego samego dnia (nie odłożona) — diagnoza okazała się kompletna i jednoznaczna, ryzyko dobrze zrozumiane (współdzielony `target` między krokami SCP frontend/admin), więc zdecydowaliśmy się dokończyć zamiast czekać na kolejną sesję.
+
+### Następny krok (priorytet #1 na start następnej sesji)
+Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych katalogów z `astro build`, z dokładną weryfikacją że nie obejmuje `private_html/config/` (sekrety) ani kroku `admin/` (osobne SCP). Rozważyć dry-run przed pierwszym żywym uruchomieniem. Backup `~/backup-orphaned-20260909/` na serwerze do skasowania po potwierdzeniu że nic z niego nie jest potrzebne.
+
 ```
 ## [v0.X] — [data]
 

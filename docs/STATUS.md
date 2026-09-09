@@ -111,6 +111,26 @@ Weryfikacja AI świeżych wpisów z YC ujawniła systemową lukę: 3 potwierdzon
 
 ---
 
+## ✅ Dokończenie strony detalu + naprawa krytycznego buga deployu (09.09.2026)
+
+**Zrobione:** trzy commity kończące redesign `[slug].astro` (pasek zgodności, powiększone podobne narzędzia, usunięcie zdublowanego linku CTA) — pełny opis w `CHANGELOG.md` [v0.11].
+
+**Znaleziony podczas weryfikacji na żywo, nie w kodzie:** `deploy.yml` nigdy nie usuwał plików z serwera przy SCP. Efekt: 40 z 41 narzędzi odrzuconych/usuniętych w historii projektu (w tym halucynacje z pipeline'u z lipca) miało wciąż żywe, publiczne strony na produkcji. Wyczyszczone ręcznie przez SSH, backup zrobiony, zero wpływu na SEO (potwierdzone w Search Console — te strony nigdy nie zostały odkryte przez Google, bo sitemapa buduje się z tych samych danych co strony).
+
+**Otwarte — priorytet #1:** naprawa `deploy.yml` (mechanizm mirror/`--delete`), żeby problem się nie powtórzył. Wymaga ostrożnej weryfikacji zasięgu (sekrety w `private_html/`, osobny krok deployu dla `admin/`) przed wdrożeniem — nie robić w pośpiechu.
+
+**Nauka:** SSG + SCP-bez-delete to pułapka, która nie ujawnia się przy normalnym testowaniu (katalog poprawnie filtruje po `status='approved'`, więc nikt nie widzi problemu, dopóki nie sprawdzi się konkretnego, nieaktualnego URL-a bezpośrednio).
+
+**Aktualizacja (ten sam wieczór):** priorytet #1 zrealizowany od razu, nie odłożony — `deploy.yml` ma teraz automatyczny krok czyszczący (commit `d62e41c`), więc problem osieroconych stron nie powinien się powtórzyć bez ręcznej interwencji. Zweryfikowane na żywym deployu (GitHub Actions run #152, zielony), zero regresji na sprawdzonej próbce narzędzi. Backup `~/backup-orphaned-20260909/` można skasować.
+
+## ✅ Poprawka paginacji w panelu admina (09.09.2026, ten sam wieczór)
+
+Zgłoszony brak "Yolo" na liście do edycji doprowadził do znalezienia szerszego buga: zakładka "Narzędzia" pokazywała tylko pierwsze 100 z 277 zatwierdzonych narzędzi (zaszyty limit z wczesnej fazy projektu, bez paginacji i bez żadnej sygnalizacji obcięcia). Naprawione (`f3ee5e2`) — dodana paginacja z bezpiecznym rzutowaniem parametru `page` z URL i stabilnym tie-breakerem sortowania. Zweryfikowane na żywo: suma stron = 277, brak duplikatów/pominięć na granicach.
+
+**Świadomie nieruszone:** widoczność narzędzi ze statusem innym niż `approved` (np. odrzuconych jak Yolo) w panelu — obecnie brak takiej zakładki/filtra, nie było dziś potrzebne, zostaje jako otwarty temat na przyszłość jeśli się okaże potrzebny.
+
+---
+
 ## 📋 Obserwacje z sesji weryfikacji AI (wrzesień 2026)
 
 Systematyczne sprawdzenie ~10 świeżych wpisów przez "Zweryfikuj przez AI" ujawniło:
