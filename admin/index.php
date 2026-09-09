@@ -387,11 +387,17 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
 
     <?php elseif ($tab === 'tools'): ?>
     <?php
+    $tools_page_size  = 100;
+    $tools_total_pages = max(1, (int) ceil($approved / $tools_page_size));
+    $tools_page       = max(1, min($tools_total_pages, (int) ($_GET['page'] ?? 1)));
+    $tools_offset     = ($tools_page - 1) * $tools_page_size;
+
     $tools = sb_get(
         'tools' .
         '?status=eq.approved' .
-        '&order=created_at.desc' .
-        '&limit=100' .
+        '&order=created_at.desc,id.asc' .
+        '&limit=' . $tools_page_size .
+        '&offset=' . $tools_offset .
         '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,rodo_compliant,ai_act_risk,status,ai_verified_at,categories(name_pl)'
     );
     $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
@@ -449,6 +455,18 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         </tr>
         <?php endforeach; ?>
     </table>
+
+    <?php if ($tools_total_pages > 1): ?>
+    <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:16px">
+        <?php if ($tools_page > 1): ?>
+        <a href="?tab=tools&page=<?= $tools_page - 1 ?>" class="btn btn-secondary">← Poprzednia</a>
+        <?php endif; ?>
+        <span style="font-size:13px;color:#6b7280">Strona <?= $tools_page ?> z <?= $tools_total_pages ?> (<?= $approved ?> narzędzi)</span>
+        <?php if ($tools_page < $tools_total_pages): ?>
+        <a href="?tab=tools&page=<?= $tools_page + 1 ?>" class="btn btn-secondary">Następna →</a>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 
     <?php elseif ($tab === 'add'): ?>
     <?php
