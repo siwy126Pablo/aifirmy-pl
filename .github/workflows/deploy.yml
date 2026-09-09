@@ -39,6 +39,20 @@ jobs:
           target: /home/siwy126/domains/aifirmy.pl/public_html/
           strip_components: 2
 
+      - name: Generate narzedzia manifest
+        run: ls frontend/dist/narzedzia > frontend/manifest-narzedzia.txt
+
+      - name: Upload narzedzia manifest
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: s103.cyber-folks.pl
+          username: siwy126
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 222
+          source: frontend/manifest-narzedzia.txt
+          target: /home/siwy126/
+          strip_components: 1
+
       - name: Fix permissions
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -49,6 +63,37 @@ jobs:
           script: |
             find /home/siwy126/domains/aifirmy.pl/public_html -type d -exec chmod 755 {} \;
             find /home/siwy126/domains/aifirmy.pl/public_html -type f -exec chmod 644 {} \;
+
+      - name: Clean up orphaned narzedzia pages
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: s103.cyber-folks.pl
+          username: siwy126
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 222
+          script: |
+            set -euo pipefail
+            MANIFEST="/home/siwy126/manifest-narzedzia.txt"
+            TARGET_DIR="/home/siwy126/domains/aifirmy.pl/public_html/narzedzia"
+            if [ ! -f "$MANIFEST" ]; then
+              echo "Manifest nie istnieje, przerywam bez usuwania niczego"
+              exit 1
+            fi
+            LINE_COUNT=$(wc -l < "$MANIFEST")
+            if [ "$LINE_COUNT" -lt 10 ]; then
+              echo "Manifest ma podejrzanie mało pozycji ($LINE_COUNT), przerywam bez usuwania niczego"
+              exit 1
+            fi
+            cd "$TARGET_DIR"
+            for d in */; do
+              slug="${d%/}"
+              if ! grep -qxF "$slug" "$MANIFEST"; then
+                echo "usuwam osierocone: $slug"
+                rm -rf -- "$slug"
+              fi
+            done
+            rm -f "$MANIFEST"
+
       - name: Deploy admin panel
         uses: appleboy/scp-action@v0.1.7
         with:
