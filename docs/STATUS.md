@@ -129,6 +129,12 @@ Zgłoszony brak "Yolo" na liście do edycji doprowadził do znalezienia szerszeg
 
 **Świadomie nieruszone:** widoczność narzędzi ze statusem innym niż `approved` (np. odrzuconych jak Yolo) w panelu — obecnie brak takiej zakładki/filtra, nie było dziś potrzebne, zostaje jako otwarty temat na przyszłość jeśli się okaże potrzebny.
 
+## ✅ Faza 2 — filtrowanie katalogu przez Pagefind, strona /narzedzia/ (10.09.2026)
+
+Jedyna rzecz z pierwotnego planu sesji redesignu (08-09.09), która pozostawała otwarta. Nowa strona `/narzedzia/` z pigułkami filtrów kategorii — statyczny fallback (prawdziwe linki do `/kategoria/{slug}/`) + płynne filtrowanie przez Pagefind bez przeładowania, skaluje się do 1000+ narzędzi bez wzrostu wagi strony (próg 60 + "Pokaż więcej"). Przy okazji naprawiony ukryty bug: strona główna renderowała cały katalog (514 KB → 35 KB).
+
+**Otwarte:** UI dla dodatkowych filtrów (cennik, AI Act) — dane już otagowane. Narastanie plików `dist/pagefind/` przy kolejnych buildach — do obserwacji, ten sam typ ryzyka co bug `deploy.yml`.
+
 ---
 
 ## 📋 Obserwacje z sesji weryfikacji AI (wrzesień 2026)
