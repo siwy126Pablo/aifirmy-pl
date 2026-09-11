@@ -12,11 +12,17 @@ const { data: companies, error } = await supabase
 
 if (error) console.error('Supabase error:', error);
 
+const isActivePremium = (tool: any) =>
+  tool.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ?? false;
+
 const sorted = [...(companies ?? [])].sort((a, b) => {
-  const aP = a.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
-  const bP = b.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
-  return bP - aP;
+  return (isActivePremium(b) ? 1 : 0) - (isActivePremium(a) ? 1 : 0);
 });
+
+// Wszystkie aktywne premium zawsze widoczne (bez limitu), uzupełnione
+// najnowszymi zwykłymi wpisami do łącznie 12 pozycji na stronie głównej.
+const premiumCount = sorted.filter(isActivePremium).length;
+const displayed = sorted.slice(0, Math.max(premiumCount, 12));
 
 const { data: categoryList } = await supabase
   .from('categories')
@@ -100,10 +106,8 @@ function pluralizeTools(n: number): string {
           Najnowsze wpisy
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sorted.map(tool => {
-            const isPremium = tool.premium_listings?.some(
-              (p: any) => p.ends_at && new Date(p.ends_at) > new Date()
-            );
+          {displayed.map(tool => {
+            const isPremium = isActivePremium(tool);
             const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
             return (
               <CompanyCard

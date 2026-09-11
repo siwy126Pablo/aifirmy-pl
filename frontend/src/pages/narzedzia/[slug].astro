@@ -183,13 +183,20 @@ const faqSchema = JSON.stringify({
         ← Powrót do katalogu
       </a>
 
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3" data-pagefind-body>
 
         <article class="relative rounded-2xl border border-gray-200 bg-white p-8 shadow-sm lg:col-span-2">
 
-          <span class="absolute right-6 top-6 rounded-full border border-gray-300 px-3 py-1 text-sm font-medium text-gray-600">
+          <span
+            class="absolute right-6 top-6 rounded-full border border-gray-300 px-3 py-1 text-sm font-medium text-gray-600"
+            data-pagefind-meta={`pricing:${pricing}`}
+            data-pagefind-filter={`cennik:${pricing}`}
+          >
             {pricingLabels[pricing]}
           </span>
+
+          <span hidden data-pagefind-meta="slug">{tool.slug}</span>
+          <span hidden data-pagefind-meta="logo">{tool.logo_url ?? ''}</span>
 
           {tool.logo_url ? (
             <img src={tool.logo_url} alt={`Logo ${tool.name}`}
@@ -200,12 +207,14 @@ const faqSchema = JSON.stringify({
             </span>
           )}
 
-          <h1 class="mb-2 pr-28 text-3xl font-medium text-gray-900">{tool.name}</h1>
+          <h1 class="mb-2 pr-28 text-3xl font-medium text-gray-900" data-pagefind-meta="name">{tool.name}</h1>
 
           {categoryName && (
             <a
               href={`/kategoria/${categorySlug}/`}
               class={`mb-3 inline-block rounded-full px-2.5 py-1 text-xs font-medium ${placeholderColor.bg} ${placeholderColor.text} hover:opacity-80`}
+              data-pagefind-meta="category"
+              data-pagefind-filter="kategoria"
             >
               {categoryName}
             </a>
@@ -255,7 +264,11 @@ const faqSchema = JSON.stringify({
               <div>
                 <dt class="mb-1 text-xs text-gray-400">AI Act</dt>
                 <dd>
-                  <span class={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${aiActRiskColors[tool.ai_act_risk].bg} ${aiActRiskColors[tool.ai_act_risk].text}`}>
+                  <span
+                    class={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${aiActRiskColors[tool.ai_act_risk].bg} ${aiActRiskColors[tool.ai_act_risk].text}`}
+                    data-pagefind-meta={`ai_act:${tool.ai_act_risk}`}
+                    data-pagefind-filter={`ai-act:${tool.ai_act_risk}`}
+                  >
                     {aiActRiskColors[tool.ai_act_risk].shortLabel}
                   </span>
                 </dd>
@@ -361,6 +374,12 @@ const faqSchema = JSON.stringify({
 
       </article>
     </main>
+
+    <script
+      type="application/json"
+      id="category-meta-data"
+      set:html={JSON.stringify({ aiActRiskColors, pricingLabels, categoryColors })}
+    />
 
     <footer class="border-t border-gray-200 py-8 text-center text-sm text-gray-400">
       © {new Date().getFullYear()} aifirmy.pl ·{' '}
