@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import CompanyCard from '../components/CompanyCard.astro';
 import CategoryIcon from '../components/icons/CategoryIcon.astro';
 import { supabase } from '../lib/supabase';
+import { isActivePremium } from '../lib/premium';
 
 const { data: companies, error } = await supabase
   .from('tools')
@@ -11,9 +12,6 @@ const { data: companies, error } = await supabase
   .order('created_at', { ascending: false });
 
 if (error) console.error('Supabase error:', error);
-
-const isActivePremium = (tool: any) =>
-  tool.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ?? false;
 
 const sorted = [...(companies ?? [])].sort((a, b) => {
   return (isActivePremium(b) ? 1 : 0) - (isActivePremium(a) ? 1 : 0);
@@ -128,6 +126,15 @@ function pluralizeTools(n: number): string {
               />
             );
           })}
+        </div>
+
+        <div class="mt-8 text-center">
+          <a
+            href="/narzedzia/"
+            class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-indigo-700"
+          >
+            Przeglądaj cały katalog →
+          </a>
         </div>
       </section>
 

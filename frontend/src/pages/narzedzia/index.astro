@@ -1,0 +1,218 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CompanyCard from '../../components/CompanyCard.astro';
+import { supabase } from '../../lib/supabase';
+import { isActivePremium } from '../../lib/premium';
+import { aiActRiskColors, pricingLabels, categoryColors } from '../../lib/category-colors';
+
+const { data: companies } = await supabase
+  .from('tools')
+  .select('*, categories(name_pl, slug), premium_listings(id, plan, ends_at), affiliate_links(affiliate_url, disclosure_text, active)')
+  .eq('status', 'approved')
+  .order('created_at', { ascending: false });
+
+const sorted = [...(companies ?? [])].sort((a, b) => {
+  return (isActivePremium(b) ? 1 : 0) - (isActivePremium(a) ? 1 : 0);
+});
+
+// Domyślny widok bez JS: wszystkie aktywne premium plus najnowsze zwykłe
+// wpisy do łącznie ~30 pozycji — pełne, indeksowalne karty CompanyCard.
+// Po kliknięciu pigułki (z JS) skrypt kliencki dociąga PEŁNY wynik przez
+// Pagefind i podmienia tę siatkę na lekkie karty budowane z metadanych.
+const premiumCount = sorted.filter(isActivePremium).length;
+const displayed = sorted.slice(0, Math.max(premiumCount, 30));
+
+const { data: categoryList } = await supabase
+  .from('categories')
+  .select('id, slug, name_pl')
+  .order('sort_order');
+---
+
+<Layout
+  title="Wszystkie narzędzia AI"
+  description="Pełny katalog narzędzi AI dla polskiego rynku — filtruj po kategorii, sprawdź ceny, zgodność z RODO i poziom ryzyka wg unijnego AI Act."
+>
+  <div class="min-h-screen bg-gray-50">
+
+    <main class="mx-auto max-w-6xl px-4 py-12">
+
+      <a href="/" class="mb-6 inline-block text-sm text-gray-400 hover:text-gray-600">
+        ← Powrót do strony głównej
+      </a>
+
+      <h1 class="mb-2 text-3xl font-bold tracking-tight text-gray-900">Wszystkie narzędzia</h1>
+      <p class="mb-8 text-lg text-gray-500">Pełny katalog narzędzi AI — filtruj po kategorii.</p>
+
+      <div id="category-pills" class="mb-8 flex flex-wrap gap-2">
+        <a
+          href="/narzedzia/"
+          data-category-filter=""
+          class="pill rounded-full border px-4 py-1.5 text-sm font-medium transition-colors border-indigo-600 bg-indigo-600 text-white"
+        >
+          Wszystkie
+        </a>
+        {(categoryList ?? []).map(cat => (
+          <a
+            href={`/kategoria/${cat.slug}/`}
+            data-category-filter={cat.name_pl}
+            class="pill rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:border-indigo-300 hover:text-indigo-600"
+          >
+            {cat.name_pl}
+          </a>
+        ))}
+      </div>
+
+      <div id="results-grid" class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {displayed.map(tool => {
+          const isPremium = isActivePremium(tool);
+          const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
+          return (
+            <CompanyCard
+              name={tool.name}
+              description={tool.description_pl ?? tool.tagline_pl ?? ''}
+              category={tool.categories?.name_pl ?? ''}
+              pricing={tool.pricing_model ?? 'free'}
+              url={tool.website_url}
+              slug={tool.slug}
+              isPremium={isPremium}
+              affiliateUrl={activeAffiliateLink?.affiliate_url}
+              disclosureText={activeAffiliateLink?.disclosure_text}
+              rodoCompliant={tool.rodo_compliant}
+              euDataHosting={tool.eu_data_hosting}
+              aiActRisk={tool.ai_act_risk}
+              logoUrl={tool.logo_url}
+              bestForPl={tool.best_for_pl}
+            />
+          );
+        })}
+      </div>
+
+      <p id="results-empty" class="py-12 text-center text-gray-400" hidden>
+        Brak narzędzi spełniających kryteria.
+      </p>
+
+      <div class="mt-8 text-center">
+        <button
+          id="load-more"
+          type="button"
+          hidden
+          class="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:border-indigo-300 hover:text-indigo-600"
+        >
+          Pokaż więcej
+        </button>
+      </div>
+
+    </main>
+
+    <script
+      type="application/json"
+      id="category-meta-data"
+      set:html={JSON.stringify({ aiActRiskColors, pricingLabels, categoryColors })}
+    />
+
+  </div>
+</Layout>
+
+<script is:inline type="module">
+  // is:inline: Vite/Rollup nie może w build-time rozwiązać importu
+  // /pagefind/pagefind.js — ten plik powstaje dopiero w kroku
+  // astro:build:done (patrz astro-pagefind), po zbudowaniu tej strony.
+  // Skrypt musi więc zostać nieprzetworzony i rozwiązany dopiero
+  // w przeglądarce, gdy plik faktycznie istnieje w dist/pagefind/.
+
+  const grid = document.getElementById('results-grid');
+  const emptyMsg = document.getElementById('results-empty');
+  const loadMoreBtn = document.getElementById('load-more');
+  const pills = Array.from(document.querySelectorAll('#category-pills .pill'));
+  const metaEl = document.getElementById('category-meta-data');
+  const { aiActRiskColors, pricingLabels, categoryColors } = metaEl
+    ? JSON.parse(metaEl.textContent || '{}')
+    : { aiActRiskColors: {}, pricingLabels: {}, categoryColors: {} };
+  const categoryColorFallback = { bg: 'bg-gray-100', text: 'text-gray-600' };
+
+  const BATCH_SIZE = 60;
+  let currentResults = [];
+  let shownCount = 0;
+
+  function cardHtml(meta) {
+    const color = categoryColors[meta.category] ?? categoryColorFallback;
+    const name = meta.name ?? '';
+
+    const logo = meta.logo
+      ? `<img src="${meta.logo}" alt="Logo ${name}" class="h-10 w-10 shrink-0 rounded-lg border border-gray-100 object-contain" />`
+      : `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold ${color.bg} ${color.text}">${name.charAt(0).toUpperCase()}</span>`;
+
+    const categoryBadge = meta.category
+      ? `<span class="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${color.bg} ${color.text}">${meta.category}</span>`
+      : '';
+
+    const aiActBadge = meta.ai_act && aiActRiskColors[meta.ai_act]
+      ? `<span class="rounded-full px-2 py-0.5 text-[11px] font-medium ${aiActRiskColors[meta.ai_act].bg} ${aiActRiskColors[meta.ai_act].text}">${aiActRiskColors[meta.ai_act].label}</span>`
+      : '';
+
+    const pricingBadge = meta.pricing && pricingLabels[meta.pricing]
+      ? `<span class="rounded-full border border-gray-300 px-2 py-0.5 text-[11px] font-medium text-gray-600">${pricingLabels[meta.pricing]}</span>`
+      : '';
+
+    return `
+      <a href="/narzedzia/${meta.slug}/" class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-indigo-300">
+        <div class="flex items-center gap-3">
+          ${logo}
+          <div class="min-w-0">
+            <p class="truncate text-base font-semibold text-gray-900">${name}</p>
+            ${categoryBadge}
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-1.5">${aiActBadge}${pricingBadge}</div>
+      </a>
+    `;
+  }
+
+  async function renderNextBatch() {
+    const batch = currentResults.slice(shownCount, shownCount + BATCH_SIZE);
+    const dataList = await Promise.all(batch.map((r) => r.data()));
+    grid.insertAdjacentHTML('beforeend', dataList.map((d) => cardHtml(d.meta)).join(''));
+    shownCount += batch.length;
+    loadMoreBtn.hidden = shownCount >= currentResults.length;
+  }
+
+  async function runSearch(categoryName) {
+    const filters = categoryName ? { kategoria: categoryName } : {};
+    const search = await pagefind.search(null, { filters });
+    currentResults = search.results;
+    shownCount = 0;
+    grid.innerHTML = '';
+    loadMoreBtn.hidden = true;
+    emptyMsg.hidden = currentResults.length > 0;
+    if (currentResults.length > 0) {
+      await renderNextBatch();
+    }
+  }
+
+  function setActivePill(activeEl) {
+    for (const p of pills) {
+      p.classList.remove('border-indigo-600', 'bg-indigo-600', 'text-white');
+      p.classList.add('border-gray-300', 'text-gray-600');
+    }
+    activeEl.classList.remove('border-gray-300', 'text-gray-600');
+    activeEl.classList.add('border-indigo-600', 'bg-indigo-600', 'text-white');
+  }
+
+  const pagefind = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
+  await pagefind.init();
+
+  for (const pill of pills) {
+    pill.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const categoryName = pill.getAttribute('data-category-filter') || '';
+      setActivePill(pill);
+      const url = categoryName ? `/narzedzia/?kategoria=${encodeURIComponent(categoryName)}` : '/narzedzia/';
+      history.pushState({}, '', url);
+      await runSearch(categoryName);
+    });
+  }
+
+  loadMoreBtn.addEventListener('click', () => {
+    renderNextBatch();
+  });
+</script>
