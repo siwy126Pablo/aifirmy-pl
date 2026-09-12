@@ -131,6 +131,21 @@ function sb_post(string $table, array $data): void {
     curl_close($ch);
 }
 
+function verify_log_activity(string $level, string $message, array $context = []): void {
+    // Nested try/catch — awaria samego logowania (np. Supabase niedostępne)
+    // nie może zablokować zwrócenia odpowiedzi błędu do frontendu.
+    try {
+        sb_post('activity_log', [
+            'source'  => 'verify_tool',
+            'level'   => $level,
+            'message' => $message,
+            'context' => $context,
+        ]);
+    } catch (\Throwable $logError) {
+        verify_write_log('verify_tool: nie udało się zapisać wpisu do activity_log: ' . $logError->getMessage());
+    }
+}
+
 // ---------- 1. Pobierz bieżące dane narzędzia ----------
 
 $tools = sb_get(
@@ -170,12 +185,20 @@ curl_close($ch);
 verify_debug('po curl strony');
 
 if ($html === false || $curlError !== '') {
+    verify_log_activity('warning', 'Nie udało się pobrać strony narzędzia', [
+        'tool_id'    => $toolId,
+        'curl_error' => $curlError,
+    ]);
     http_response_code(502);
     echo json_encode(['error' => 'Nie udało się pobrać strony narzędzia: ' . $curlError]);
     exit;
 }
 
 if ($httpCode >= 400) {
+    verify_log_activity('warning', 'Strona narzędzia zwróciła błąd HTTP', [
+        'tool_id'   => $toolId,
+        'http_code' => $httpCode,
+    ]);
     http_response_code(502);
     echo json_encode(['error' => 'Strona narzędzia zwróciła błąd HTTP ' . $httpCode . '.']);
     exit;
@@ -431,19 +454,7 @@ try {
     verify_debug('WYJĄTEK: ' . $e->getMessage() . ' w ' . $e->getFile() . ':' . $e->getLine());
     verify_write_log('verify_tool: stack trace: ' . $e->getTraceAsString());
 
-    // Zapis do activity_log w osobnym try/catch — awaria samego logowania
-    // (np. Supabase niedostępne) nie może zablokować zwrócenia odpowiedzi
-    // błędu do frontendu.
-    try {
-        sb_post('activity_log', [
-            'source'  => 'verify_tool',
-            'level'   => 'error',
-            'message' => $e->getMessage(),
-            'context' => ['tool_id' => $toolId],
-        ]);
-    } catch (\Throwable $logError) {
-        verify_write_log('verify_tool: nie udało się zapisać wpisu do activity_log: ' . $logError->getMessage());
-    }
+    verify_log_activity('error', $e->getMessage(), ['tool_id' => $toolId]);
 
     if (!headers_sent()) {
         http_response_code(500);
