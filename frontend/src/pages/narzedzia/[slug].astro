@@ -197,6 +197,19 @@ const faqSchema = JSON.stringify({
 
           <span hidden data-pagefind-meta="slug">{tool.slug}</span>
           <span hidden data-pagefind-meta="logo">{tool.logo_url ?? ''}</span>
+          <span hidden data-pagefind-meta="url">{tool.website_url}</span>
+          <span hidden data-pagefind-meta={`description:${tool.description_pl ?? tool.tagline_pl ?? ''}`} />
+          {tool.best_for_pl && (
+            <span hidden data-pagefind-meta={`best_for:${tool.best_for_pl}`} />
+          )}
+          <span hidden data-pagefind-meta={`eu_hosting:${tool.eu_data_hosting ? 'true' : 'false'}`} />
+          <span hidden data-pagefind-meta={`rodo:${tool.rodo_compliant ? 'true' : 'false'}`} />
+          {activeAffiliateLink && (
+            <>
+              <span hidden data-pagefind-meta={`affiliate_url:${activeAffiliateLink.affiliate_url}`} />
+              <span hidden data-pagefind-meta={`disclosure_text:${activeAffiliateLink.disclosure_text}`} />
+            </>
+          )}
 
           {tool.logo_url ? (
             <img src={tool.logo_url} alt={`Logo ${tool.name}`}

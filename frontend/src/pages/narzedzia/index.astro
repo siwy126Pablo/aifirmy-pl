@@ -134,37 +134,82 @@ const { data: categoryList } = await supabase
   let currentResults = [];
   let shownCount = 0;
 
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  // Struktura i klasy MUSZĄ być zsynchronizowane z CompanyCard.astro —
+  // to jest ten sam komponent wizualny, tylko budowany z metadanych
+  // Pagefind zamiast renderowany server-side przez Astro.
   function cardHtml(meta) {
     const color = categoryColors[meta.category] ?? categoryColorFallback;
     const name = meta.name ?? '';
+    const safeName = escapeHtml(name);
 
     const logo = meta.logo
-      ? `<img src="${meta.logo}" alt="Logo ${name}" class="h-10 w-10 shrink-0 rounded-lg border border-gray-100 object-contain" />`
-      : `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold ${color.bg} ${color.text}">${name.charAt(0).toUpperCase()}</span>`;
+      ? `<img src="${escapeHtml(meta.logo)}" alt="Logo ${safeName}" class="h-10 w-10 shrink-0 rounded-lg border border-gray-100 object-contain" />`
+      : `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold ${color.bg} ${color.text}">${escapeHtml(name.charAt(0).toUpperCase())}</span>`;
 
-    const categoryBadge = meta.category
-      ? `<span class="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${color.bg} ${color.text}">${meta.category}</span>`
+    const aiActPill = meta.ai_act && aiActRiskColors[meta.ai_act]
+      ? `<span class="absolute right-3 top-3 rounded-full px-2 py-0.5 text-xs font-medium ${aiActRiskColors[meta.ai_act].bg} ${aiActRiskColors[meta.ai_act].text}">${escapeHtml(aiActRiskColors[meta.ai_act].label)}</span>`
       : '';
 
-    const aiActBadge = meta.ai_act && aiActRiskColors[meta.ai_act]
-      ? `<span class="rounded-full px-2 py-0.5 text-[11px] font-medium ${aiActRiskColors[meta.ai_act].bg} ${aiActRiskColors[meta.ai_act].text}">${aiActRiskColors[meta.ai_act].label}</span>`
+    const categoryBadge = meta.category
+      ? `<span class="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${color.bg} ${color.text}">${escapeHtml(meta.category)}</span>`
+      : '';
+
+    const bestForLine = meta.best_for
+      ? `<p class="truncate text-xs italic text-gray-400">Najlepsze dla: ${escapeHtml(meta.best_for)}</p>`
+      : '';
+
+    const rodoBadge = meta.rodo === 'true'
+      ? `<span class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">✓ RODO</span>`
+      : '';
+
+    const euBadge = meta.eu_hosting === 'true'
+      ? `<span class="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">Hosting UE</span>`
       : '';
 
     const pricingBadge = meta.pricing && pricingLabels[meta.pricing]
-      ? `<span class="rounded-full border border-gray-300 px-2 py-0.5 text-[11px] font-medium text-gray-600">${pricingLabels[meta.pricing]}</span>`
+      ? `<span class="rounded-full border border-gray-300 px-2 py-0.5 text-[11px] font-medium text-gray-600">${escapeHtml(pricingLabels[meta.pricing])}</span>`
+      : '';
+
+    // ctaUrl/disclosure: jak w CompanyCard — drugorzędny link zawsze
+    // prowadzi na stronę producenta (affiliate_url jeśli jest, inaczej
+    // bezpośrednio website_url); tylko ⓘ tooltip jest warunkowy.
+    const ctaUrl = meta.affiliate_url || meta.url || '#';
+    const disclosureText = meta.disclosure_text || 'Link afiliacyjny — możemy otrzymać prowizję.';
+    const disclosureIcon = meta.affiliate_url
+      ? `<span class="cursor-help text-xs text-gray-300 hover:text-gray-500" title="${escapeHtml(disclosureText)}" aria-label="${escapeHtml(disclosureText)}">ⓘ</span>`
       : '';
 
     return `
-      <a href="/narzedzia/${meta.slug}/" class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-indigo-300">
-        <div class="flex items-center gap-3">
+      <article class="relative flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-indigo-300">
+        ${aiActPill}
+        <div class="flex items-center gap-3 pr-20">
           ${logo}
           <div class="min-w-0">
-            <p class="truncate text-base font-semibold text-gray-900">${name}</p>
+            <h2 class="truncate text-lg font-semibold text-gray-900">${safeName}</h2>
             ${categoryBadge}
           </div>
         </div>
-        <div class="flex flex-wrap gap-1.5">${aiActBadge}${pricingBadge}</div>
-      </a>
+        <div class="min-h-4">${bestForLine}</div>
+        <p class="line-clamp-6 text-sm text-gray-600">${escapeHtml(meta.description ?? '')}</p>
+        <div class="flex flex-wrap gap-1.5">${rodoBadge}${euBadge}${pricingBadge}</div>
+        <div class="mt-auto flex flex-col gap-1.5 pt-1">
+          <a href="/narzedzia/${escapeHtml(meta.slug)}/" class="block w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-indigo-700">
+            Zobacz szczegóły →
+          </a>
+          <div class="flex items-center justify-center gap-1.5">
+            <a href="${escapeHtml(ctaUrl)}" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-400 hover:text-gray-600 hover:underline">
+              Strona producenta ↗
+            </a>
+            ${disclosureIcon}
+          </div>
+        </div>
+      </article>
     `;
   }
 
