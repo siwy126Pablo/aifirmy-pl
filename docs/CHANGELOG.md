@@ -243,11 +243,15 @@
 - ✅ Ręczne czyszczenie 40 osieroconych stron narzędzi na serwerze (`rm -rf` przez SSH, backup w `~/backup-orphaned-20260909/`), zweryfikowane 200→404 przez Chrome
 - ✅ `d62e41c` — naprawa `deploy.yml`: nowy krok czyszczący (`Clean up orphaned narzedzia pages`) usuwający z serwera katalogi `narzedzia/{slug}/`, które zniknęły z buildu — manifest slugów wgrywany poza webroot, porównanie przez `grep -qxF`, zabezpieczenie przed pustym/wadliwym manifestem (próg min. 10 linii), `set -euo pipefail`, `rm -rf --`. Zweryfikowane na żywym deployu (run #152, zielony) bez regresji na 10 sprawdzonych żywych i 10 usuniętych narzędziach.
 
+- ✅ `f3ee5e2` — naprawa panelu admina: zakładka "Narzędzia" renderowała tylko pierwsze 100 z 277 zatwierdzonych narzędzi (zaszyty `&limit=100`, zero paginacji, zero sygnalizacji obcięcia). Dodana paginacja (`?tab=tools&page=N`, `offset` obok `limit`), stabilny tie-breaker sortowania (`order=created_at.desc,id.asc`) żeby granice stron nie duplikowały/pomijały wierszy przy remisach `created_at`. Zweryfikowane na żywo: 100+100+77=277, brak duplikatów/dziur na obu granicach stron.
+
 ### Odkrycia / problemy
 - **Krytyczny bug w `deploy.yml`:** `appleboy/scp-action` używa zwykłego SCP — nadpisuje pliki, nigdy nie usuwa tych, które zniknęły z `dist/`. Każde narzędzie, które kiedykolwiek zmieniło status z `approved`, zostaje jako żywa, publicznie dostępna strona na serwerze na zawsze, niezależnie od tego czy zmiana statusu była słuszna czy przez pomyłkę.
 - **Skala:** 40 z 41 narzędzi ze statusem `!= approved` w `tools` miało wciąż żywą stronę (200) na produkcji — w tym halucynacje z pipeline'u z lipca (Siri AI, Apple Core AI Framework, OpenAI, kilkanaście surowych tytułów "Show HN: ...").
 - **SEO bez szkód:** Google Search Console (Inspekcja URL) potwierdza dla sprawdzonych przypadków (`openai`, `siri-ai`) — "Adres URL jest Google nieznany". Nigdy nie odkryte, bo sitemapa jest budowana z tego samego zapytania co strony — nic do zgłoszenia w Search Console.
 - Diagnostyka: `cf-cache-status: DYNAMIC` wykluczył Cloudflare jako przyczynę; świeży pełny rebuild w GitHub Actions nic nie zmienił (bo build nigdy nie generuje pliku dla strony poza `getStaticPaths()` — SCP nie ma czego wgrać).
+
+- **Osobne odkrycie, nie związane z bugiem deployu:** przy okazji sprawdzania czemu "Yolo" (Ultralytics YOLO26, status `rejected` z masowego odrzucenia 18.07) nie pojawia się w panelu do edycji, wyszedł drugi, niezależny bug — limit 100 wierszy bez paginacji, dotykający 177 zatwierdzonych narzędzi. Sama nieobecność "Yolo" w zakładce "Narzędzia" to osobna sprawa (zakładka filtruje wyłącznie `status=approved`, nie pokazuje odrzuconych) — świadomie zostawiona bez zmian, brak obecnie potrzeby przeglądu/przywracania odrzuconych narzędzi z poziomu UI.
 
 ### Zmieniam podejście do
 - Naprawa `deploy.yml` (dodanie mirror/`--delete`) świadomie odłożona na osobną sesję — zmiana z realnym ryzykiem (możliwość usunięcia czegoś poza zasięgiem, np. `private_html/config/` z sekretami), nie robić pod presją czasu na koniec długiej sesji.
@@ -255,6 +259,40 @@
 
 ### Następny krok (priorytet #1 na start następnej sesji)
 Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych katalogów z `astro build`, z dokładną weryfikacją że nie obejmuje `private_html/config/` (sekrety) ani kroku `admin/` (osobne SCP). Rozważyć dry-run przed pierwszym żywym uruchomieniem. Backup `~/backup-orphaned-20260909/` na serwerze do skasowania po potwierdzeniu że nic z niego nie jest potrzebne.
+
+
+## [v0.12] — 2026-09-10 (Faza 2: filtrowanie katalogu przez Pagefind)
+
+### Zrobione
+- ✅ `a03a685` + poprawka premium — fundament: naprawiony ukryty bug (`index.astro` renderował WSZYSTKIE ~277 narzędzi mimo nagłówka "Najnowsze wpisy", brak `.limit()` → 514 KB), przy okazji naprawiony bug liczników kategorii, poprawka zapewniająca że aktywne premium zawsze widoczne w całości, zainstalowany `astro-pagefind`, strony narzędzi otagowane `data-pagefind-body/meta/filter`
+- ✅ Prompt B — nowa strona `/narzedzia/` (wzorzec kolekcja→zasób obok `/narzedzia/{slug}/`): domyślny pełny SSR (CompanyCard, dla crawlerów/bez JS), pigułki filtrów jako prawdziwe linki do `/kategoria/{slug}/` (fallback bez JS), z JS: `pagefind.search(null, {filters})`, próg 60 wyników + "Pokaż więcej", link w nawigacji + CTA na stronie głównej
+
+### Odkrycia / problemy
+- **Decyzja architektoniczna, nie oczywista od razu:** spośród 4 podejść (linki / toggle w JS / żywe zapytania Supabase / Pagefind) wybrano Pagefind Wariant B2 — jedyne godzące SEO, płynność i skalowanie do 1000+ bez kosztu żywego backendu/RLS
+- Strona główna: 514 KB → 35 KB
+- Zweryfikowane w pełni na żywej produkcji przez przeglądarkę (nie tylko lokalnie): filtrowanie bez przeładowania, próg 60/"Pokaż więcej", fallback bez JS strukturalnie potwierdzony
+
+### Następny krok
+- Kolejne wymiary filtrowania w UI (cennik, AI Act) — dane już otagowane, brakuje UI
+- Narastanie plików `dist/pagefind/` przy kolejnych buildach — ten sam typ problemu co bug `deploy.yml` z 09.09, do obserwacji
+
+---
+
+## [v0.13] — 2026-09-13 (panel logowania błędów)
+
+### Zrobione
+- ✅ Tabela `activity_log` (Supabase) — RLS append-only, wspólna dla `verify_tool.php` i planowanego scrapera
+- ✅ `verify_tool.php` — helper `verify_log_activity()`, logowanie `error` (wyjątki) i `warning` (martwe URL-e: curl-level i HTTP≥400, osobne konteksty)
+- ✅ `admin/logs.php` — nowy panel: filtr source/level, paginacja, kolorystyka pill spójna z `category-colors.ts`
+
+### Odkrycia / problemy
+- Pierwszy test dymny (podmiana `website_url` na martwy adres) nie wygenerował wpisu w logach — okazało się, że fetch strony z kodem HTTP ≥400 kończy się kontrolowanym early-return (JSON błędu), nie wyjątkiem `\Throwable`. Nowy log w głównym catch bloku nigdy nie miał szans się odpalić tą ścieżką — trzeba było dopisać osobne logowanie `warning` bezpośrednio przy obu early-return blokach (curl error i HTTP≥400)
+- Nauka: przy dodawaniu logowania do istniejącego kodu z wieloma ścieżkami błędów, nie zakładać, że wszystkie błędy przechodzą przez jeden centralny catch — zweryfikować to na produkcji przed uznaniem zadania za zamknięte
+
+### Następny krok
+- Pilot scrapera YC-OSS jako alternatywa dla NiFi (PHP + GitHub Actions scheduled workflow) — activity_log gotowe do przyjęcia logów ze scrapera (source='scraper:yc_ai_pilot', run_id do wykorzystania)
+
+
 
 ```
 ## [v0.X] — [data]

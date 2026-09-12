@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-09-05
+> Ostatnia aktualizacja: 2026-09-13
 
 ---
 
@@ -14,7 +14,7 @@
 | **Pipeline NiFi** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API, dwuwarstwowy filtr jakości |
 | **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
-| **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony) |
+| **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony), panel logów błędów (activity_log, 13.09) |
 | **Monetyzacja** | ✅ Stripe Live mode, checkout + webhook, email po zakupie |
 | **Affiliate** | ✅ ClickUp/PartnerStack aktywny |
 | **Analytics** | ✅ Search Console (główne źródło prawdy) + AWStats; ⚠️ GA4 niewiarygodne (patrz niżej) |
@@ -134,6 +134,22 @@ Zgłoszony brak "Yolo" na liście do edycji doprowadził do znalezienia szerszeg
 Jedyna rzecz z pierwotnego planu sesji redesignu (08-09.09), która pozostawała otwarta. Nowa strona `/narzedzia/` z pigułkami filtrów kategorii — statyczny fallback (prawdziwe linki do `/kategoria/{slug}/`) + płynne filtrowanie przez Pagefind bez przeładowania, skaluje się do 1000+ narzędzi bez wzrostu wagi strony (próg 60 + "Pokaż więcej"). Przy okazji naprawiony ukryty bug: strona główna renderowała cały katalog (514 KB → 35 KB).
 
 **Otwarte:** UI dla dodatkowych filtrów (cennik, AI Act) — dane już otagowane. Narastanie plików `dist/pagefind/` przy kolejnych buildach — do obserwacji, ten sam typ ryzyka co bug `deploy.yml`.
+
+---
+
+## ✅ Panel logowania błędów — activity_log (13.09.2026)
+
+**Kontekst:** błędy z `verify_tool.php` (wyjątki PHP, martwe/404 `website_url`) trafiały wyłącznie do plikowego logu na serwerze (`private_html/logs/verify_debug.log`) — nie było scentralizowanego, przeglądalnego miejsca do monitorowania jakości pipeline'u weryfikacji bez SSH.
+
+**Zrobione:**
+- Nowa tabela `activity_log` (Supabase, RLS z policy insert/select dla `anon`, append-only — brak policy update/delete) — wspólna dla `verify_tool.php` i w przyszłości dla scrapera
+- `admin/verify_tool.php`: nowy helper `verify_log_activity()`, wołany w trzech miejscach — `level='error'` dla przechwyconych wyjątków (`catch (\Throwable $e)`, zrefaktoryzowany z istniejącego inline insertu), `level='warning'` dla dwóch odrębnych trybów martwego URL-a (`curl_error` przy błędzie DNS/timeout, `http_code` przy odpowiedzi ≥400) — każdy z osobnym kształtem `context`
+- Nowy `admin/logs.php` — filtrowalny/paginowany podgląd logów (wzorowany na `admin/affiliate.php`), domyślny filtr `warning+error`, rozwijany JSON kontekstu, kolorystyka pill spójna z `aiActRiskColors` (error≈unacceptable, warning≈limited)
+- Link nawigacyjny w `admin/index.php`
+
+**Świadomie odłożone:** throttling/dedup powtarzających się `warning` dla tego samego martwego URL-a przy wielokrotnym ręcznym klikaniu "Zweryfikuj przez AI" — akceptowalne przy ręcznej akcji, do rewizji przy scraperze (automatyczny, cykliczny proces zmienia kalkulację).
+
+**Zamierzone wykorzystanie w przyszłości:** `run_id` (kolumna UUID w schemacie) zarezerwowane pod grupowanie logów jednego uruchomienia scrapera — nieużywane przez `verify_tool.php`, celowo.
 
 ---
 
