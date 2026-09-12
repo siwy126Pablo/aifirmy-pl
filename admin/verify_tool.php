@@ -114,6 +114,23 @@ function sb_get(string $path): array {
     return json_decode($res, true) ?? [];
 }
 
+function sb_post(string $table, array $data): void {
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($data),
+        CURLOPT_HTTPHEADER     => [
+            'apikey: ' . SUPABASE_KEY,
+            'Authorization: Bearer ' . SUPABASE_KEY,
+            'Content-Type: application/json',
+            'Prefer: return=minimal',
+        ],
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
 // ---------- 1. Pobierz bieżące dane narzędzia ----------
 
 $tools = sb_get(
@@ -413,6 +430,20 @@ try {
 } catch (\Throwable $e) {
     verify_debug('WYJĄTEK: ' . $e->getMessage() . ' w ' . $e->getFile() . ':' . $e->getLine());
     verify_write_log('verify_tool: stack trace: ' . $e->getTraceAsString());
+
+    // Zapis do activity_log w osobnym try/catch — awaria samego logowania
+    // (np. Supabase niedostępne) nie może zablokować zwrócenia odpowiedzi
+    // błędu do frontendu.
+    try {
+        sb_post('activity_log', [
+            'source'  => 'verify_tool',
+            'level'   => 'error',
+            'message' => $e->getMessage(),
+            'context' => ['tool_id' => $toolId],
+        ]);
+    } catch (\Throwable $logError) {
+        verify_write_log('verify_tool: nie udało się zapisać wpisu do activity_log: ' . $logError->getMessage());
+    }
 
     if (!headers_sent()) {
         http_response_code(500);

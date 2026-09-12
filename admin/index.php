@@ -250,6 +250,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <strong>aifirmy.pl — Panel admina</strong>
     <div style="display:flex;gap:16px;align-items:center">
         <a href="/admin/affiliate.php">Linki afiliacyjne</a>
+        <a href="/admin/logs.php">Logi</a>
         <a href="?logout=1">Wyloguj →</a>
     </div>
 </div>
