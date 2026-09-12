@@ -1,0 +1,21 @@
+name: Scraper — YC-OSS (pilot)
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # 3:00 UTC = 5:00 czasu polskiego (CEST) — do sprawdzenia po zmianie na czas zimowy
+  workflow_dispatch: {}     # ręczne uruchomienie z zakładki Actions, przydatne do testów
+
+jobs:
+  scrape-yc-pilot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Uruchom pilota YC-OSS
+        env:
+          SUPABASE_URL:      ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
+        run: php scraper/run.php --source=yc_oss
