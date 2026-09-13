@@ -4,6 +4,9 @@
 > Ten czat (Claude.ai, projekt aifirmy.pl) służy jako stałe miejsce do przeprowadzania tych sesji.
 > Aktualizuj przy każdej sesji: dopisz sekcję `## Sesja YYYY-MM-DD` na dole, zadania → Notion Todo (strona P001).
 
+> **Zakres:** hierarchia informacji, czytelność, flow, spójność komponentów jako doświadczenia użytkownika.
+> Typografia, paleta kolorów jako system i ikonografia jako osobna dyscyplina → `DESIGN-SYSTEM.md`, nie tutaj.
+
 ---
 
 ## 🎯 Cel dokumentu
