@@ -153,6 +153,33 @@ Jedyna rzecz z pierwotnego planu sesji redesignu (08-09.09), która pozostawała
 
 ---
 
+## 🎯 Sesja strategiczna 2026-09-13 — audyt kursu: produkt vs. growth
+
+**Obserwacja:** ostatni miesiąc (redesign karty/detalu, naprawa deploy.yml, paginacja
+admina, Pagefind, activity_log, pilot scrapera) to w całości praca po stronie podaży
+(produkt/infra), mimo że plan z 23.08 ustalał Fazę 1 (growth: LinkedIn + outreach)
+jako priorytet po wzroście katalogu do 260+. Warunek wstrzymania growth odhaczony od
+tygodni, growth mimo to nie ruszony. Przychód (1 płatność + 1 afiliacja) zbyt mały,
+żeby wnioskować o dopasowaniu produktu — brak udokumentowanego feedbacku od klientów.
+
+**Decyzja robocza:** tymczasowa blokada nowego developmentu produktowego (poza
+krytycznymi bugami) na 2–4 tygodnie; cały budżet 1h/dzień → Faza 1 (LinkedIn +
+cold outreach) + zbieranie realnego feedbacku.
+
+### 📈 Trend aktywności growth (nowy — uzupełniać przy cotygodniowej kontroli ruchu)
+
+| Data | Posty LinkedIn | Maile cold outreach | Odpowiedzi/feedback |
+|---|---|---|---|
+| 2026-09-13 | 0 | 0 | 0 |
+
+### Zadania z tej sesji
+- [ ] Opublikować 2 gotowe posty LinkedIn (drafty w Notion)
+- [ ] Rozpocząć cold outreach — ustalić minimalny tygodniowy commitment i zacząć
+- [ ] Zebrać 3–5 nieformalnych rozmów/feedbacków od użytkowników/klientów katalogu
+- [ ] Powtarzać rytuał sesji strategicznej: trend ruchu + bilans czasu produkt/growth + 1 decyzja na sesję
+
+---
+
 ## 📋 Obserwacje z sesji weryfikacji AI (wrzesień 2026)
 
 Systematyczne sprawdzenie ~10 świeżych wpisów przez "Zweryfikuj przez AI" ujawniło:
