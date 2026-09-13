@@ -219,6 +219,28 @@ Konsekwentny, przyspieszający wzrost. Ciekawy wzorzec: strony narzędzi z tytu�
 
 ---
 
+## 🎨 Audyt UX katalogu (2026-09-13)
+
+Pierwszy przegląd w nowym, cyklicznym formacie "UX designer" — ocena strony z perspektywy
+kupującego B2B, na podstawie realnego przeglądu żywej strony (nie tylko dokumentacji).
+Pełna lista i uzasadnienia: Notion, sekcja "Sesja UX 2026-09-13".
+
+**🔴 Wysoki priorytet**
+- [ ] Hero strony głównej nie komunikuje wyróżnika RODO/AI Act/UE (jest tylko na `/premium`)
+- [ ] Badge RODO/DPA na `[slug].astro` czyta się jak "niezgodny", nie "nie zweryfikowano"
+- [ ] Ceny w PLN (deklarowany wyróżnik) nie są widoczne nigdzie w UI
+
+**🟡 Średni priorytet**
+- [ ] Badge AI Act "minimalny" na ~90% kart bez zróżnicowania wizualnego od rzadszych, ważniejszych poziomów
+- [ ] Brak widocznego pola wyszukiwania tekstowego na `/narzedzia/` (tylko pigułki kategorii)
+- [ ] Strona główna duplikuje `/narzedzia/` zamiast pełnić odrębną rolę
+
+**🟢 Niski priorytet**
+- [ ] "Najpopularniejszy" na pakiecie Featured (`/premium`) — zweryfikować czy to prawdziwe dane
+- [ ] "Podobne narzędzia" to tylko ta sama kategoria, nie prawdziwe podobieństwo
+
+---
+
 ## 📋 Backlog
 
 ### 🗺️ Plan działań (ustalony 23.08, wciąż aktualny)
