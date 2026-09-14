@@ -226,8 +226,8 @@ kupującego B2B, na podstawie realnego przeglądu żywej strony (nie tylko dokum
 Pełna lista i uzasadnienia: Notion, sekcja "Sesja UX 2026-09-13".
 
 **🔴 Wysoki priorytet**
-- [ ] Hero strony głównej nie komunikuje wyróżnika RODO/AI Act/UE (jest tylko na `/premium`)
-- [ ] Badge RODO/DPA na `[slug].astro` czyta się jak "niezgodny", nie "nie zweryfikowano"
+- [x] Hero strony głównej nie komunikuje wyróżnika RODO/AI Act/UE (jest tylko na `/premium`)
+- [x] Badge RODO/DPA na `[slug].astro` czyta się jak "niezgodny", nie "nie zweryfikowano"
 - [ ] Ceny w PLN (deklarowany wyróżnik) nie są widoczne nigdzie w UI
 
 **🟡 Średni priorytet**
@@ -238,6 +238,29 @@ Pełna lista i uzasadnienia: Notion, sekcja "Sesja UX 2026-09-13".
 **🟢 Niski priorytet**
 - [ ] "Najpopularniejszy" na pakiecie Featured (`/premium`) — zweryfikować czy to prawdziwe dane
 - [ ] "Podobne narzędzia" to tylko ta sama kategoria, nie prawdziwe podobieństwo
+
+---
+
+## 🎨 Audyt UX katalogu (2026-09-13) — aktualizacja
+
+**Punkt 1 (hero strony głównej) — rozwiązany.**
+
+**Punkt 2 (RODO/DPA jako fałszywy negatyw) — zamknięty, Wariant B (pełna naprawa modelu danych):**
+- `db/migrations/002_tri_state_compliance_fields.sql` — rodo_compliant/dpa_available/
+  eu_data_hosting: BOOLEAN nullable (NULL = nie zweryfikowano). Backfill i trigger
+  `promote_scrape_to_tools()` zaktualizowane.
+- Panel admina — tri-state UI (select) na formularzu dodawania + inline-edit
+  w zakładce "Narzędzia" dla wszystkich trzech pól.
+- `[slug].astro` — kafelki "Zgodność i dane" + FAQ rozróżniają 3 stany.
+
+**Nowy punkt backlogu (znaleziony przy okazji, nie w zakresie tej pracy):**
+- [ ] Meta Pagefind (`rodo:`/`eu_hosting:` w `data-pagefind-filter`) zlewa `false`/`null`
+  w jedno `'false'` — do naprawy razem z "kolejne wymiary filtrowania w UI (cennik, AI Act)"
+  jeśli/gdy powstanie filtr po statusie zgodności na `/narzedzia/`.
+
+Pozostałe punkty audytu (ceny PLN niewidoczne, badge AI Act bez zróżnicowania, brak
+wyszukiwania tekstowego, duplikacja homepage/`/narzedzia/`, social proof "Najpopularniejszy",
+"Podobne narzędzia" tylko wg kategorii) — nadal otwarte, pełna lista w Notion.
 
 ---
 
