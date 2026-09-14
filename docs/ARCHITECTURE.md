@@ -54,9 +54,9 @@ CREATE TABLE tools (
   pricing_model    TEXT        CHECK (pricing_model IN ('free','freemium','paid','open_source')),
   price_from_pln   NUMERIC(10,2),
   price_note       TEXT,
-  rodo_compliant   BOOLEAN     NOT NULL DEFAULT false,
-  dpa_available    BOOLEAN     DEFAULT false,
-  eu_data_hosting  BOOLEAN     DEFAULT false,
+  rodo_compliant   BOOLEAN,    -- NULL = nie zweryfikowano, false/true = zweryfikowano
+  dpa_available    BOOLEAN,    -- j.w.
+  eu_data_hosting  BOOLEAN,    -- j.w.
   ai_act_risk      TEXT        CHECK (ai_act_risk IN ('minimal','limited','high','unacceptable')),
   ai_act_notes     TEXT,
   target_size      TEXT[],                        -- ['smb','mid','enterprise']

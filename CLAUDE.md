@@ -103,9 +103,9 @@ CREATE TABLE tools (
   pricing_model    TEXT        CHECK (pricing_model IN ('free','freemium','paid','open_source')),
   price_from_pln   NUMERIC(10,2),
   price_note       TEXT,
-  rodo_compliant   BOOLEAN     NOT NULL DEFAULT false,   -- manual-only, never touched by AI
-  dpa_available    BOOLEAN     DEFAULT false,
-  eu_data_hosting  BOOLEAN     DEFAULT false,
+  rodo_compliant   BOOLEAN,    -- manual-only, never touched by AI; NULL = nie zweryfikowano (3-stanowy model od 2026-09-14)
+  dpa_available    BOOLEAN,    -- NULL = nie zweryfikowano
+  eu_data_hosting  BOOLEAN,    -- NULL = nie zweryfikowano
   ai_act_risk      TEXT        CHECK (ai_act_risk IN ('minimal','limited','high','unacceptable')),
   ai_act_notes     TEXT,
   target_size      TEXT[],
@@ -148,11 +148,13 @@ CREATE TABLE categories (
 
 ## Database trigger — `promote_scrape_to_tools()`
 
-**Lives in Supabase (Postgres function/trigger), NOT in this repo.** The PHP "Zatwierdź" button in `admin/index.php` only sets `scrape_queue.stage = 'published'`; this trigger does the actual `INSERT INTO tools`. Current definition includes `best_for_pl` and favicon fallback:
+**Lives in Supabase (Postgres function/trigger), NOT in this repo.** The PHP "Zatwierdź" button in `admin/index.php` only sets `scrape_queue.stage = 'published'`; this trigger does the actual `INSERT INTO tools`. Current definition includes `best_for_pl`, favicon fallback, and (since the 2026-09-14 tri-state migration below) `rodo_compliant = NULL` instead of `false`:
 
 ```sql
-CREATE OR REPLACE FUNCTION promote_scrape_to_tools()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.promote_scrape_to_tools()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
 DECLARE
   v_category_id UUID;
   v_slug TEXT;
@@ -160,8 +162,10 @@ DECLARE
   v_logo_url TEXT;
 BEGIN
   IF NEW.stage = 'published' AND OLD.stage != 'published' THEN
-    SELECT id INTO v_category_id FROM categories
-    WHERE name_pl ILIKE '%' || NEW.ai_category || '%' LIMIT 1;
+    SELECT id INTO v_category_id
+    FROM categories
+    WHERE name_pl ILIKE '%' || NEW.ai_category || '%'
+    LIMIT 1;
 
     v_slug := slugify(COALESCE(NEW.name, NEW.raw_name, 'narzedzie'));
     WHILE EXISTS (SELECT 1 FROM tools WHERE slug = v_slug) LOOP
@@ -169,27 +173,46 @@ BEGIN
     END LOOP;
 
     IF COALESCE(NEW.source_url, '') != '' THEN
-      v_domain := regexp_replace(regexp_replace(NEW.source_url, '^https?://(www\.)?', ''), '/.*$', '');
+      v_domain := regexp_replace(
+        regexp_replace(NEW.source_url, '^https?://(www\.)?', ''),
+        '/.*$', ''
+      );
       v_logo_url := 'https://www.google.com/s2/favicons?domain=' || v_domain || '&sz=128';
+    ELSE
+      v_logo_url := NULL;
     END IF;
 
     INSERT INTO tools (
       slug, name, description_pl, website_url, category_id, pricing_model,
       rodo_compliant, ai_act_risk, status, source, source_url, logo_url, best_for_pl
     ) VALUES (
-      v_slug, COALESCE(NEW.name, NEW.raw_name, 'Bez nazwy'), NEW.ai_description,
-      COALESCE(NEW.source_url, ''), v_category_id, COALESCE(NEW.ai_pricing_model, 'freemium'),
-      false, 'minimal', 'approved', NEW.source_name, NEW.source_url, v_logo_url, NEW.best_for_pl
+      v_slug,
+      COALESCE(NEW.name, NEW.raw_name, 'Bez nazwy'),
+      NEW.ai_description,
+      COALESCE(NEW.source_url, ''),
+      v_category_id,
+      COALESCE(NEW.ai_pricing_model, 'freemium'),
+      NULL,
+      'minimal',
+      'approved',
+      NEW.source_name,
+      NEW.source_url,
+      v_logo_url,
+      NEW.best_for_pl
     );
 
-    UPDATE scrape_queue SET tool_id = (SELECT id FROM tools WHERE slug = v_slug) WHERE id = NEW.id;
+    UPDATE scrape_queue
+    SET tool_id = (SELECT id FROM tools WHERE slug = v_slug)
+    WHERE id = NEW.id;
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$function$;
 ```
 
 **Note:** favicon fallback only applies to *new* rows via this trigger; a one-time backfill was run manually for pre-existing tools.
+
+**Migracja 3-stanowa rodo_compliant/dpa_available/eu_data_hosting (2026-09-14):** `NOT NULL DEFAULT false` zamienione na dopuszczalny `NULL` (= nie zweryfikowano) dla wszystkich trzech pól — patrz `db/migrations/002_tri_state_compliance_fields.sql` dla pełnej treści. Backfill objął tylko wiersze, gdzie `false` było artefaktem defaultu/triggera, nie realną decyzją: **rodo_compliant** 199 NULL / 15 false / 115 true (15 wierszy `source='manual'` z `false` świadomie pominięte w backfillu — te powstały przez ręczne odznaczenie checkboxa w formularzu "Dodaj wpis", więc to rzeczywista decyzja, nie default), **dpa_available** 326 NULL / 3 true, **eu_data_hosting** 326 NULL / 3 true (oba pola nigdy nie mają UI do ustawienia `false` — jedyne 3 wartości `true` w każdym powstały przez bezpośrednią edycję w Supabase, poza panelem admina).
 
 **⚠️ Known gap:** `website_url` for entries sourced from Product Hunt sometimes ends up pointing to the PH listing page instead of the tool's real domain (this is a `source_url`/`website_url` data quality issue upstream of the trigger, not a trigger bug). Fixed manually per-case when spotted (e.g. TraceLLM, Cleanlist AI). Worth a spot-check pass periodically.
 
