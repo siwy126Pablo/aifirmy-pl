@@ -300,6 +300,23 @@ function extract_logo_hint(string $html, string $baseUrl): ?string {
     return null;
 }
 
+// Zabezpieczenie server-side na wypadek, gdyby model zwrócił dłuższy cytat
+// niż instrukcja w prompcie ("max ~200 znaków") — prompt to prośba, nie
+// gwarancja. Normalizuje też nie-string/pusty string do null.
+function truncate_evidence($value, int $max = 200): ?string {
+    if (!is_string($value)) {
+        return null;
+    }
+    $value = trim($value);
+    if ($value === '') {
+        return null;
+    }
+    if (mb_strlen($value) > $max) {
+        $value = mb_substr($value, 0, $max) . '…';
+    }
+    return $value;
+}
+
 $pageText         = extract_page_text($html);
 $logoHintFromHtml = extract_logo_hint($html, $tool['website_url']);
 
@@ -314,7 +331,8 @@ if ($pageText === '') {
 $categoryNames = array_map(fn($c) => $c['name_pl'], $categories);
 
 $systemPrompt = 'Na podstawie treści strony narzędzia/firmy zweryfikuj i zaktualizuj dane. '
-    . 'Zwróć TYLKO JSON: { description, category, pricing_model, best_for_pl, ai_act_risk_suggestion, logo_hint }. '
+    . 'Zwróć TYLKO JSON: { description, category, pricing_model, best_for_pl, ai_act_risk_suggestion, logo_hint, '
+    . 'rodo_evidence, dpa_evidence, eu_hosting_evidence }. '
     . 'Zasady: description — 2 zdania po polsku, neutralne, SEO-friendly. '
     . 'category — jedna z: ' . implode(', ', $categoryNames) . '. '
     . 'pricing_model — jedna wartość: free, freemium, paid, open_source. '
@@ -326,11 +344,18 @@ $systemPrompt = 'Na podstawie treści strony narzędzia/firmy zweryfikuj i zaktu
     . 'best_for_pl — jedno krótkie zdanie po polsku, max 60 znaków. '
     . 'ai_act_risk_suggestion — TYLKO jeśli strona explicite wspomina o zgodności z AI Act, inaczej null '
     . '(to pole nigdy nie jest pewne, tylko sugestia do ręcznej weryfikacji). '
-    . 'logo_hint — URL do favicon lub OG image ze strony jeśli widoczny w HTML head, inaczej null.';
+    . 'logo_hint — URL do favicon lub OG image ze strony jeśli widoczny w HTML head, inaczej null. '
+    . 'rodo_evidence, dpa_evidence, eu_hosting_evidence — przeszukaj podany fragment tekstu strony pod kątem '
+    . 'DOSŁOWNYCH wzmianek o: (a) polityce prywatności / zgodności z RODO/GDPR (rodo_evidence), '
+    . '(b) umowie DPA / Data Processing Agreement (dpa_evidence), (c) lokalizacji hostingu/przetwarzania danych '
+    . 'w UE, np. "EU servers", "Frankfurt", "Ireland", "hosted in Europe" (eu_hosting_evidence). '
+    . 'NIE oceniaj czy narzędzie jest zgodne — tylko zacytuj fragment tekstu, jeśli taki istnieje '
+    . '(max ~200 znaków, dosłowny cytat, nie parafraza). Jeśli nic nie znaleziono dla danego punktu, zwróć null '
+    . 'dla tego pola.';
 
 $payload = [
     'model'           => 'gpt-4o-mini',
-    'max_tokens'      => 400,
+    'max_tokens'      => 700,
     'response_format' => ['type' => 'json_object'],
     'messages'        => [
         ['role' => 'system', 'content' => $systemPrompt],
@@ -425,6 +450,17 @@ try {
         }
     }
 
+    // Sygnały tekstowe (cytaty), NIE ocena zgodności — rodo_compliant/
+    // dpa_available/eu_data_hosting zostają manual-only, bez zmian. To osobny
+    // klucz najwyższego poziomu, nie część "new", bo nie mapuje się na żadną
+    // kolumnę tools — modal pokazuje je jako pomoc w researchu, nie jako
+    // sugestię z checkboxem "zastosuj".
+    $complianceEvidence = [
+        'rodo'       => truncate_evidence($ai['rodo_evidence'] ?? null),
+        'dpa'        => truncate_evidence($ai['dpa_evidence'] ?? null),
+        'eu_hosting' => truncate_evidence($ai['eu_hosting_evidence'] ?? null),
+    ];
+
     $response = [
         'old' => [
             'description'   => $tool['description_pl'],
@@ -445,6 +481,7 @@ try {
             'category_ai_act_hint'   => $categoryAiActHint,
             'logo_hint'              => $logoHint,
         ],
+        'compliance_evidence' => $complianceEvidence,
     ];
 
     echo json_encode($response);

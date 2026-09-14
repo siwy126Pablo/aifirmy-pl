@@ -452,6 +452,11 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             <th>Akcja</th>
         </tr>
         <?php foreach ($tools as $tool): ?>
+        <tr id="evidence-row-<?= htmlspecialchars($tool['id']) ?>" style="display:none">
+            <td colspan="9" class="notice">
+                <div id="evidence-content-<?= htmlspecialchars($tool['id']) ?>"></div>
+            </td>
+        </tr>
         <tr>
             <td>
                 <strong><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= htmlspecialchars($tool['slug']) ?></small>
@@ -750,6 +755,7 @@ function verifyTool(id, btn) {
         }
         verifyTargetId = id;
         openVerifyModal(res.data);
+        renderComplianceEvidence(id, res.data.compliance_evidence);
     })
     .catch(function() {
         alert('Błąd sieci podczas weryfikacji.');
@@ -758,6 +764,60 @@ function verifyTool(id, btn) {
         btn.disabled = false;
         btn.textContent = original;
     });
+}
+
+// Cytaty ze strony dot. RODO/DPA/hostingu UE, znalezione przy okazji tego
+// samego wywołania OpenAI co reszta weryfikacji — NIE ocena zgodności,
+// samo rodo_compliant/dpa_available/eu_data_hosting zostaje manual-only.
+// Renderowane bezpośrednio w wierszu tabeli, nad tymi samymi trójstanowymi
+// selectami co zawsze (żadnej nowej logiki zapisu) — nie w modalu, żeby
+// cytat był fizycznie obok pól do ręcznego ustawienia, nie w osobnym
+// popupie. Budowane przez DOM/textContent, nie innerHTML z surowym
+// tekstem — cytat pochodzi ze scrapowanej, niezaufanej strony zewnętrznej.
+var COMPLIANCE_EVIDENCE_LABELS = { rodo: 'RODO', dpa: 'DPA', eu_hosting: 'Hosting UE' };
+
+function renderComplianceEvidence(id, evidence) {
+    var row = document.getElementById('evidence-row-' + id);
+    var content = document.getElementById('evidence-content-' + id);
+    if (!row || !content) return;
+
+    content.innerHTML = '';
+
+    var keys = Object.keys(COMPLIANCE_EVIDENCE_LABELS).filter(function(key) {
+        return evidence && typeof evidence[key] === 'string' && evidence[key] !== '';
+    });
+
+    if (keys.length === 0) {
+        row.style.display = 'none';
+        return;
+    }
+
+    var header = document.createElement('div');
+    header.style.fontWeight = '600';
+    header.style.marginBottom = '6px';
+    header.textContent = '🔍 Znalezione sygnały (nie ocena zgodności)';
+    content.appendChild(header);
+
+    keys.forEach(function(key) {
+        var line = document.createElement('div');
+        line.style.fontSize = '13px';
+        line.style.marginBottom = '4px';
+
+        var label = document.createElement('strong');
+        label.textContent = COMPLIANCE_EVIDENCE_LABELS[key] + ': ';
+
+        line.appendChild(label);
+        line.appendChild(document.createTextNode('„' + evidence[key] + '”'));
+        content.appendChild(line);
+    });
+
+    var disclaimer = document.createElement('div');
+    disclaimer.className = 'verify-hint-note';
+    disclaimer.style.marginTop = '4px';
+    disclaimer.textContent = 'To są cytaty znalezione na stronie, nie ocena AI czy narzędzie jest zgodne z prawem. Sprawdź kontekst i ustaw pola RODO/DPA/Hosting UE poniżej ręcznie.';
+    content.appendChild(disclaimer);
+
+    row.style.display = 'table-row';
 }
 
 function verifyDisplayValue(v) {
