@@ -112,6 +112,39 @@ function slugify(string $text): string {
     return trim($text, '-');
 }
 
+// Pola 3-stanowe (true/false/NULL = nie zweryfikowano) — rodo_compliant,
+// dpa_available, eu_data_hosting od migracji 002_tri_state_compliance_fields.
+function tri_state_from_post(string $key): ?bool {
+    $v = $_POST[$key] ?? 'null';
+    if ($v === 'true') return true;
+    if ($v === 'false') return false;
+    return null;
+}
+
+function tri_state_badge(?bool $value): array {
+    if ($value === true)  return ['badge-green', '✓ Tak'];
+    if ($value === false) return ['badge-red', '✗ Nie'];
+    return ['badge-gray', 'Nie zweryf.'];
+}
+
+// Renderuje select + przycisk "Zapisz" + span na komunikat, w tym samym
+// wzorcu co inline-edit Kategorii/Logo niżej — plus kolorowa plakietka
+// bieżącego stanu (zielona/czerwona/szara), spójna z krokiem frontendowym.
+function render_tri_state_cell(string $toolId, string $field, string $jsFn, ?bool $value): void {
+    $safeId = htmlspecialchars($toolId);
+    [$badgeClass, $badgeLabel] = tri_state_badge($value);
+    ?>
+    <span class="badge <?= $badgeClass ?>" style="display:inline-block;margin-bottom:4px"><?= $badgeLabel ?></span><br>
+    <select id="<?= $field ?>-<?= $safeId ?>" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px">
+        <option value="null" <?= $value === null ? 'selected' : '' ?>>Nie zweryfikowano</option>
+        <option value="true" <?= $value === true ? 'selected' : '' ?>>Tak</option>
+        <option value="false" <?= $value === false ? 'selected' : '' ?>>Nie</option>
+    </select>
+    <button class="btn btn-secondary" style="font-size:11px;padding:3px 6px;margin-left:4px" onclick="<?= $jsFn ?>('<?= $safeId ?>')">Zapisz</button>
+    <div id="<?= $field ?>-msg-<?= $safeId ?>" style="font-size:11px;color:#16a34a;margin-top:2px"></div>
+    <?php
+}
+
 // ---------- auth ----------
 
 if (isset($_GET['logout'])) {
@@ -165,7 +198,9 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'logo_url'      => $logoUrl,
             'category_id'   => $_POST['category_id'] ?: null,
             'pricing_model' => $_POST['pricing_model'],
-            'rodo_compliant'=> isset($_POST['rodo_compliant']),
+            'rodo_compliant'  => tri_state_from_post('rodo_compliant'),
+            'dpa_available'   => tri_state_from_post('dpa_available'),
+            'eu_data_hosting' => tri_state_from_post('eu_data_hosting'),
             'ai_act_risk'   => $_POST['ai_act_risk'],
             'status'        => 'approved',
         ]);
@@ -207,6 +242,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         .badge-green { background: #dcfce7; color: #16a34a; }
         .badge-blue { background: #dbeafe; color: #2563eb; }
         .badge-gray { background: #f3f4f6; color: #6b7280; }
+        .badge-red { background: #fee2e2; color: #dc2626; }
         .desc { max-width: 400px; white-space: normal; line-height: 1.5; }
         .actions { display: flex; gap: 8px; }
         .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
@@ -399,7 +435,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         '&order=created_at.desc,id.asc' .
         '&limit=' . $tools_page_size .
         '&offset=' . $tools_offset .
-        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,rodo_compliant,ai_act_risk,status,ai_verified_at,categories(name_pl)'
+        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,rodo_compliant,dpa_available,eu_data_hosting,ai_act_risk,status,ai_verified_at,categories(name_pl)'
     );
     $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
@@ -409,6 +445,8 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             <th>Kategoria</th>
             <th>Cennik</th>
             <th>RODO</th>
+            <th>DPA</th>
+            <th>Hosting UE</th>
             <th>AI Act</th>
             <th>Status</th>
             <th>Akcja</th>
@@ -439,7 +477,9 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             </td>
             <td><?= htmlspecialchars($tool['categories']['name_pl'] ?? '') ?></td>
             <td><span class="badge badge-gray"><?= htmlspecialchars($tool['pricing_model'] ?? '') ?></span></td>
-            <td><?= $tool['rodo_compliant'] ? '✅' : '❌' ?></td>
+            <td><?php render_tri_state_cell($tool['id'], 'rodo', 'saveRodo', $tool['rodo_compliant']); ?></td>
+            <td><?php render_tri_state_cell($tool['id'], 'dpa', 'saveDpa', $tool['dpa_available']); ?></td>
+            <td><?php render_tri_state_cell($tool['id'], 'eu', 'saveEuHosting', $tool['eu_data_hosting']); ?></td>
             <td><?= htmlspecialchars($tool['ai_act_risk'] ?? '') ?></td>
             <td><span class="badge <?= $tool['status'] === 'approved' ? 'badge-green' : 'badge-gray' ?>"><?= htmlspecialchars($tool['status']) ?></span></td>
             <td>
@@ -523,9 +563,31 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                         <option value="high">Wysokie</option>
                     </select>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;padding-top:28px">
-                    <input type="checkbox" name="rodo_compliant" id="rodo" checked>
-                    <label for="rodo" style="font-size:14px">RODO zgodny</label>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">RODO zgodny</label>
+                    <select name="rodo_compliant" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                        <option value="null" selected>Nie zweryfikowano</option>
+                        <option value="true">Tak</option>
+                        <option value="false">Nie</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Umowa DPA dostępna</label>
+                    <select name="dpa_available" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                        <option value="null" selected>Nie zweryfikowano</option>
+                        <option value="true">Tak</option>
+                        <option value="false">Nie</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Hosting danych w UE</label>
+                    <select name="eu_data_hosting" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                        <option value="null" selected>Nie zweryfikowano</option>
+                        <option value="true">Tak</option>
+                        <option value="false">Nie</option>
+                    </select>
                 </div>
             </div>
             <button type="submit" name="add_tool" class="btn btn-primary" style="align-self:flex-start;padding:12px 32px">Dodaj narzędzie</button>
@@ -616,6 +678,43 @@ function saveLogo(id) {
         }
     });
 }
+
+// ---------- Pola 3-stanowe: RODO / DPA / hosting UE ----------
+// Select ma wartości 'null'/'true'/'false' jako stringi (HTML nie ma
+// natywnego typu boolean/null dla <option>) — triStateFromSelect konwertuje
+// to na prawdziwe true/false/null PRZED JSON.stringify, tak żeby PATCH
+// wysłał literalny JSON null (nie string "null"), analogicznie do
+// istniejącego `logo_url: input.value || null` w saveLogo() wyżej.
+function triStateFromSelect(value) {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return null;
+}
+
+function saveTriStateField(id, selectPrefix, dbField) {
+    var select = document.getElementById(selectPrefix + '-' + id);
+    var msg = document.getElementById(selectPrefix + '-msg-' + id);
+    var payload = {};
+    payload[dbField] = triStateFromSelect(select.value);
+    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: {
+            'apikey': '<?= SUPABASE_KEY ?>',
+            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    }).then(function(r) {
+        if (r.ok) {
+            msg.textContent = 'Zapisano';
+            setTimeout(function() { msg.textContent = ''; }, 2000);
+        }
+    });
+}
+
+function saveRodo(id) { saveTriStateField(id, 'rodo', 'rodo_compliant'); }
+function saveDpa(id) { saveTriStateField(id, 'dpa', 'dpa_available'); }
+function saveEuHosting(id) { saveTriStateField(id, 'eu', 'eu_data_hosting'); }
 
 // ---------- Weryfikacja narzędzia przez AI ----------
 
