@@ -103,9 +103,12 @@ CREATE TABLE tools (
   pricing_model    TEXT        CHECK (pricing_model IN ('free','freemium','paid','open_source')),
   price_from_pln   NUMERIC(10,2),
   price_note       TEXT,
-  rodo_compliant   BOOLEAN,    -- manual-only, never touched by AI; NULL = nie zweryfikowano (3-stanowy model od 2026-09-14)
-  dpa_available    BOOLEAN,    -- NULL = nie zweryfikowano
-  eu_data_hosting  BOOLEAN,    -- NULL = nie zweryfikowano
+  rodo_compliant   BOOLEAN,    -- manual-only, never touched by AI; NULL = nie zweryfikowano
+                               -- (3-stanowy model od 2026-09-14); verify_tool.php od 2026-09-14
+                               -- może podpowiedzieć cytat ze strony (evidence, nie ocena) — patrz
+                               -- sekcja "Admin panel" niżej
+  dpa_available    BOOLEAN,    -- NULL = nie zweryfikowano; ta sama zasada evidence-only co wyżej
+  eu_data_hosting  BOOLEAN,    -- NULL = nie zweryfikowano; ta sama zasada evidence-only co wyżej
   ai_act_risk      TEXT        CHECK (ai_act_risk IN ('minimal','limited','high','unacceptable')),
   ai_act_notes     TEXT,
   target_size      TEXT[],
@@ -304,7 +307,22 @@ ReplaceText (builds OpenAI request body):
   3. Extract `<title>`, meta description, body text (script/style/nav/footer stripped, capped ~3000 chars) + `logo_hint`
   4. Call `gpt-4o-mini` with `response_format: json_object`
   5. Resolve AI's category string back to `category_id` server-side; **auto-disables the category checkbox client-side with a warning if no exact match** — this correctly caught the AI Act "Bezpieczeństwo IT" hallucination in Sept 2026 before it could be saved as a null category
-  6. `rodo_compliant` is **never** sent to or returned from the AI — manual-only field, by design
+  6. `rodo_compliant` is **never** sent to or returned from the AI — manual-only field, by design.
+     `dpa_available`/`eu_data_hosting` follow the same manual-only principle.
+
+     **Deliberate, limited exception (added 2026-09-14):** the same OpenAI call now also
+     extracts literal on-page *citations* about RODO/DPA/EU hosting (`rodo_evidence`,
+     `dpa_evidence`, `eu_hosting_evidence`) — not a compliance judgment. Returned as a
+     separate `compliance_evidence` top-level key (doesn't map to any `tools` column).
+     Rendered in the verify modal as an informational panel ("🔍 Znalezione sygnały —
+     nie ocena zgodności") directly above the tri-state selects, built via `textContent`
+     (not `innerHTML` — the quote text originates from an untrusted external page). No
+     "apply" checkbox: nothing here writes to the DB automatically, the human still sets
+     RODO/DPA/EU hosting manually via the existing tri-state selects. This does NOT
+     reverse the manual-only rule above — same reasoning as `$CATEGORY_AI_ACT_HINTS`
+     below: surface evidence, never let the model make the legal call itself, since
+     these three fields are the catalog's core trust differentiator and a wrong AI
+     assertion here is costlier than a wrong category guess.
   7. `ai_act_risk_suggestion` and `logo_hint` default to **unchecked** in the UI; description/category/pricing_model/best_for_pl default **checked**. `category_ai_act_hint` (see below) also defaults unchecked.
   8. Wrapped in `try/catch (\Throwable)` + `register_shutdown_function`, logging to `error_log()` and `private_html/logs/verify_debug.log`
 
