@@ -11,8 +11,8 @@ interface Props {
   isPremium?: boolean;
   affiliateUrl?: string | null;
   disclosureText?: string | null;
-  rodoCompliant?: boolean;
-  euDataHosting?: boolean;
+  rodoCompliant?: boolean | null;
+  euDataHosting?: boolean | null;
   aiActRisk?: 'minimal' | 'limited' | 'high' | 'unacceptable' | null;
   logoUrl?: string | null;
   bestForPl?: string | null;
@@ -28,8 +28,8 @@ const {
   isPremium = false,
   affiliateUrl,
   disclosureText,
-  rodoCompliant = false,
-  euDataHosting = false,
+  rodoCompliant = null,
+  euDataHosting = null,
   aiActRisk = null,
   logoUrl = null,
   bestForPl = null,

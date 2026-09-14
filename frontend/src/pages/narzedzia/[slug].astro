@@ -97,6 +97,21 @@ const targetSizeText = ((tool.target_size ?? []) as string[])
   .map((t: string) => targetSizeLabels[t] ?? t)
   .join(', ');
 
+// Pola 3-stanowe (true/false/NULL = nie zweryfikowano) — rodo_compliant,
+// dpa_available, eu_data_hosting od migracji 002_tri_state_compliance_fields.
+// false to teraz realna, zweryfikowana odpowiedź "nie" (nie domyślny
+// artefakt) — stąd osobny, wyraźny czerwony stan zamiast dawnego
+// dwustanowego true/false collapsed do jednego ✗.
+function triStatePill(value: boolean | null, trueLabel = 'Tak', falseLabel = 'Nie') {
+  if (value === true) return { label: `✓ ${trueLabel}`, bg: 'bg-green-100', text: 'text-green-800' };
+  if (value === false) return { label: `✗ ${falseLabel}`, bg: 'bg-red-100', text: 'text-red-800' };
+  return { label: 'Nie zweryfikowano', bg: 'bg-gray-100', text: 'text-gray-500' };
+}
+
+const rodoPill = triStatePill(tool.rodo_compliant);
+const dpaPill = triStatePill(tool.dpa_available, 'Dostępna', 'Niedostępna');
+const euHostingPill = triStatePill(tool.eu_data_hosting);
+
 const aiActRiskEducation: Record<string, string> = {
   minimal: 'Większość narzędzi AI należy do tej kategorii — np. chatboty obsługi klienta bez wpływu na ważne decyzje, filtry spamu, systemy rekomendacji. AI Act nie nakłada tu żadnych obowiązkowych wymogów, jedynie zachęca do dobrowolnych kodeksów postępowania.',
   limited: 'Narzędzia tej kategorii podlegają obowiązkom przejrzystości (art. 50 AI Act) — musisz poinformować użytkowników, że wchodzą w interakcję z systemem AI lub że treść została wygenerowana bądź zmodyfikowana przez AI. Nie wymaga to certyfikacji, tylko jasnej informacji dla odbiorców.',
@@ -107,23 +122,29 @@ const aiActRiskEducation: Record<string, string> = {
 const faqs = [
   {
     question: `Czy ${tool.name} jest zgodne z RODO?`,
-    answer: tool.rodo_compliant
+    answer: tool.rodo_compliant === true
       ? 'Tak. Zgodność z RODO oznacza, że dostawca zobowiązuje się przetwarzać dane osobowe zgodnie z unijnym rozporządzeniem o ochronie danych — masz prawo do informacji, dostępu, poprawiania i usunięcia swoich danych, a dostawca musi zgłaszać naruszenia bezpieczeństwa.'
-      : 'Brak potwierdzonej zgodności z RODO nie musi oznaczać naruszenia przepisów, ale przed wdrożeniem warto samodzielnie zweryfikować politykę prywatności dostawcy, zwłaszcza jeśli przetwarzasz dane osobowe klientów lub pracowników.',
+      : tool.rodo_compliant === false
+      ? 'Nie. Ten dostawca został zweryfikowany jako niezgodny z RODO (lub sam deklaruje brak zgodności) — jeśli planujesz przetwarzać dane osobowe klientów lub pracowników za pomocą tego narzędzia, skonsultuj to z działem prawnym lub IOD przed wdrożeniem.'
+      : 'Zgodność z RODO nie została jeszcze zweryfikowana dla tego narzędzia. Brak potwierdzenia nie musi oznaczać naruszenia przepisów, ale przed wdrożeniem warto samodzielnie zweryfikować politykę prywatności dostawcy, zwłaszcza jeśli przetwarzasz dane osobowe klientów lub pracowników.',
   },
   {
     question: 'Czy dostępna jest umowa DPA?',
     answer: 'Umowa powierzenia przetwarzania danych (DPA) to formalny dokument regulujący zasady przetwarzania danych osobowych przez dostawcę w Twoim imieniu — RODO wymaga jej zawarcia, gdy zewnętrzny dostawca ma dostęp do danych osobowych Twoich klientów lub pracowników.'
-      + (tool.dpa_available
+      + (tool.dpa_available === true
         ? ' Ten dostawca oferuje gotową umowę DPA — możesz ją podpisać przed rozpoczęciem korzystania z narzędzia.'
-        : ' Brak potwierdzonej dostępności DPA — jeśli planujesz przetwarzać dane osobowe, zapytaj dostawcę bezpośrednio przed wdrożeniem.'),
+        : tool.dpa_available === false
+        ? ' Ten dostawca zweryfikowany został jako nieoferujący umowy DPA — jeśli planujesz przetwarzać dane osobowe za pomocą tego narzędzia, może to być utrudnione lub niezgodne z RODO; skonsultuj to z dostawcą lub działem prawnym przed wdrożeniem.'
+        : ' Dostępność umowy DPA nie została jeszcze zweryfikowana — jeśli planujesz przetwarzać dane osobowe, zapytaj dostawcę bezpośrednio przed wdrożeniem.'),
   },
   {
     question: 'Czy dane są przetwarzane w UE?',
     answer: 'Przetwarzanie danych w UE oznacza, że serwery przechowujące dane znajdują się na terenie Unii Europejskiej, co upraszcza zgodność z RODO — nie trzeba wtedy polegać na dodatkowych mechanizmach transferu danych poza UE.'
-      + (tool.eu_data_hosting
+      + (tool.eu_data_hosting === true
         ? ' To narzędzie przetwarza dane na terenie UE.'
-        : ' Jeśli dane są przetwarzane poza UE, dostawca musi zapewnić mechanizm transferu zgodny z RODO (np. Standardowe Klauzule Umowne) — warto to zweryfikować przed wdrożeniem.'),
+        : tool.eu_data_hosting === false
+        ? ' To narzędzie zostało zweryfikowane jako przetwarzające dane poza UE — dostawca musi zapewnić mechanizm transferu zgodny z RODO (np. Standardowe Klauzule Umowne); warto potwierdzić to bezpośrednio u dostawcy przed wdrożeniem.'
+        : ' Lokalizacja przetwarzania danych nie została jeszcze zweryfikowana — jeśli dane mogą być przetwarzane poza UE, dostawca powinien zapewnić mechanizm transferu zgodny z RODO (np. Standardowe Klauzule Umowne); warto to zweryfikować przed wdrożeniem.'),
   },
   {
     question: `Jaki jest model cenowy ${tool.name}?`,
@@ -302,14 +323,30 @@ const faqSchema = JSON.stringify({
 
         <div class="mb-8">
           <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">Zgodność i dane</h2>
-          <dl class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div class="rounded-lg border border-gray-200 p-3">
               <dt class="text-xs text-gray-400">RODO</dt>
-              <dd class="text-sm font-medium text-gray-700">{tool.rodo_compliant ? '✓ Tak' : '✗ Nie'}</dd>
+              <dd>
+                <span class={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${rodoPill.bg} ${rodoPill.text}`}>
+                  {rodoPill.label}
+                </span>
+              </dd>
             </div>
             <div class="rounded-lg border border-gray-200 p-3">
               <dt class="text-xs text-gray-400">DPA</dt>
-              <dd class="text-sm font-medium text-gray-700">{tool.dpa_available ? 'Dostępna' : 'Niedostępna'}</dd>
+              <dd>
+                <span class={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${dpaPill.bg} ${dpaPill.text}`}>
+                  {dpaPill.label}
+                </span>
+              </dd>
+            </div>
+            <div class="rounded-lg border border-gray-200 p-3">
+              <dt class="text-xs text-gray-400">Hosting w UE</dt>
+              <dd>
+                <span class={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${euHostingPill.bg} ${euHostingPill.text}`}>
+                  {euHostingPill.label}
+                </span>
+              </dd>
             </div>
             <div class="rounded-lg border border-gray-200 p-3">
               <dt class="text-xs text-gray-400">Interfejs PL</dt>
