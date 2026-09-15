@@ -43,6 +43,16 @@ const { data: categoryList } = await supabase
       <h1 class="mb-2 text-3xl font-bold tracking-tight text-gray-900">Wszystkie narzędzia</h1>
       <p class="mb-8 text-lg text-gray-500">Pełny katalog narzędzi AI — filtruj po kategorii.</p>
 
+      <div class="mb-4">
+        <label for="tool-search" class="sr-only">Szukaj narzędzia</label>
+        <input
+          type="search"
+          id="tool-search"
+          placeholder="Szukaj narzędzia po nazwie lub opisie…"
+          class="w-full max-w-md rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+        />
+      </div>
+
       <div id="category-pills" class="mb-8 flex flex-wrap gap-2">
         <a
           href="/narzedzia/"
@@ -123,6 +133,7 @@ const { data: categoryList } = await supabase
   const grid = document.getElementById('results-grid');
   const emptyMsg = document.getElementById('results-empty');
   const loadMoreBtn = document.getElementById('load-more');
+  const searchInput = document.getElementById('tool-search');
   const pills = Array.from(document.querySelectorAll('#category-pills .pill'));
   const metaEl = document.getElementById('category-meta-data');
   const { aiActRiskColors, pricingLabels, categoryColors } = metaEl
@@ -221,10 +232,29 @@ const { data: categoryList } = await supabase
     loadMoreBtn.hidden = shownCount >= currentResults.length;
   }
 
-  async function runSearch(categoryName) {
+  // query i categoryName działają RAZEM (nie zastępują się nawzajem) —
+  // pagefind.search() natywnie przyjmuje oba naraz w jednym wywołaniu,
+  // więc filtr kategorii zawęża zbiór, w którym szuka fraza tekstowa.
+  //
+  // Odkryte przy weryfikacji: Pagefind NIE odrzuca wyników bez realnego
+  // trafienia tekstowego — zwraca praktycznie cały (przefiltrowany przez
+  // `filters`) zbiór, dopełniony wpisami o niskim, "podłogowym" wyniku
+  // (score) i pustym `words`, nawet gdy fraza nigdzie nie występuje w
+  // treści strony. Same `results.length` nie wystarcza więc do wykrycia
+  // braku wyników przy wyszukiwaniu tekstowym — trzeba odsiać wpisy bez
+  // faktycznego dopasowania słowa (`words.length > 0`, dostępne od razu
+  // na surowym wyniku, bez kosztownego await .data() na każdym).
+  // WAŻNE: `words` jest puste dla WSZYSTKICH wyników, gdy query===null
+  // (samo filtrowanie po kategorii, bez wpisanej frazy) — filtr po
+  // `words` stosujemy więc TYLKO gdy jest realna fraza tekstowa, inaczej
+  // wyzerowałby dotychczasowe, poprawnie działające filtrowanie kategorii.
+  async function runSearch(query, categoryName) {
+    const trimmedQuery = (query || '').trim();
     const filters = categoryName ? { kategoria: categoryName } : {};
-    const search = await pagefind.search(null, { filters });
-    currentResults = search.results;
+    const search = await pagefind.search(trimmedQuery || null, { filters });
+    currentResults = trimmedQuery
+      ? search.results.filter((r) => r.words && r.words.length > 0)
+      : search.results;
     shownCount = 0;
     grid.innerHTML = '';
     loadMoreBtn.hidden = true;
@@ -246,18 +276,31 @@ const { data: categoryList } = await supabase
   const pagefind = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
   await pagefind.init();
 
+  let activeCategory = '';
+
   for (const pill of pills) {
     pill.addEventListener('click', async (e) => {
       e.preventDefault();
-      const categoryName = pill.getAttribute('data-category-filter') || '';
+      activeCategory = pill.getAttribute('data-category-filter') || '';
       setActivePill(pill);
-      const url = categoryName ? `/narzedzia/?kategoria=${encodeURIComponent(categoryName)}` : '/narzedzia/';
+      const url = activeCategory ? `/narzedzia/?kategoria=${encodeURIComponent(activeCategory)}` : '/narzedzia/';
       history.pushState({}, '', url);
-      await runSearch(categoryName);
+      await runSearch(searchInput.value.trim(), activeCategory);
     });
   }
 
   loadMoreBtn.addEventListener('click', () => {
     renderNextBatch();
+  });
+
+  // Debounce ~250ms — Pagefind szuka lokalnie (WASM, brak requestu
+  // sieciowego), więc to głównie ochrona przed przerysowywaniem siatki
+  // wyników przy każdym naciśnięciu klawisza, nie przed obciążeniem serwera.
+  let searchDebounceTimer;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      runSearch(searchInput.value.trim(), activeCategory);
+    }, 250);
   });
 </script>
