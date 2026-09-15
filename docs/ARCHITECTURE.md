@@ -135,7 +135,7 @@ Format: JSON { description, category, tags, segment }
 - Commity: `feat:`, `fix:`, `docs:`, `refactor:`
 
 ## Decyzje podjęte
-- [x] Nisza: narzędzia AI dla polskiego B2B (RODO, AI Act, ceny w PLN)
+- [x] Nisza: narzędzia AI dla polskiego B2B (RODO, AI Act)
 - [x] Baza: PostgreSQL na Supabase free zamiast MariaDB na Cyberfolks (ADR-007)
 - [x] Panel admin: Supabase Studio zamiast Directus (ADR-006)
 - [x] NiFi: lokalnie na Windows zamiast Oracle Cloud (ADR-008)

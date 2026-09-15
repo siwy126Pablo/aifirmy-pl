@@ -29,7 +29,7 @@ Kontynuujemy: [opisz co robisz].
 
 ## Project overview
 
-**aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market, with a unique differentiator: every listing is tagged for RODO compliance, EU AI Act risk level, and PLN pricing. Live on Cyberfolks, generating revenue (Stripe live + affiliate). ~260+ tools across **10 categories** as of September 2026.
+**aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market, with a unique differentiator: every listing is tagged for RODO compliance and EU AI Act risk level — no other Polish AI catalog does this. PLN pricing is shown where available (price_from_pln, ~1% fill rate as of 2026-09, manual-entry only via "Dodaj wpis"), not a systemic differentiator yet. Live on Cyberfolks, generating revenue (Stripe live + affiliate). ~260+ tools across **10 categories** as of September 2026.
 
 ## Tech stack (current)
 

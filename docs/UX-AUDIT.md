@@ -24,19 +24,18 @@ Cykliczny (co jakiś czas, bez sztywnego harmonogramu) przegląd wyglądu i uży
 | Strona główna | ✅ Odchudzona 10.09 (514 KB → 35 KB) — lekka wizytówka, nie duplikat katalogu |
 | `/narzedzia/` (filtrowanie przez Pagefind) | ✅ Wdrożona 10.09 |
 | Responsywność (sprawdzone: 390px mobile) | ✅ Nawigacja, karty, pigułki filtrów, hero+sidebar, panel zgodności — wszystko poprawnie się składa |
-| Hero strony głównej — komunikacja wyróżnika (RODO/AI Act/UE) | ❌ Brak — zidentyfikowane 13.09, wciąż otwarte |
-| Badge RODO/DPA/Interfejs PL — czytelność stanu "niezweryfikowane" | ❌ Czyta się jak "niezgodny" — zidentyfikowane 13.09, wciąż otwarte |
-| Ceny w PLN w UI | ❌ Brak mimo istniejących danych (`price_from_pln`) |
+| Hero strony głównej — komunikacja wyróżnika (RODO/AI Act/UE) | ✅ Naprawiona 13.09 |
+| Badge RODO/DPA/Interfejs PL — czytelność stanu "niezweryfikowane" | ✅ Naprawiona 14.09 (pełna migracja modelu danych na 3-stanowy, nie tylko poprawka wizualna — patrz szczegóły w sesji niżej) |
+| Ceny w PLN w UI | ❌ Brak mimo istniejących danych (`price_from_pln`) (deklarowany wyróżnik skorygowany w dokumentacji 15.09 — PLN pricing to teraz opcjonalny bonus, nie systemowa cecha; formularz dodawania odblokowany, UI renderowania świadomie odłożone do wyższego fill rate) |
 
 ## 🔴 Wysoki priorytet
 
-- [ ] **Hero strony głównej nie komunikuje unikalnego wyróżnika.** Nagłówek/podtytuł mówi o "przejrzystych opisach i cenach" — nie wspomina RODO/AI Act/hosting UE, czyli jedynej rzeczy odróżniającej katalog od konkurencji. Ten wyróżnik dziś żyje tylko na `/premium`.
-- [ ] **Badge'e "✗ Nie" (RODO/DPA/Interfejs PL na stronie detalu) czytają się jak zarzut, nie jak brak informacji.** Realne ryzyko wizerunkowe dla katalogu, którego głównym USP jest wiarygodność informacji o zgodności. Potrzebny inny wizualny/tekstowy wzorzec dla "nie zweryfikowano" vs. faktyczne "niezgodne".
+_(brak otwartych punktów wysokiego priorytetu — oba przeniesione do "✅ Zamknięte")_
 
 ## 🟡 Średni priorytet
 
 - [ ] **Pusta przestrzeń w sidebarze "W skrócie" na stronie detalu.** Gdy narzędzie ma mniej wypełnionych pól (np. brak `eu_data_hosting`), panel po prawej (dopasowany wysokością do hero w gridzie) zostaje z zauważalnym pustym obszarem na dole. Wygląda na niedokończone, nie na "mniej danych do pokazania".
-- [ ] **Ceny w PLN nigdzie nie są widoczne** — tylko kategoria (Darmowe/Freemium/Płatne/Open source). `price_from_pln` istnieje w schemacie od początku, nigdy nie trafił do UI. Niespójne z deklarowanym wyróżnikiem "informacje o cenach w PLN".
+- [ ] **Ceny w PLN nigdzie nie są widoczne w UI** — tylko kategoria (Darmowe/Freemium/Płatne/Open source). `price_from_pln` istnieje w schemacie od początku, nigdy nie trafił do UI. Deklaracja skorygowana w dokumentacji 15.09 — PLN pricing to teraz opcjonalny bonus, nie systemowa cecha; formularz "Dodaj wpis" odblokowany dla tego pola na przyszłość, samo UI renderowania świadomie odłożone do wyższego fill rate (dziś ~1%).
 - [ ] **Brak wyszukiwania tekstowego na `/narzedzia/`** — tylko pigułki kategorii. Pagefind (wdrożony 10.09) już obsługuje wolny tekst, brakuje tylko pola wyszukiwania w interfejsie — relatywnie tani krok na już istniejącym fundamencie.
 
 ## 🟢 Niski priorytet / do obserwacji
@@ -48,6 +47,8 @@ Cykliczny (co jakiś czas, bez sztywnego harmonogramu) przegląd wyglądu i uży
 
 - ~~Strona główna duplikuje `/narzedzia/` zamiast pełnić odrębną rolę~~ — rozwiązane Fazą 2 (10.09): strona główna to teraz lekka wizytówka (12 kart + CTA), `/narzedzia/` to właściwe narzędzie przeglądania z filtrowaniem.
 - ~~Niespójny wygląd karty między stronami~~ — rozwiązane 10.09 (patrz `CHANGELOG.md`, commit `75dfa6f`).
+- ~~Hero strony głównej nie komunikuje unikalnego wyróżnika~~ — rozwiązane 13.09: nagłówek/podtytuł teraz komunikują RODO/AI Act.
+- ~~Badge'e "✗ Nie" czytają się jak zarzut, nie jak brak informacji~~ — rozwiązane 14.09: pełna migracja modelu danych `rodo_compliant`/`dpa_available`/`eu_data_hosting` na 3-stanowy (NULL = nie zweryfikowano), nie tylko poprawka wizualna. Patrz szczegóły w sesji 2026-09-13/15 niżej.
 
 ---
 
@@ -76,6 +77,19 @@ Cykliczny (co jakiś czas, bez sztywnego harmonogramu) przegląd wyglądu i uży
 **Zadania przekazane do Notion Todo (strona P001):** patrz nowa sekcja "🎨 UX/UI — do zrobienia".
 
 **Otwarte na następną sesję:** priorytet na 🔴 (hero + czytelność badge'y "✗ Nie") — oba dotyczą wiarygodności głównego wyróżnika katalogu, warto zrobić przed kolejną rundą growth (LinkedIn/outreach), żeby nowy ruch trafiał na stronę, która od razu komunikuje przewagę.
+
+---
+
+## Sesja 2026-09-13/15 (Claude.ai — kontynuacja, poza tym czatem)
+
+**Uwaga:** ta sesja odbyła się równolegle w osobnym wątku Claude.ai, nie w tym samym czacie co sesja 09-10 — plik i Notion (strona P001, sekcja "Sesja UX 2026-09-13") prowadzone równolegle od teraz.
+
+**Zrobione, krok po kroku, z pełną weryfikacją na żywo między krokami:**
+1. Hero strony głównej — skorygowany, żeby komunikować RODO/AI Act (wyróżnik wcześniej żył tylko na `/premium`).
+2. RODO/DPA/EU hosting — pełna migracja modelu danych z 2-stanowego (boolean, default false) na 3-stanowy (NULL = nie zweryfikowano). Migracja SQL (`db/migrations/002_tri_state_compliance_fields.sql`), panel admina (tri-state select + inline-edit), frontend (`[slug].astro` — kafelki i FAQ rozróżniają teraz "nie zweryfikowano" od zweryfikowanego "Nie"). Dodatkowo: "Zweryfikuj przez AI" wykrywa teraz cytaty (nie ocenę) zgodności ze strony narzędzia — świadomy, ograniczony wyjątek od zasady manual-only, udokumentowany w `CLAUDE.md`.
+3. Ceny PLN — audyt ujawnił 0,9% fill rate (3/329, wszystkie z jednorazowej partii z tygodnia 1) i brak jakiejkolwiek ścieżki w pipeline/panelu do ich ustawiania. Deklaracja "PLN pricing" jako wyróżnik skorygowana w `CLAUDE.md`/`ARCHITECTURE.md`/`SEO.md` do "RODO + AI Act" (PLN jako bonus). Formularz "Dodaj wpis" odblokowany dla `price_from_pln` na przyszłość, UI renderowania świadomie odłożone do wyższego fill rate.
+
+**Otwarte na następną sesję (patrz też Notion, sekcja UX 2026-09-13):** badge AI Act "minimalny" bez zróżnicowania wizualnego, brak wyszukiwania tekstowego na `/narzedzia/`, "Najpopularniejszy" na `/premium` do weryfikacji czy oparte na realnych danych, "Podobne narzędzia" tylko wg kategorii.
 
 ---
 

@@ -62,7 +62,7 @@ Prawdopodobnie nie odosobniony przypadek — `CONTENT-GUIDE.md` już flaguje "to
 
 ### 2. Title tag generyczny na wszystkich stronach narzędzi
 Wzorzec: `"{Nazwa} — aifirmy.pl"` (potwierdzone live). Nie zawiera kategorii ani wyróżnika (RODO/AI Act/cena).
-Dla katalogu, gdzie **unikalny wyróżnik to właśnie RODO/AI Act/PLN**, title nie wykorzystuje tego do przechwytywania long-tail zapytań typu "[narzędzie] RODO", "[narzędzie] cena PLN", "[narzędzie] AI Act ryzyko".
+Dla katalogu, gdzie **unikalny wyróżnik to właśnie RODO/AI Act**, title nie wykorzystuje tego do przechwytywania long-tail zapytań typu "[narzędzie] RODO", "[narzędzie] cena PLN", "[narzędzie] AI Act ryzyko".
 
 **Potencjalny kierunek (do decyzji, nie do wdrożenia bez ustalenia z Pablo):**
 `"{Nazwa} — opis, cena, RODO | aifirmy.pl"` lub podobny wzorzec z kategorią/wyróżnikiem.
@@ -125,7 +125,6 @@ sprawdzić w zakładce "Sprawdź szczegóły" w GSC dokładną przyczynę niepow
 
 Z `STATUS.md`, sesja UX 13.09 (część nakłada się bezpośrednio na SEO/CTR):
 - Hero strony głównej nie komunikuje wyróżnika RODO/AI Act/UE (tylko na `/premium`) — traci szansę na trafienie w intencję wyszukiwania już na landing page
-- Ceny w PLN (deklarowany wyróżnik) nie są widoczne nigdzie w UI — potencjalnie tracone zapytania z intencją "cena"
 - Brak widocznego pola wyszukiwania tekstowego na `/narzedzia/` — tylko pigułki kategorii
 
 Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo pokrywa się z SEO):
