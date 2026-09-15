@@ -145,6 +145,34 @@ function render_tri_state_cell(string $toolId, string $field, string $jsFn, ?boo
     <?php
 }
 
+// Buduje URL zakładki "Narzędzia" zachowujący search/filtr/sort — używane
+// przez paginację i nagłówki sortowania, żeby żaden z tych trzech
+// parametrów nigdy nie ginął przy zmianie innego (wymóg: da się wrócić
+// do tego samego widoku po przeładowaniu/edycji).
+function tools_tab_url(int $page, string $sort, string $dir, string $q, string $categoryId): string {
+    $params = ['tab' => 'tools'];
+    if ($page > 1) $params['page'] = $page;
+    if ($sort !== 'created_at') $params['sort'] = $sort;
+    if ($dir !== 'desc') $params['dir'] = $dir;
+    if ($q !== '') $params['q'] = $q;
+    if ($categoryId !== '') $params['category_id'] = $categoryId;
+    return '?' . http_build_query($params);
+}
+
+// Nagłówek kolumny jako link zmieniający sortowanie — zmiana sortowania
+// świadomie resetuje na stronę 1 (strona 4 w innej kolejności to inny,
+// mylący zbiór wyników).
+function tools_sort_header(string $label, string $field, string $currentSort, string $currentDir, string $q, string $categoryId): void {
+    $isActive = $currentSort === $field;
+    $nextDir  = ($isActive && $currentDir === 'asc') ? 'desc' : 'asc';
+    $url      = tools_tab_url(1, $field, $nextDir, $q, $categoryId);
+    $indicator = $isActive ? ($currentDir === 'asc' ? ' ▲' : ' ▼') : '';
+    $style = $isActive ? 'color:#4f46e5;font-weight:700' : 'color:inherit';
+    ?>
+    <a href="<?= htmlspecialchars($url) ?>" style="text-decoration:none;<?= $style ?>"><?= htmlspecialchars($label . $indicator) ?></a>
+    <?php
+}
+
 // ---------- auth ----------
 
 if (isset($_GET['logout'])) {
@@ -431,31 +459,91 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
 
     <?php elseif ($tab === 'tools'): ?>
     <?php
-    $tools_page_size  = 100;
-    $tools_total_pages = max(1, (int) ceil($approved / $tools_page_size));
-    $tools_page       = max(1, min($tools_total_pages, (int) ($_GET['page'] ?? 1)));
-    $tools_offset     = ($tools_page - 1) * $tools_page_size;
+    // Search/filtr/sort — wszystkie trzy jako query params, żeby dało się
+    // wrócić do tego samego widoku po przeładowaniu/edycji (np. inline-edit
+    // w wierszu przeładowuje stronę przez zwykły link, nie przez fetch).
+    $tools_q           = trim((string) ($_GET['q'] ?? ''));
+    $tools_category_id = trim((string) ($_GET['category_id'] ?? ''));
+
+    // Biała lista sortowalnych kolumn — nazwa parametru URL => realna
+    // kolumna/wyrażenie order= w zapytaniu do PostgREST. categories(name_pl)
+    // to sortowanie po zagnieżdżonym zasobie — sprawdzone jako działające
+    // na żywo w Supabase REST przed wdrożeniem, nie zgadywane.
+    $tools_sort_columns = [
+        'name'       => 'name',
+        'category'   => 'categories(name_pl)',
+        'status'     => 'status',
+        'created_at' => 'created_at',
+    ];
+    $tools_sort = $_GET['sort'] ?? 'created_at';
+    if (!isset($tools_sort_columns[$tools_sort])) $tools_sort = 'created_at';
+    $tools_dir  = ($_GET['dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+    $tools_order = $tools_sort_columns[$tools_sort] . '.' . $tools_dir . ',id.asc';
+
+    $tools_filters = ['status=eq.approved'];
+    if ($tools_q !== '') {
+        $tools_filters[] = 'name=ilike.*' . rawurlencode($tools_q) . '*';
+    }
+    if ($tools_category_id !== '') {
+        $tools_filters[] = 'category_id=eq.' . rawurlencode($tools_category_id);
+    }
+    $tools_filter_qs = implode('&', $tools_filters);
+
+    // Licznik i paginacja MUSZĄ liczyć się na przefiltrowanym zbiorze, nie
+    // na globalnym $approved (ten zostaje niezmieniony — karta statystyk
+    // u góry ma pokazywać prawdziwy total, niezależny od aktywnego filtra).
+    $tools_page_size    = 100;
+    $tools_filtered_total = sb_count('tools', $tools_filter_qs);
+    $tools_total_pages  = max(1, (int) ceil($tools_filtered_total / $tools_page_size));
+    $tools_page         = max(1, min($tools_total_pages, (int) ($_GET['page'] ?? 1)));
+    $tools_offset       = ($tools_page - 1) * $tools_page_size;
 
     $tools = sb_get(
         'tools' .
-        '?status=eq.approved' .
-        '&order=created_at.desc,id.asc' .
+        '?' . $tools_filter_qs .
+        '&order=' . $tools_order .
         '&limit=' . $tools_page_size .
         '&offset=' . $tools_offset .
         '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,rodo_compliant,dpa_available,eu_data_hosting,ai_act_risk,status,ai_verified_at,categories(name_pl)'
     );
     $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
+    <form method="GET" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:16px;background:white;padding:16px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+        <input type="hidden" name="tab" value="tools">
+        <?php if ($tools_sort !== 'created_at'): ?>
+        <input type="hidden" name="sort" value="<?= htmlspecialchars($tools_sort) ?>">
+        <?php endif; ?>
+        <?php if ($tools_dir !== 'desc'): ?>
+        <input type="hidden" name="dir" value="<?= htmlspecialchars($tools_dir) ?>">
+        <?php endif; ?>
+        <div>
+            <label style="font-size:12px;font-weight:500;display:block;margin-bottom:4px">Szukaj po nazwie</label>
+            <input type="search" name="q" value="<?= htmlspecialchars($tools_q) ?>" placeholder="np. Sona8" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;width:220px">
+        </div>
+        <div>
+            <label style="font-size:12px;font-weight:500;display:block;margin-bottom:4px">Kategoria</label>
+            <select name="category_id" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                <option value="">Wszystkie</option>
+                <?php foreach ($tools_categories as $cat): ?>
+                <option value="<?= htmlspecialchars($cat['id']) ?>" <?= $tools_category_id === $cat['id'] ? 'selected' : '' ?>><?= htmlspecialchars($cat['name_pl']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Filtruj</button>
+        <?php if ($tools_q !== '' || $tools_category_id !== ''): ?>
+        <a href="<?= htmlspecialchars(tools_tab_url(1, $tools_sort, $tools_dir, '', '')) ?>" class="btn btn-secondary">Wyczyść</a>
+        <?php endif; ?>
+    </form>
     <table>
         <tr>
-            <th>Nazwa</th>
-            <th>Kategoria</th>
+            <th><?php tools_sort_header('Nazwa', 'name', $tools_sort, $tools_dir, $tools_q, $tools_category_id); ?></th>
+            <th><?php tools_sort_header('Kategoria', 'category', $tools_sort, $tools_dir, $tools_q, $tools_category_id); ?></th>
             <th>Cennik</th>
             <th>RODO</th>
             <th>DPA</th>
             <th>Hosting UE</th>
             <th>AI Act</th>
-            <th>Status</th>
+            <th><?php tools_sort_header('Status', 'status', $tools_sort, $tools_dir, $tools_q, $tools_category_id); ?></th>
             <th>Akcja</th>
         </tr>
         <?php foreach ($tools as $tool): ?>
@@ -512,11 +600,11 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
     <?php if ($tools_total_pages > 1): ?>
     <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:16px">
         <?php if ($tools_page > 1): ?>
-        <a href="?tab=tools&page=<?= $tools_page - 1 ?>" class="btn btn-secondary">← Poprzednia</a>
+        <a href="<?= htmlspecialchars(tools_tab_url($tools_page - 1, $tools_sort, $tools_dir, $tools_q, $tools_category_id)) ?>" class="btn btn-secondary">← Poprzednia</a>
         <?php endif; ?>
-        <span style="font-size:13px;color:#6b7280">Strona <?= $tools_page ?> z <?= $tools_total_pages ?> (<?= $approved ?> narzędzi)</span>
+        <span style="font-size:13px;color:#6b7280">Strona <?= $tools_page ?> z <?= $tools_total_pages ?> (<?= $tools_filtered_total ?> narzędzi)</span>
         <?php if ($tools_page < $tools_total_pages): ?>
-        <a href="?tab=tools&page=<?= $tools_page + 1 ?>" class="btn btn-secondary">Następna →</a>
+        <a href="<?= htmlspecialchars(tools_tab_url($tools_page + 1, $tools_sort, $tools_dir, $tools_q, $tools_category_id)) ?>" class="btn btn-secondary">Następna →</a>
         <?php endif; ?>
     </div>
     <?php endif; ?>
