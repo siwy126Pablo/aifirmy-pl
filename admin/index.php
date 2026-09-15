@@ -189,6 +189,12 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($logoUrl === '') {
             $logoUrl = favicon_from_url($_POST['website_url']);
         }
+        // Puste pole = NULL (nie zweryfikowano/nie dotyczy), nie 0 — cena 0
+        // ma inne znaczenie (np. darmowy tier freemium) niż brak danych.
+        // is_numeric() zamiast samego (float) cast, żeby niepoprawny/pusty
+        // string nigdy nie ciął się cicho do 0.
+        $priceFromPln = trim($_POST['price_from_pln'] ?? '');
+        $priceFromPln = ($priceFromPln !== '' && is_numeric($priceFromPln)) ? (float) $priceFromPln : null;
         sb_post('tools', [
             'slug'          => slugify($_POST['name']),
             'name'          => $_POST['name'],
@@ -198,6 +204,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'logo_url'      => $logoUrl,
             'category_id'   => $_POST['category_id'] ?: null,
             'pricing_model' => $_POST['pricing_model'],
+            'price_from_pln'  => $priceFromPln,
             'rodo_compliant'  => tri_state_from_post('rodo_compliant'),
             'dpa_available'   => tri_state_from_post('dpa_available'),
             'eu_data_hosting' => tri_state_from_post('eu_data_hosting'),
@@ -550,7 +557,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
                 <div>
                     <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Model cenowy</label>
                     <select name="pricing_model" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
@@ -559,6 +566,10 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                         <option value="paid">Paid</option>
                         <option value="open_source">Open Source</option>
                     </select>
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Cena od (PLN, opcjonalnie)</label>
+                    <input type="number" step="0.01" name="price_from_pln" placeholder="np. 99" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
                 </div>
                 <div>
                     <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">AI Act ryzyko</label>
