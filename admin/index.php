@@ -280,6 +280,13 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         .stat-val { font-size: 32px; font-weight: 600; color: #4f46e5; }
         .stat-lbl { font-size: 13px; color: #6b7280; margin-top: 4px; }
         .notice { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+        /* Panel "Znalezione sygnały" — celowo BEZ dolnej krawędzi/zaokrąglenia
+           i BEZ marginesu, żeby wizualnie "sklejał się" z wierszem narzędzia
+           tuż pod nim (do którego się odnosi), zamiast wyglądać jak osobna,
+           pływająca karta. Strzałka ▼ w .evidence-arrow dodatkowo wskazuje
+           kierunek w dół, na wiersz docelowy. */
+        .evidence-panel { background: #fffbeb; border: 1px solid #fde68a; border-bottom: none; border-radius: 8px 8px 0 0; color: #92400e; padding: 10px 16px 2px; font-size: 14px; }
+        .evidence-arrow { text-align: center; color: #d97706; font-size: 13px; line-height: 1; margin-top: 2px; }
         .notice a { color: #4f46e5; font-weight: 500; text-decoration: none; margin-left: 8px; }
         .notice a:hover { text-decoration: underline; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
@@ -543,8 +550,9 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         </tr>
         <?php foreach ($tools as $tool): ?>
         <tr id="evidence-row-<?= htmlspecialchars($tool['id']) ?>" style="display:none">
-            <td colspan="9" class="notice">
+            <td colspan="9" class="evidence-panel">
                 <div id="evidence-content-<?= htmlspecialchars($tool['id']) ?>"></div>
+                <div class="evidence-arrow" aria-hidden="true">▼</div>
             </td>
         </tr>
         <tr>
@@ -934,6 +942,14 @@ function verifyTool(id, btn) {
     btn.disabled = true;
     btn.textContent = '⏳ Weryfikuję…';
 
+    // Nazwa narzędzia jest już w DOM (pierwszy <strong> w tym samym wierszu,
+    // patrz komórka "Nazwa") — czytamy ją stąd zamiast dociągać osobnym
+    // zapytaniem, żeby nagłówek panelu "Znalezione sygnały" mógł jasno
+    // wskazywać, do którego wiersza się odnosi.
+    var row = btn.closest('tr');
+    var nameEl = row ? row.querySelector('strong') : null;
+    var toolName = nameEl ? nameEl.textContent : '';
+
     fetch('verify_tool.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -949,7 +965,7 @@ function verifyTool(id, btn) {
         }
         verifyTargetId = id;
         openVerifyModal(res.data);
-        renderComplianceEvidence(id, res.data.compliance_evidence);
+        renderComplianceEvidence(id, res.data.compliance_evidence, toolName);
     })
     .catch(function() {
         alert('Błąd sieci podczas weryfikacji.');
@@ -964,13 +980,16 @@ function verifyTool(id, btn) {
 // samego wywołania OpenAI co reszta weryfikacji — NIE ocena zgodności,
 // samo rodo_compliant/dpa_available/eu_data_hosting zostaje manual-only.
 // Renderowane bezpośrednio w wierszu tabeli, nad tymi samymi trójstanowymi
-// selectami co zawsze (żadnej nowej logiki zapisu) — nie w modalu, żeby
-// cytat był fizycznie obok pól do ręcznego ustawienia, nie w osobnym
-// popupie. Budowane przez DOM/textContent, nie innerHTML z surowym
-// tekstem — cytat pochodzi ze scrapowanej, niezaufanej strony zewnętrznej.
+// plakietkami co zawsze (żadnej nowej logiki zapisu, edycja tylko przez
+// #edit-modal) — nie w modalu weryfikacji, żeby cytat był fizycznie obok
+// pól do ręcznego ustawienia, nie w osobnym popupie. Budowane przez
+// DOM/textContent, nie innerHTML z surowym tekstem — cytat pochodzi ze
+// scrapowanej, niezaufanej strony zewnętrznej. Nazwa narzędzia w nagłówku
+// i wizualne "sklejenie" z wierszem (.evidence-panel, strzałka ▼) usuwają
+// niejednoznaczność, do którego wiersza panel się odnosi.
 var COMPLIANCE_EVIDENCE_LABELS = { rodo: 'RODO', dpa: 'DPA', eu_hosting: 'Hosting UE' };
 
-function renderComplianceEvidence(id, evidence) {
+function renderComplianceEvidence(id, evidence, toolName) {
     var row = document.getElementById('evidence-row-' + id);
     var content = document.getElementById('evidence-content-' + id);
     if (!row || !content) return;
@@ -989,7 +1008,9 @@ function renderComplianceEvidence(id, evidence) {
     var header = document.createElement('div');
     header.style.fontWeight = '600';
     header.style.marginBottom = '6px';
-    header.textContent = '🔍 Znalezione sygnały (nie ocena zgodności)';
+    header.textContent = toolName
+        ? '🔍 Znalezione sygnały dla „' + toolName + '” (nie ocena zgodności)'
+        : '🔍 Znalezione sygnały (nie ocena zgodności)';
     content.appendChild(header);
 
     keys.forEach(function(key) {
