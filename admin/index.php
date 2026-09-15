@@ -127,21 +127,16 @@ function tri_state_badge(?bool $value): array {
     return ['badge-gray', 'Nie zweryf.'];
 }
 
-// Renderuje select + przycisk "Zapisz" + span na komunikat, w tym samym
-// wzorcu co inline-edit Kategorii/Logo niżej — plus kolorowa plakietka
-// bieżącego stanu (zielona/czerwona/szara), spójna z krokiem frontendowym.
-function render_tri_state_cell(string $toolId, string $field, string $jsFn, ?bool $value): void {
+// Zwarty, czysto informacyjny badge dla pól 3-stanowych w wierszu tabeli —
+// edycja odbywa się wyłącznie przez #edit-modal (patchTool()); to tylko
+// odczyt. id="{field}-badge-{toolId}" musi zostać zsynchronizowane z
+// updateTriStateDisplay() w JS, które podmienia ten sam element po zapisie
+// z modala bez przeładowania strony.
+function render_tri_state_badge(string $toolId, string $field, ?bool $value): void {
     $safeId = htmlspecialchars($toolId);
     [$badgeClass, $badgeLabel] = tri_state_badge($value);
     ?>
-    <span id="<?= $field ?>-badge-<?= $safeId ?>" class="badge <?= $badgeClass ?>" style="display:inline-block;margin-bottom:4px"><?= $badgeLabel ?></span><br>
-    <select id="<?= $field ?>-<?= $safeId ?>" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px">
-        <option value="null" <?= $value === null ? 'selected' : '' ?>>Nie zweryfikowano</option>
-        <option value="true" <?= $value === true ? 'selected' : '' ?>>Tak</option>
-        <option value="false" <?= $value === false ? 'selected' : '' ?>>Nie</option>
-    </select>
-    <button class="btn btn-secondary" style="font-size:11px;padding:3px 6px;margin-left:4px" onclick="<?= $jsFn ?>('<?= $safeId ?>')">Zapisz</button>
-    <div id="<?= $field ?>-msg-<?= $safeId ?>" style="font-size:11px;color:#16a34a;margin-top:2px"></div>
+    <span id="<?= $field ?>-badge-<?= $safeId ?>" class="badge <?= $badgeClass ?>"><?= $badgeLabel ?></span>
     <?php
 }
 
@@ -554,32 +549,20 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         </tr>
         <tr>
             <td>
-                <strong><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= htmlspecialchars($tool['slug']) ?></small>
-                <div style="margin-top:6px">
-                    <input type="text" id="url-<?= htmlspecialchars($tool['id']) ?>" value="<?= htmlspecialchars($tool['website_url'] ?? '') ?>" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;width:200px">
-                    <button class="btn btn-secondary" style="font-size:12px;padding:4px 8px" onclick="saveUrl('<?= htmlspecialchars($tool['id']) ?>')">Zapisz URL</button>
-                    <select id="cat-<?= htmlspecialchars($tool['id']) ?>" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px">
-                        <?php foreach ($tools_categories as $cat): ?>
-                        <option value="<?= htmlspecialchars($cat['id']) ?>" <?= $cat['id'] === $tool['category_id'] ? 'selected' : '' ?>><?= htmlspecialchars($cat['name_pl']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button class="btn btn-secondary" style="font-size:12px;padding:4px 8px" onclick="saveCategory('<?= htmlspecialchars($tool['id']) ?>')">Zapisz kategorię</button>
-                    <span id="msg-<?= htmlspecialchars($tool['id']) ?>" style="font-size:12px;color:#16a34a"></span>
-                </div>
-                <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+                <div style="display:flex;align-items:center;gap:8px">
                     <?php if ($tool['logo_url']): ?>
                     <img src="<?= htmlspecialchars($tool['logo_url']) ?>" alt="" style="width:20px;height:20px;border-radius:4px;object-fit:contain;border:1px solid #eee">
                     <?php endif; ?>
-                    <input type="text" id="logo-<?= htmlspecialchars($tool['id']) ?>" value="<?= htmlspecialchars($tool['logo_url'] ?? '') ?>" placeholder="Logo URL" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;width:200px">
-                    <button class="btn btn-secondary" style="font-size:12px;padding:4px 8px" onclick="saveLogo('<?= htmlspecialchars($tool['id']) ?>')">Zapisz logo</button>
-                    <span id="logo-msg-<?= htmlspecialchars($tool['id']) ?>" style="font-size:12px;color:#16a34a"></span>
+                    <div>
+                        <strong><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= htmlspecialchars($tool['slug']) ?></small>
+                    </div>
                 </div>
             </td>
-            <td><?= htmlspecialchars($tool['categories']['name_pl'] ?? '') ?></td>
+            <td id="category-cell-<?= htmlspecialchars($tool['id']) ?>"><?= htmlspecialchars($tool['categories']['name_pl'] ?? '') ?></td>
             <td><span class="badge badge-gray"><?= htmlspecialchars($tool['pricing_model'] ?? '') ?></span></td>
-            <td><?php render_tri_state_cell($tool['id'], 'rodo', 'saveRodo', $tool['rodo_compliant']); ?></td>
-            <td><?php render_tri_state_cell($tool['id'], 'dpa', 'saveDpa', $tool['dpa_available']); ?></td>
-            <td><?php render_tri_state_cell($tool['id'], 'eu', 'saveEuHosting', $tool['eu_data_hosting']); ?></td>
+            <td><?php render_tri_state_badge($tool['id'], 'rodo', $tool['rodo_compliant']); ?></td>
+            <td><?php render_tri_state_badge($tool['id'], 'dpa', $tool['dpa_available']); ?></td>
+            <td><?php render_tri_state_badge($tool['id'], 'eu', $tool['eu_data_hosting']); ?></td>
             <td><?= htmlspecialchars($tool['ai_act_risk'] ?? '') ?></td>
             <td><span class="badge <?= $tool['status'] === 'approved' ? 'badge-green' : 'badge-gray' ?>"><?= htmlspecialchars($tool['status']) ?></span></td>
             <td>
@@ -625,9 +608,9 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
 
     <!-- Modal edycji narzędzia — wzorowany na #verify-modal (ten sam
          mechanizm otwierania/zamykania, styl .modal-overlay/.modal-box).
-         Świadomie OBOK istniejących mini-formularzy inline (URL/kategoria/
-         logo/RODO/DPA/Hosting UE w wierszu), nie zamiast nich — nowa opcja
-         do porównania przed ewentualnym usunięciem starego mechanizmu. -->
+         Jedyna ścieżka edycji URL/kategorii/logo/RODO/DPA/Hosting UE —
+         dawne mini-formularze inline w wierszu usunięte po zweryfikowaniu
+         tego modala na żywo jako pełnoprawnej zamiany. -->
     <div id="edit-modal" class="modal-overlay" style="display:none">
         <div class="modal-box">
             <h2 style="margin-bottom:16px;font-size:18px">Edytuj narzędzie</h2>
@@ -825,64 +808,22 @@ function patchTool(id, fields, onSuccess) {
     });
 }
 
-function saveUrl(id) {
-    var input = document.getElementById('url-' + id);
-    var newUrl = input.value;
-    patchTool(id, { website_url: newUrl }, function() {
-        input.value = newUrl;
-    });
-}
-
-function saveCategory(id) {
-    var select = document.getElementById('cat-' + id);
-    var msg = document.getElementById('msg-' + id);
-    patchTool(id, { category_id: select.value }, function() {
-        msg.textContent = 'Zapisano';
-        setTimeout(function() { msg.textContent = ''; }, 2000);
-    });
-}
-
-function saveLogo(id) {
-    var input = document.getElementById('logo-' + id);
-    var msg = document.getElementById('logo-msg-' + id);
-    patchTool(id, { logo_url: input.value || null }, function() {
-        msg.textContent = 'Zapisano';
-        setTimeout(function() { msg.textContent = ''; }, 2000);
-    });
-}
-
-// ---------- Pola 3-stanowe: RODO / DPA / hosting UE ----------
 // Select ma wartości 'null'/'true'/'false' jako stringi (HTML nie ma
 // natywnego typu boolean/null dla <option>) — triStateFromSelect konwertuje
 // to na prawdziwe true/false/null PRZED JSON.stringify, tak żeby PATCH
-// wysłał literalny JSON null (nie string "null"), analogicznie do
-// istniejącego `logo_url: input.value || null` w saveLogo() wyżej.
+// wysłał literalny JSON null (nie string "null"). Używane przez modal
+// edycji (saveEditModal) przy odczycie jego trzech selectów.
 function triStateFromSelect(value) {
     if (value === 'true') return true;
     if (value === 'false') return false;
     return null;
 }
 
-function saveTriStateField(id, selectPrefix, dbField) {
-    var select = document.getElementById(selectPrefix + '-' + id);
-    var msg = document.getElementById(selectPrefix + '-msg-' + id);
-    var payload = {};
-    payload[dbField] = triStateFromSelect(select.value);
-    patchTool(id, payload, function() {
-        msg.textContent = 'Zapisano';
-        setTimeout(function() { msg.textContent = ''; }, 2000);
-    });
-}
-
-function saveRodo(id) { saveTriStateField(id, 'rodo', 'rodo_compliant'); }
-function saveDpa(id) { saveTriStateField(id, 'dpa', 'dpa_available'); }
-function saveEuHosting(id) { saveTriStateField(id, 'eu', 'eu_data_hosting'); }
-
 // ---------- Modal edycji narzędzia ----------
-// Obok istniejących mini-formularzy inline (URL/kategoria/logo/RODO/DPA/
-// Hosting UE w wierszu) — nowa opcja do porównania, nie zamiennik. Jeden
-// PATCH na wszystkie 6 pól naraz (przez wspólny patchTool()), zamiast
-// sześciu osobnych requestów jak przy inline-save.
+// Jedyna ścieżka edycji URL/kategorii/logo/RODO/DPA/Hosting UE — dawne
+// mini-formularze inline w wierszu usunięte. Jeden PATCH na wszystkie
+// 6 pól naraz (przez wspólny patchTool()), zamiast sześciu osobnych
+// requestów jak przy dawnym inline-save.
 
 var editTargetId = null;
 
@@ -922,13 +863,11 @@ function triStateBadgeInfo(value) {
     return { cls: 'badge-gray', label: 'Nie zweryf.' };
 }
 
-// Aktualizuje select I plakietkę danego pola 3-stanowego w wierszu tabeli,
-// żeby po zapisie z modala nie zostawić starej, niezgodnej wartości w
-// inline-formularzu tego samego wiersza.
+// Aktualizuje wyłącznie plakietkę danego pola 3-stanowego w wierszu —
+// od usunięcia inline mini-formularzy w wierszu nie ma już odpowiadającego
+// <select>u do zsynchronizowania, jest tylko badge (patrz render_tri_state_badge
+// w PHP).
 function updateTriStateDisplay(id, prefix, value) {
-    var select = document.getElementById(prefix + '-' + id);
-    if (select) select.value = triStateToSelectValue(value);
-
     var badge = document.getElementById(prefix + '-badge-' + id);
     if (badge) {
         var info = triStateBadgeInfo(value);
@@ -937,24 +876,22 @@ function updateTriStateDisplay(id, prefix, value) {
     }
 }
 
-// Po udanym PATCH z modala: uaktualnia WIDOCZNE wartości w wierszu (read-only
-// tekst kategorii, inline inputy URL/logo, plakietki i selecty 3-stanowe)
-// bez przeładowania strony — ten sam wzorzec co przy istniejącym inline-save.
+// Po udanym PATCH z modala: uaktualnia WIDOCZNE wartości w wierszu bez
+// przeładowania strony. Od usunięcia inline mini-formularzy (URL/kategoria/
+// logo/RODO/DPA/Hosting UE) jedyne, co faktycznie zostało w wierszu do
+// zsynchronizowania, to tekst kolumny "Kategoria" i trzy plakietki
+// 3-stanowe — URL i logo nie mają już żadnego odpowiednika w tabeli.
 function updateRowAfterEdit(id, fields) {
-    var urlInput = document.getElementById('url-' + id);
-    if (urlInput) urlInput.value = fields.website_url || '';
-
-    var catSelect = document.getElementById('cat-' + id);
-    if (catSelect) {
-        catSelect.value = fields.category_id || '';
-        var selectedOption = catSelect.options[catSelect.selectedIndex];
-        var row = catSelect.closest('tr');
-        var categoryCell = row ? row.children[1] : null; // 2. <td> = kolumna "Kategoria"
-        if (categoryCell && selectedOption) categoryCell.textContent = selectedOption.text;
+    var categoryCell = document.getElementById('category-cell-' + id);
+    if (categoryCell) {
+        var categorySelect = document.getElementById('edit-category_id');
+        var matchingOption = categorySelect
+            ? Array.prototype.filter.call(categorySelect.options, function(opt) {
+                return opt.value === (fields.category_id || '');
+            })[0]
+            : null;
+        categoryCell.textContent = matchingOption ? matchingOption.text : '';
     }
-
-    var logoInput = document.getElementById('logo-' + id);
-    if (logoInput) logoInput.value = fields.logo_url || '';
 
     updateTriStateDisplay(id, 'rodo', fields.rodo_compliant);
     updateTriStateDisplay(id, 'dpa', fields.dpa_available);
