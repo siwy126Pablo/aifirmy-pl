@@ -134,7 +134,7 @@ function render_tri_state_cell(string $toolId, string $field, string $jsFn, ?boo
     $safeId = htmlspecialchars($toolId);
     [$badgeClass, $badgeLabel] = tri_state_badge($value);
     ?>
-    <span class="badge <?= $badgeClass ?>" style="display:inline-block;margin-bottom:4px"><?= $badgeLabel ?></span><br>
+    <span id="<?= $field ?>-badge-<?= $safeId ?>" class="badge <?= $badgeClass ?>" style="display:inline-block;margin-bottom:4px"><?= $badgeLabel ?></span><br>
     <select id="<?= $field ?>-<?= $safeId ?>" style="font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:4px">
         <option value="null" <?= $value === null ? 'selected' : '' ?>>Nie zweryfikowano</option>
         <option value="true" <?= $value === true ? 'selected' : '' ?>>Tak</option>
@@ -590,6 +590,20 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                             <?= $tool['ai_verified_at'] ? 'Sprawdzono: ' . date('d.m.Y', strtotime($tool['ai_verified_at'])) : '' ?>
                         </div>
                     </div>
+                    <button
+                        class="btn btn-secondary"
+                        style="font-size:12px;padding:6px 10px"
+                        data-tool-id="<?= htmlspecialchars($tool['id']) ?>"
+                        data-tool='<?= htmlspecialchars(json_encode([
+                            'website_url'     => $tool['website_url'],
+                            'category_id'     => $tool['category_id'],
+                            'logo_url'        => $tool['logo_url'],
+                            'rodo_compliant'  => $tool['rodo_compliant'],
+                            'dpa_available'   => $tool['dpa_available'],
+                            'eu_data_hosting' => $tool['eu_data_hosting'],
+                        ]), ENT_QUOTES) ?>'
+                        onclick="openEditModalFromButton(this)"
+                    >✏️ Edytuj</button>
                     <button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($tool['id']) ?>', 'tools', 'status', this.closest('tr'))">Usuń</button>
                 </div>
             </td>
@@ -608,6 +622,65 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         <?php endif; ?>
     </div>
     <?php endif; ?>
+
+    <!-- Modal edycji narzędzia — wzorowany na #verify-modal (ten sam
+         mechanizm otwierania/zamykania, styl .modal-overlay/.modal-box).
+         Świadomie OBOK istniejących mini-formularzy inline (URL/kategoria/
+         logo/RODO/DPA/Hosting UE w wierszu), nie zamiast nich — nowa opcja
+         do porównania przed ewentualnym usunięciem starego mechanizmu. -->
+    <div id="edit-modal" class="modal-overlay" style="display:none">
+        <div class="modal-box">
+            <h2 style="margin-bottom:16px;font-size:18px">Edytuj narzędzie</h2>
+            <div style="display:flex;flex-direction:column;gap:14px">
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">URL strony</label>
+                    <input type="url" id="edit-website_url" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Kategoria</label>
+                    <select id="edit-category_id" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                        <?php foreach ($tools_categories as $cat): ?>
+                        <option value="<?= htmlspecialchars($cat['id']) ?>"><?= htmlspecialchars($cat['name_pl']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Logo URL</label>
+                    <input type="url" id="edit-logo_url" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                    <div>
+                        <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">RODO zgodny</label>
+                        <select id="edit-rodo_compliant" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                            <option value="null">Nie zweryfikowano</option>
+                            <option value="true">Tak</option>
+                            <option value="false">Nie</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Umowa DPA</label>
+                        <select id="edit-dpa_available" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                            <option value="null">Nie zweryfikowano</option>
+                            <option value="true">Tak</option>
+                            <option value="false">Nie</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Hosting UE</label>
+                        <select id="edit-eu_data_hosting" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                            <option value="null">Nie zweryfikowano</option>
+                            <option value="true">Tak</option>
+                            <option value="false">Nie</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Anuluj</button>
+                <button class="btn btn-success" onclick="saveEditModal()">Zapisz zmiany</button>
+            </div>
+        </div>
+    </div>
 
     <?php elseif ($tab === 'add'): ?>
     <?php
@@ -729,9 +802,12 @@ function softDelete(id, table, field, row) {
     });
 }
 
-function saveUrl(id) {
-    var input = document.getElementById('url-' + id);
-    var newUrl = input.value;
+// Wspólny, niskopoziomowy helper PATCH na tools — jedno miejsce zamiast
+// powtarzania fetch/headers w każdej funkcji save* (dawniej saveUrl/
+// saveCategory/saveLogo powtarzały ten sam blok trzykrotnie). Używany
+// zarówno przez istniejące pojedyncze inline-save, jak i nowy modal
+// edycji (jeden PATCH na wszystkie 6 pól naraz zamiast sześciu osobnych).
+function patchTool(id, fields, onSuccess) {
     fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
         method: 'PATCH',
         headers: {
@@ -739,47 +815,39 @@ function saveUrl(id) {
             'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({website_url: newUrl})
+        body: JSON.stringify(fields)
     }).then(function(r) {
-        if (r.ok) input.value = newUrl;
+        if (r.ok) {
+            if (onSuccess) onSuccess();
+        } else {
+            alert('Nie udało się zapisać zmian.');
+        }
+    });
+}
+
+function saveUrl(id) {
+    var input = document.getElementById('url-' + id);
+    var newUrl = input.value;
+    patchTool(id, { website_url: newUrl }, function() {
+        input.value = newUrl;
     });
 }
 
 function saveCategory(id) {
     var select = document.getElementById('cat-' + id);
     var msg = document.getElementById('msg-' + id);
-    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
-        method: 'PATCH',
-        headers: {
-            'apikey': '<?= SUPABASE_KEY ?>',
-            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({category_id: select.value})
-    }).then(function(r) {
-        if (r.ok) {
-            msg.textContent = 'Zapisano';
-            setTimeout(function() { msg.textContent = ''; }, 2000);
-        }
+    patchTool(id, { category_id: select.value }, function() {
+        msg.textContent = 'Zapisano';
+        setTimeout(function() { msg.textContent = ''; }, 2000);
     });
 }
 
 function saveLogo(id) {
     var input = document.getElementById('logo-' + id);
     var msg = document.getElementById('logo-msg-' + id);
-    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
-        method: 'PATCH',
-        headers: {
-            'apikey': '<?= SUPABASE_KEY ?>',
-            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({logo_url: input.value || null})
-    }).then(function(r) {
-        if (r.ok) {
-            msg.textContent = 'Zapisano';
-            setTimeout(function() { msg.textContent = ''; }, 2000);
-        }
+    patchTool(id, { logo_url: input.value || null }, function() {
+        msg.textContent = 'Zapisano';
+        setTimeout(function() { msg.textContent = ''; }, 2000);
     });
 }
 
@@ -800,25 +868,115 @@ function saveTriStateField(id, selectPrefix, dbField) {
     var msg = document.getElementById(selectPrefix + '-msg-' + id);
     var payload = {};
     payload[dbField] = triStateFromSelect(select.value);
-    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
-        method: 'PATCH',
-        headers: {
-            'apikey': '<?= SUPABASE_KEY ?>',
-            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    }).then(function(r) {
-        if (r.ok) {
-            msg.textContent = 'Zapisano';
-            setTimeout(function() { msg.textContent = ''; }, 2000);
-        }
+    patchTool(id, payload, function() {
+        msg.textContent = 'Zapisano';
+        setTimeout(function() { msg.textContent = ''; }, 2000);
     });
 }
 
 function saveRodo(id) { saveTriStateField(id, 'rodo', 'rodo_compliant'); }
 function saveDpa(id) { saveTriStateField(id, 'dpa', 'dpa_available'); }
 function saveEuHosting(id) { saveTriStateField(id, 'eu', 'eu_data_hosting'); }
+
+// ---------- Modal edycji narzędzia ----------
+// Obok istniejących mini-formularzy inline (URL/kategoria/logo/RODO/DPA/
+// Hosting UE w wierszu) — nowa opcja do porównania, nie zamiennik. Jeden
+// PATCH na wszystkie 6 pól naraz (przez wspólny patchTool()), zamiast
+// sześciu osobnych requestów jak przy inline-save.
+
+var editTargetId = null;
+
+function triStateToSelectValue(value) {
+    if (value === true) return 'true';
+    if (value === false) return 'false';
+    return 'null';
+}
+
+function openEditModalFromButton(btn) {
+    var id = btn.dataset.toolId;
+    var tool = JSON.parse(btn.dataset.tool);
+    openEditModal(id, tool);
+}
+
+function openEditModal(id, tool) {
+    editTargetId = id;
+    document.getElementById('edit-website_url').value = tool.website_url || '';
+    document.getElementById('edit-category_id').value = tool.category_id || '';
+    document.getElementById('edit-logo_url').value = tool.logo_url || '';
+    document.getElementById('edit-rodo_compliant').value = triStateToSelectValue(tool.rodo_compliant);
+    document.getElementById('edit-dpa_available').value = triStateToSelectValue(tool.dpa_available);
+    document.getElementById('edit-eu_data_hosting').value = triStateToSelectValue(tool.eu_data_hosting);
+    document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+    editTargetId = null;
+}
+
+// Kolory/etykiety plakietki 3-stanowej w JS — musi zostać zsynchronizowane
+// z tri_state_badge() w PHP (admin/index.php), jeśli któreś się zmieni.
+function triStateBadgeInfo(value) {
+    if (value === true)  return { cls: 'badge-green', label: '✓ Tak' };
+    if (value === false) return { cls: 'badge-red',   label: '✗ Nie' };
+    return { cls: 'badge-gray', label: 'Nie zweryf.' };
+}
+
+// Aktualizuje select I plakietkę danego pola 3-stanowego w wierszu tabeli,
+// żeby po zapisie z modala nie zostawić starej, niezgodnej wartości w
+// inline-formularzu tego samego wiersza.
+function updateTriStateDisplay(id, prefix, value) {
+    var select = document.getElementById(prefix + '-' + id);
+    if (select) select.value = triStateToSelectValue(value);
+
+    var badge = document.getElementById(prefix + '-badge-' + id);
+    if (badge) {
+        var info = triStateBadgeInfo(value);
+        badge.className = 'badge ' + info.cls;
+        badge.textContent = info.label;
+    }
+}
+
+// Po udanym PATCH z modala: uaktualnia WIDOCZNE wartości w wierszu (read-only
+// tekst kategorii, inline inputy URL/logo, plakietki i selecty 3-stanowe)
+// bez przeładowania strony — ten sam wzorzec co przy istniejącym inline-save.
+function updateRowAfterEdit(id, fields) {
+    var urlInput = document.getElementById('url-' + id);
+    if (urlInput) urlInput.value = fields.website_url || '';
+
+    var catSelect = document.getElementById('cat-' + id);
+    if (catSelect) {
+        catSelect.value = fields.category_id || '';
+        var selectedOption = catSelect.options[catSelect.selectedIndex];
+        var row = catSelect.closest('tr');
+        var categoryCell = row ? row.children[1] : null; // 2. <td> = kolumna "Kategoria"
+        if (categoryCell && selectedOption) categoryCell.textContent = selectedOption.text;
+    }
+
+    var logoInput = document.getElementById('logo-' + id);
+    if (logoInput) logoInput.value = fields.logo_url || '';
+
+    updateTriStateDisplay(id, 'rodo', fields.rodo_compliant);
+    updateTriStateDisplay(id, 'dpa', fields.dpa_available);
+    updateTriStateDisplay(id, 'eu', fields.eu_data_hosting);
+}
+
+function saveEditModal() {
+    if (!editTargetId) return;
+    var id = editTargetId;
+    var fields = {
+        website_url:     document.getElementById('edit-website_url').value.trim(),
+        category_id:     document.getElementById('edit-category_id').value || null,
+        logo_url:        document.getElementById('edit-logo_url').value.trim() || null,
+        rodo_compliant:  triStateFromSelect(document.getElementById('edit-rodo_compliant').value),
+        dpa_available:   triStateFromSelect(document.getElementById('edit-dpa_available').value),
+        eu_data_hosting: triStateFromSelect(document.getElementById('edit-eu_data_hosting').value),
+    };
+    patchTool(id, fields, function() {
+        updateRowAfterEdit(id, fields);
+        closeEditModal();
+    });
+}
 
 // ---------- Weryfikacja narzędzia przez AI ----------
 
