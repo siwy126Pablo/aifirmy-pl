@@ -13,8 +13,12 @@ export const categoryColors: Record<string, { bg: string; text: string }> = {
 
 export const categoryColorFallback = { bg: 'bg-gray-100', text: 'text-gray-600' };
 
+// 'minimal' celowo wyciszony (szary, niski kontrast) — to domyślny,
+// "nic się nie dzieje" przypadek na ~90% kart katalogu, nie powinien
+// przyciągać wzroku na równi z rzadszymi, decyzyjnymi poziomami ryzyka.
+// limited/high/unacceptable zostają nasycone — te MAJĄ przyciągać uwagę.
 export const aiActRiskColors: Record<string, { bg: string; text: string; label: string; shortLabel: string }> = {
-  minimal: { bg: 'bg-green-100', text: 'text-green-800', label: 'AI Act: minimalny', shortLabel: 'Minimalny' },
+  minimal: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'AI Act: minimalny', shortLabel: 'Minimalny' },
   limited: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'AI Act: ograniczony', shortLabel: 'Ograniczony' },
   high: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'AI Act: wysoki', shortLabel: 'Wysoki' },
   unacceptable: { bg: 'bg-red-100', text: 'text-red-800', label: 'AI Act: niedopuszczalny', shortLabel: 'Niedopuszczalny' },
