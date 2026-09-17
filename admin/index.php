@@ -567,7 +567,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                 </div>
             </td>
             <td id="category-cell-<?= htmlspecialchars($tool['id']) ?>"><?= htmlspecialchars($tool['categories']['name_pl'] ?? '') ?></td>
-            <td><span class="badge badge-gray"><?= htmlspecialchars($tool['pricing_model'] ?? '') ?></span></td>
+            <td id="pricing-cell-<?= htmlspecialchars($tool['id']) ?>"><span class="badge badge-gray"><?= htmlspecialchars($tool['pricing_model'] ?? '') ?></span></td>
             <td><?php render_tri_state_badge($tool['id'], 'rodo', $tool['rodo_compliant']); ?></td>
             <td><?php render_tri_state_badge($tool['id'], 'dpa', $tool['dpa_available']); ?></td>
             <td><?php render_tri_state_badge($tool['id'], 'eu', $tool['eu_data_hosting']); ?></td>
@@ -591,6 +591,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                             'logo_url'        => $tool['logo_url'],
                             'description_pl'  => $tool['description_pl'],
                             'best_for_pl'     => $tool['best_for_pl'],
+                            'pricing_model'   => $tool['pricing_model'],
                             'rodo_compliant'  => $tool['rodo_compliant'],
                             'dpa_available'   => $tool['dpa_available'],
                             'eu_data_hosting' => $tool['eu_data_hosting'],
@@ -648,6 +649,15 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                 <div>
                     <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Najlepsze dla</label>
                     <input type="text" id="edit-best_for_pl" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Model cenowy</label>
+                    <select id="edit-pricing_model" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                        <option value="free">Free</option>
+                        <option value="freemium">Freemium</option>
+                        <option value="paid">Paid</option>
+                        <option value="open_source">Open Source</option>
+                    </select>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
                     <div>
@@ -864,6 +874,7 @@ function openEditModal(id, tool) {
     document.getElementById('edit-logo_url').value = tool.logo_url || '';
     document.getElementById('edit-description_pl').value = tool.description_pl || '';
     document.getElementById('edit-best_for_pl').value = tool.best_for_pl || '';
+    document.getElementById('edit-pricing_model').value = tool.pricing_model || 'freemium';
     document.getElementById('edit-rodo_compliant').value = triStateToSelectValue(tool.rodo_compliant);
     document.getElementById('edit-dpa_available').value = triStateToSelectValue(tool.dpa_available);
     document.getElementById('edit-eu_data_hosting').value = triStateToSelectValue(tool.eu_data_hosting);
@@ -899,8 +910,9 @@ function updateTriStateDisplay(id, prefix, value) {
 // Po udanym PATCH z modala: uaktualnia WIDOCZNE wartości w wierszu bez
 // przeładowania strony. Od usunięcia inline mini-formularzy (URL/kategoria/
 // logo/RODO/DPA/Hosting UE) jedyne, co faktycznie zostało w wierszu do
-// zsynchronizowania, to tekst kolumny "Kategoria" i trzy plakietki
-// 3-stanowe — URL i logo nie mają już żadnego odpowiednika w tabeli.
+// zsynchronizowania, to tekst kolumny "Kategoria", plakietka modelu
+// cenowego i trzy plakietki 3-stanowe — URL, opis, "Najlepsze dla" i logo
+// nie mają żadnego odpowiednika w tabeli.
 function updateRowAfterEdit(id, fields) {
     var categoryCell = document.getElementById('category-cell-' + id);
     if (categoryCell) {
@@ -911,6 +923,12 @@ function updateRowAfterEdit(id, fields) {
             })[0]
             : null;
         categoryCell.textContent = matchingOption ? matchingOption.text : '';
+    }
+
+    var pricingCell = document.getElementById('pricing-cell-' + id);
+    if (pricingCell) {
+        pricingCell.innerHTML = '<span class="badge badge-gray"></span>';
+        pricingCell.firstChild.textContent = fields.pricing_model || '';
     }
 
     updateTriStateDisplay(id, 'rodo', fields.rodo_compliant);
@@ -927,6 +945,7 @@ function saveEditModal() {
         logo_url:        document.getElementById('edit-logo_url').value.trim() || null,
         description_pl:  document.getElementById('edit-description_pl').value.trim() || null,
         best_for_pl:     document.getElementById('edit-best_for_pl').value.trim() || null,
+        pricing_model:   document.getElementById('edit-pricing_model').value,
         rodo_compliant:  triStateFromSelect(document.getElementById('edit-rodo_compliant').value),
         dpa_available:   triStateFromSelect(document.getElementById('edit-dpa_available').value),
         eu_data_hosting: triStateFromSelect(document.getElementById('edit-eu_data_hosting').value),
