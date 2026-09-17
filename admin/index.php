@@ -506,7 +506,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         '&order=' . $tools_order .
         '&limit=' . $tools_page_size .
         '&offset=' . $tools_offset .
-        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,rodo_compliant,dpa_available,eu_data_hosting,ai_act_risk,status,ai_verified_at,categories(name_pl)'
+        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,description_pl,best_for_pl,rodo_compliant,dpa_available,eu_data_hosting,ai_act_risk,status,ai_verified_at,categories(name_pl)'
     );
     $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
@@ -589,6 +589,8 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                             'website_url'     => $tool['website_url'],
                             'category_id'     => $tool['category_id'],
                             'logo_url'        => $tool['logo_url'],
+                            'description_pl'  => $tool['description_pl'],
+                            'best_for_pl'     => $tool['best_for_pl'],
                             'rodo_compliant'  => $tool['rodo_compliant'],
                             'dpa_available'   => $tool['dpa_available'],
                             'eu_data_hosting' => $tool['eu_data_hosting'],
@@ -638,6 +640,14 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                 <div>
                     <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Logo URL</label>
                     <input type="url" id="edit-logo_url" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Opis PL</label>
+                    <textarea id="edit-description_pl" rows="4" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical"></textarea>
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Najlepsze dla</label>
+                    <input type="text" id="edit-best_for_pl" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
                     <div>
@@ -852,6 +862,8 @@ function openEditModal(id, tool) {
     document.getElementById('edit-website_url').value = tool.website_url || '';
     document.getElementById('edit-category_id').value = tool.category_id || '';
     document.getElementById('edit-logo_url').value = tool.logo_url || '';
+    document.getElementById('edit-description_pl').value = tool.description_pl || '';
+    document.getElementById('edit-best_for_pl').value = tool.best_for_pl || '';
     document.getElementById('edit-rodo_compliant').value = triStateToSelectValue(tool.rodo_compliant);
     document.getElementById('edit-dpa_available').value = triStateToSelectValue(tool.dpa_available);
     document.getElementById('edit-eu_data_hosting').value = triStateToSelectValue(tool.eu_data_hosting);
@@ -913,6 +925,8 @@ function saveEditModal() {
         website_url:     document.getElementById('edit-website_url').value.trim(),
         category_id:     document.getElementById('edit-category_id').value || null,
         logo_url:        document.getElementById('edit-logo_url').value.trim() || null,
+        description_pl:  document.getElementById('edit-description_pl').value.trim() || null,
+        best_for_pl:     document.getElementById('edit-best_for_pl').value.trim() || null,
         rodo_compliant:  triStateFromSelect(document.getElementById('edit-rodo_compliant').value),
         dpa_available:   triStateFromSelect(document.getElementById('edit-dpa_available').value),
         eu_data_hosting: triStateFromSelect(document.getElementById('edit-eu_data_hosting').value),
