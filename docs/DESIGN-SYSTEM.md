@@ -74,4 +74,13 @@ Ocena strony jako systemu graficznego: czy typografia, kolory i ikony tworzą sp
 
 ---
 
+### Sesja 2026-09-13 (weryfikacja postępu)
+
+**Sprawdzone na żywo, oba punkty 🔴 bez zmian:**
+- Krój pisma — wciąż `ui-sans-serif, system-ui`, brak własnego fontu
+- Paleta kategorii — "Zarządzanie projektami"/"Cyberbezpieczeństwo AI" wciąż identyczne (chroma 0.003 oba)
+- Skala nagłówków — wciąż 14×`<h2>`, 0×`<h3>`, bez zmian
+
+---
+
 *Utworzono: 2026-09-10, w reakcji na brak tej sesji przy pierwotnym audycie "grafik UI". Aktualizuj po każdej sesji — nowa sekcja na dole, nie nadpisuj historii.*

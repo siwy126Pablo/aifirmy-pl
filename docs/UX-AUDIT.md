@@ -93,4 +93,14 @@ _(brak otwartych punktów wysokiego priorytetu — oba przeniesione do "✅ Zamk
 
 ---
 
+### Sesja 2026-09-13 (weryfikacja postępu)
+
+**Sprawdzone na żywo, oba punkty 🔴 potwierdzone jako zamknięte:**
+- Hero strony głównej — zawiera teraz wyróżnik RODO/AI Act/UE
+- Badge "✗ Nie" → "Nie zweryfikowano" na stronie detalu
+
+**Nie sprawdzone tej rundy (zakładam bez zmian):** pusta przestrzeń w sidebarze, ceny PLN, wyszukiwanie tekstowe na /narzedzia/.
+
+---
+
 *Utworzono: 2026-09-10. Aktualizuj po każdej sesji — nowa sekcja na dole, nie nadpisuj historii.*
