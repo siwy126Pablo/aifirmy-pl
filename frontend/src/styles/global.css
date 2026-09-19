@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+/* Inter, self-hosted przez @fontsource — tylko wagi faktycznie używane w
+   klasach Tailwind (font-medium=500, font-semibold=600, font-bold=700,
+   domyślny tekst=400), nie wszystkie 9 dostępnych. Pełne pliki wagowe (a
+   nie warianty "-latin"/"-latin-ext", które NIE deklarują unicode-range i
+   przy złożeniu dwóch takich reguł dla tej samej wagi ryzykują
+   niejednoznaczny wybór fontu) — dzięki poprawnemu unicode-range w tych
+   plikach przeglądarka i tak pobiera z nich realnie tylko podzbiory latin +
+   latin-ext (pokrywają polskie znaki diakrytyczne ą ć ę ł ń ó ś ź ż),
+   cyrillic/greek/vietnamese nigdy nie trafiają na tę stronę i nie są
+   pobierane mimo obecności deklaracji w CSS. */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
+/* Tailwind v4: theme żyje w CSS, nie w tailwind.config.js. Nadpisanie
+   --font-sans tutaj zmienia zarówno klasę font-sans, jak i domyślny
+   font-family na <html> (Preflight czyta --default-font-family, które
+   samo czyta --font-sans — patrz node_modules/tailwindcss/preflight.css).
+   Fallback stack PO Inter, nie zamiast niego — na wypadek opóźnienia
+   ładowania webfontu. */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+}
