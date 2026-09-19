@@ -562,7 +562,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                     <img src="<?= htmlspecialchars($tool['logo_url']) ?>" alt="" style="width:20px;height:20px;border-radius:4px;object-fit:contain;border:1px solid #eee">
                     <?php endif; ?>
                     <div>
-                        <strong><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= htmlspecialchars($tool['slug']) ?></small>
+                        <strong id="name-cell-<?= htmlspecialchars($tool['id']) ?>"><?= htmlspecialchars($tool['name']) ?></strong><br><small style="color:#9ca3af"><?= htmlspecialchars($tool['slug']) ?></small>
                     </div>
                 </div>
             </td>
@@ -586,6 +586,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                         style="font-size:12px;padding:6px 10px"
                         data-tool-id="<?= htmlspecialchars($tool['id']) ?>"
                         data-tool='<?= htmlspecialchars(json_encode([
+                            'name'            => $tool['name'],
                             'website_url'     => $tool['website_url'],
                             'category_id'     => $tool['category_id'],
                             'logo_url'        => $tool['logo_url'],
@@ -626,6 +627,10 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         <div class="modal-box">
             <h2 style="margin-bottom:16px;font-size:18px">Edytuj narzędzie</h2>
             <div style="display:flex;flex-direction:column;gap:14px">
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Nazwa</label>
+                    <input type="text" id="edit-name" maxlength="30" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                </div>
                 <div>
                     <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">URL strony</label>
                     <input type="url" id="edit-website_url" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
@@ -869,6 +874,7 @@ function openEditModalFromButton(btn) {
 
 function openEditModal(id, tool) {
     editTargetId = id;
+    document.getElementById('edit-name').value = tool.name || '';
     document.getElementById('edit-website_url').value = tool.website_url || '';
     document.getElementById('edit-category_id').value = tool.category_id || '';
     document.getElementById('edit-logo_url').value = tool.logo_url || '';
@@ -909,11 +915,16 @@ function updateTriStateDisplay(id, prefix, value) {
 
 // Po udanym PATCH z modala: uaktualnia WIDOCZNE wartości w wierszu bez
 // przeładowania strony. Od usunięcia inline mini-formularzy (URL/kategoria/
-// logo/RODO/DPA/Hosting UE) jedyne, co faktycznie zostało w wierszu do
-// zsynchronizowania, to tekst kolumny "Kategoria", plakietka modelu
-// cenowego i trzy plakietki 3-stanowe — URL, opis, "Najlepsze dla" i logo
-// nie mają żadnego odpowiednika w tabeli.
+// logo/RODO/DPA/Hosting UE) w wierszu do zsynchronizowania zostały: nazwa,
+// tekst kolumny "Kategoria", plakietka modelu cenowego i trzy plakietki
+// 3-stanowe — URL, opis, "Najlepsze dla" i logo nie mają żadnego
+// odpowiednika w tabeli.
 function updateRowAfterEdit(id, fields) {
+    var nameCell = document.getElementById('name-cell-' + id);
+    if (nameCell) {
+        nameCell.textContent = fields.name || '';
+    }
+
     var categoryCell = document.getElementById('category-cell-' + id);
     if (categoryCell) {
         var categorySelect = document.getElementById('edit-category_id');
@@ -940,6 +951,7 @@ function saveEditModal() {
     if (!editTargetId) return;
     var id = editTargetId;
     var fields = {
+        name:            document.getElementById('edit-name').value.trim(),
         website_url:     document.getElementById('edit-website_url').value.trim(),
         category_id:     document.getElementById('edit-category_id').value || null,
         logo_url:        document.getElementById('edit-logo_url').value.trim() || null,
