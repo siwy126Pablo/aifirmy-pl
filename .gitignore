@@ -12,3 +12,6 @@ dist/
 .DS_Store
 .idea/
 
+# Ad-hoc script output (audit CSVs etc.)
+scraper/reports/
+
