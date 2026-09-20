@@ -292,6 +292,93 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 ### Następny krok
 - Pilot scrapera YC-OSS jako alternatywa dla NiFi (PHP + GitHub Actions scheduled workflow) — activity_log gotowe do przyjęcia logów ze scrapera (source='scraper:yc_ai_pilot', run_id do wykorzystania)
 
+---
+
+## [v0.14] — 2026-09-13/15 (sesja UX — audyt katalogu)
+
+### Zrobione
+- ✅ Hero strony głównej z wyróżnikiem RODO/AI Act/UE (`a032d72`, `1f90b02`) — wcześniej tylko na `/premium`
+- ✅ Migracja `002_tri_state_compliance_fields.sql` — `rodo_compliant`/`dpa_available`/`eu_data_hosting` nullable (NULL = nie zweryfikowano); trigger `promote_scrape_to_tools()`, panel admina (tri-state select) i frontend (kafelki + FAQ) zaktualizowane
+- ✅ "🔍 Znalezione sygnały" w modalu weryfikacji — dosłowne cytaty ze strony o RODO/DPA/hostingu UE, bez oceny, zapis nadal ręczny (`79243aa`)
+- ✅ Badge AI Act "minimalny" wyciszony do szarego (`1945ddd`)
+- ✅ Wyszukiwanie tekstowe na `/narzedzia/` — debounce + `pagefind.search()` z filtrem kategorii, naprawiony bug empty-state (`2976272`)
+- ✅ Formularz "Dodaj wpis" przyjmuje `price_from_pln` (`664c416`)
+- ✅ 19.09: font Inter self-hosted (`5c68209`), nowe kolory kategorii Zarządzanie projektami i Cyberbezpieczeństwo AI (`c93f7f0`)
+
+### Odkrycia / problemy
+- `price_from_pln` wypełnione dla 0,9% wpisów (3/329), wszystkie z jednorazowej partii z tygodnia 1 — deklarowany wyróżnik "ceny w PLN" nie miał pokrycia w danych
+- Zasada "rodo_compliant manual-only" pozostaje w mocy — "Znalezione sygnały" to evidence (cytat), nie ocena; wyjątek udokumentowany w `CLAUDE.md`
+- Pagefind zlewa `false`/`null` w meta `rodo:`/`eu_hosting:` — do naprawy razem z filtrem po statusie zgodności
+
+### Zmieniam podejście do
+- Pozycjonowanie: "RODO + AI Act + PLN" → **"RODO + AI Act"** (PLN jako bonus) w `CLAUDE.md`/`ARCHITECTURE.md`/`SEO.md`; UI cen odłożone do wyższego fill rate
+
+### Następny krok
+- Otwarte, niski priorytet: duplikacja homepage/`/narzedzia/`, badge "Najpopularniejszy" na `/premium` (usunięcie zlecone, wykonanie niepotwierdzone — na 20.09 wciąż w kodzie), "Podobne narzędzia" tylko wg kategorii
+
+---
+
+## [v0.15] — 2026-09-15 (refaktoryzacja panelu admina — zakładka "Narzędzia")
+
+### Zrobione
+- ✅ Wyszukiwanie po nazwie + filtr kategorii + sortowalne nagłówki (`tools_tab_url()` współdzielone z paginacją) (`f7b26dd`)
+- ✅ Modal edycji `#edit-modal` — wszystkie pola jednym PATCH przez wspólny `patchTool()`, zastępuje 3 zduplikowane funkcje `save*` (`cc1a12c`)
+- ✅ Mini-formularze zastąpione read-only badge'ami (`785306f`): 6→0 pól formularza, 9→3 przyciski/wiersz, −36% rozmiaru szablonu wiersza
+
+### Odkrycia / problemy
+- Problemem nie był rozmiar ani paginacja, tylko gęstość interakcji (6 zawsze widocznych mini-formularzy, ~20 elementów DOM na wiersz)
+
+### Następny krok
+- Modal edycji rozszerzany w sesji Content o kolejne pola (v0.16)
+
+---
+
+## [v0.16] — 2026-09-13/19 (sesja Content/Copywriting — audyt jakości języka)
+
+### Zrobione
+- ✅ `CONTENT-GUIDE.md` — źródło prawdy dla tonu i jakości copy (`c7cbb1f`)
+- ✅ `verify_tool.php` — reguły jakości języka w prompcie (diakrytyki, gramatyka, długość, ton, 3. osoba, bez etykiet pól) (`4fed1fe`, `6dd180c`)
+- ✅ Audyt ~245/300 wpisów: ~61 jednoznacznych błędów (Wzorzec A "Dla: Dla..." ×35, mieszanie osób ×12, gramatyka ×7, diakrytyki ×4 + pojedyncze) i ~55 wpisów w stylu Wzorca B
+- ✅ Masowa regeneracja ~50 wpisów przez panel: ~20 przyjętych w całości, ~15 częściowo, ~8 odrzuconych
+- ✅ 4 wpisy usunięte jako martwe/rebrandowane: Legora, Tokenless (→ Touchy), Hotjar (→ Contentsquare), PilotCite (→ AEO Mantis)
+- ✅ RODO/DPA/hosting UE zebrane dla ~35 narzędzi przez web search
+- ✅ Modal "Edytuj": ręczna edycja `description_pl`/`best_for_pl` (`fb571b0`), `pricing_model` (`398c151`), `name` (`793ef84`)
+
+### Odkrycia / problemy
+- Regeneracja AI systematycznie gubi polski kontekst rynkowy z ręcznych wpisów (Rossum — KSeF; Surfer SEO, Woodpecker.co — polskie firmy z Wrocławia)
+- Możliwa halucynacja modelu "Qwen3.8-27B" w yolo-auto-api, możliwy duplikat rows-ai/rows — do sprawdzenia
+
+### Zmieniam podejście do
+- Wzorzec B (~55 wpisów w stylu 1-zdaniowym, konwencja z sierpnia) potraktowany jako decyzja stylistyczna, nie bug — odłożony jako "Faza 4 audytu contentu"
+
+### Następny krok
+- Decyzja stylistyczna ws. Wzorca B (niska pilność)
+
+---
+
+## [v0.17] — 2026-09-16/19 (audyt `website_url` całego katalogu)
+
+### Zrobione
+- ✅ Jednorazowy skrypt PHP (`scraper/url_audit.php`) + workflow (`cc5fd5f`; workflow `url-audit-oneshot.yml` usunięty 20.09 po zamknięciu audytu): 283 sprawdzone, 43 oflagowane (~15%)
+- ✅ 7 przypadków doprowadzonych do końca: 3 usunięte (Drift → 1mind/Salesloft, Causal → Lucanet/xP&A, Understudy → Orchestra.ai), 1 naprawiony (Brainware: Kofax → Hyland), 1 fałszywy alarm (MailBroom)
+- ✅ Łącznie w audycie contentu (13–19.09) usunięto 7 produktów (Legora, Tokenless, Hotjar, PilotCite, Drift, Causal, Understudy); stan bazy 20.09: 284 zatwierdzone
+
+### Odkrycia / problemy
+- ~15% `website_url` w katalogu oflagowane. Wśród przypadków doprowadzonych do końca: produkty przejęte/rebrandowane i błędne przypisanie do innej firmy (Brainware); pozostałe ~37 to głównie HTTP 403 i konsolidacje domen
+
+### Następny krok
+- Pozostałe ~37 oflagowanych URL-i (niska pilność), Amorphic Labs (nazwa firmy vs. produkt), decyzja ws. opisu Brainware
+
+---
+
+## [v0.18] — 2026-09-19 (growth — pierwszy post LinkedIn)
+
+### Zrobione
+- ✅ Post 1 LinkedIn (RODO/AI Act) opublikowany 19.09.2026 — pierwszy krok Fazy 1 po sesji strategicznej z 13.09
+
+### Następny krok
+- Post 2 LinkedIn (draft w Notion) i start cold outreachu — wciąż nierozpoczęte
+
 
 
 ```

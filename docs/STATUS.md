@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-09-13
+> Ostatnia aktualizacja: 2026-09-20
 
 ---
 
@@ -7,14 +7,14 @@
 
 | Element | Status |
 |---|---|
-| **Faza** | Projekt live, generujący przychód. Katalog urósł z ~90 do ~260+ narzędzi. Ruch organiczny rośnie tydzień do tygodnia. 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. |
+| **Faza** | Projekt live, generujący przychód. Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09). Ruch organiczny rośnie tydzień do tygodnia. 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. |
 | **Domena** | ✅ aifirmy.pl (Cyberfolks) + www→apex redirect (Cloudflare) |
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
 | **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii |
 | **Pipeline NiFi** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API, dwuwarstwowy filtr jakości |
-| **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09) |
+| **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09), hero z wyróżnikiem RODO/AI Act/UE (13.09), tri-state RODO/DPA/EU hosting (14.09), wyszukiwanie tekstowe na `/narzedzia/` (15.09), font Inter (19.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
-| **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony), panel logów błędów (activity_log, 13.09) |
+| **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony), panel logów błędów (activity_log, 13.09), modal edycji + wyszukiwanie/filtr/sortowanie w zakładce "Narzędzia" (15–19.09), "Znalezione sygnały" RODO/DPA/UE w weryfikacji (14.09) |
 | **Monetyzacja** | ✅ Stripe Live mode, checkout + webhook, email po zakupie |
 | **Affiliate** | ✅ ClickUp/PartnerStack aktywny |
 | **Analytics** | ✅ Search Console (główne źródło prawdy) + AWStats; ⚠️ GA4 niewiarygodne (patrz niżej) |
@@ -174,10 +174,76 @@ cold outreach) + zbieranie realnego feedbacku.
 | 2026-09-19 | 1 | 0 | — |
 
 ### Zadania z tej sesji
-- [ ] Opublikować 2 gotowe posty LinkedIn (drafty w Notion)
+- [x] Post 1 LinkedIn opublikowany (19.09)
+- [ ] Post 2 LinkedIn opublikować (draft w Notion)
 - [ ] Rozpocząć cold outreach — ustalić minimalny tygodniowy commitment i zacząć
 - [ ] Zebrać 3–5 nieformalnych rozmów/feedbacków od użytkowników/klientów katalogu
 - [ ] Powtarzać rytuał sesji strategicznej: trend ruchu + bilans czasu produkt/growth + 1 decyzja na sesję
+
+---
+
+## ✅ Sesja UX 2026-09-13/15 — audyt katalogu (zamknięta niemal w całości)
+
+Realizacja punktów z audytu UX (pełna lista i historia rund: `UX-AUDIT.md`, Notion "Sesja UX 2026-09-13").
+
+- **Hero strony głównej** — dopisany główny wyróżnik (RODO / AI Act / hosting UE), wcześniej komunikowany tylko na `/premium` (`a032d72`, `1f90b02`)
+- **RODO/DPA/EU hosting jako 3 stany** — migracja `db/migrations/002_tri_state_compliance_fields.sql`: pola BOOLEAN nullable (NULL = nie zweryfikowano, zamiast domyślnego `false`). Backfill, trigger `promote_scrape_to_tools()` zaktualizowany, panel admina (tri-state select), frontend (kafelki "Zgodność i dane" + FAQ rozróżniają 3 stany) — `a4302d9`, `72067cd`, `3a1ad28`
+- **Cena PLN** — fill rate `price_from_pln` = **0,9% (3/329 w audycie; 3 z 284 zatwierdzonych na 20.09)**, wszystkie z jednorazowej partii z tygodnia 1, w pipeline/panelu nie było ścieżki do ich ustawiania. Deklaracja pozycjonowania skorygowana z "RODO + AI Act + PLN" na **"RODO + AI Act"** (PLN jako bonus) w `CLAUDE.md`/`ARCHITECTURE.md`/`SEO.md` (`f5d6222`). Formularz "Dodaj wpis" odblokowany dla `price_from_pln` (`664c416`); UI renderowania cen świadomie odłożone do wyższego fill rate
+- **Badge AI Act "minimalny"** — wyciszony wizualnie (`bg-green-100/text-green-800` → `bg-gray-100/text-gray-500`), żeby rzadsze, bardziej decyzyjne poziomy ryzyka wyraźniej się wyróżniały (`1945ddd`)
+- **Wyszukiwanie tekstowe na `/narzedzia/`** — debounced input + `pagefind.search()` łączone z filtrem kategorii, przy okazji naprawiony bug empty-state (`2976272`)
+- **Nowa funkcja panelu: "🔍 Znalezione sygnały"** w modalu weryfikacji — AI zwraca dosłowne cytaty ze strony nt. RODO/DPA/hostingu UE (bez oceny zgodności), czysto informacyjne, zapis nadal wyłącznie ręczny. Świadomie **nie** koliduje z zasadą "rodo_compliant manual-only" (opis wyjątku w `CLAUDE.md`, `eea5da9`) — `79243aa`, doprecyzowanie panelu `0f5e4cc`
+- **Krój pisma i kolory kategorii (19.09, z git log)** — self-hosted Inter przez `@fontsource` zamiast czcionki systemowej (`5c68209`); nowe, rozróżnialne kolory dla "Zarządzanie projektami" i "Cyberbezpieczeństwo AI" — poprzednie były praktycznie identyczne i bezbarwne (chroma ~0.003) (`c93f7f0`). Szczegóły w `DESIGN-SYSTEM.md`
+
+**Otwarte (niski priorytet):**
+- Duplikacja strony głównej i `/narzedzia/`
+- Badge "Najpopularniejszy" na `/premium` — prompt do usunięcia dany, **wykonanie niepotwierdzone**. Stan kodu na 20.09: badge nadal jest w `frontend/src/pages/premium.astro:95` (`pkg.highlight`) na `main`, więc usunięcie nie trafiło do repo (sprawdzić, czy nie leży niewypchnięte na drugim komputerze)
+- "Podobne narzędzia" tylko wg kategorii, nie prawdziwego podobieństwa
+- Meta Pagefind zlewa `false`/`null` (patrz sekcja audytu UX niżej)
+
+---
+
+## ✅ Sesja Content/Copywriting 2026-09-13/19 — audyt jakości języka (zamknięta)
+
+**Zrobione:**
+- `CONTENT-GUIDE.md` napisany i zaakceptowany (`c7cbb1f`) — źródło prawdy dla tonu/copy, analogiczne do `ARCHITECTURE.md` dla kodu
+- `verify_tool.php` — prompt wzmocniony o reguły jakości języka: diakrytyki, zgodność gramatyczna, długość 2 zdań, bez tonu marketingowego, bez podwójnego "Dla: Dla...", wymuszona 3. osoba, bez etykiet pól typu "Tagline:" w treści (`4fed1fe`, `6dd180c`)
+- **Pełny audyt ~245/300 wpisów** (ręczny, Chrome) — ~61 jednoznacznych błędów: Wzorzec A "Dla: Dla..." ×35, mieszanie osób ×12, gramatyka ×7, diakrytyki ×4 + pojedyncze (Crisp: "Tagline:" w treści, Legora: wymieszane dane, rows-ai/rows: możliwy duplikat, yolo-auto-api: możliwa halucynacja modelu "Qwen3.8-27B"). Do tego ~55 przypadków stylu 1-zdaniowego bez nazwy narzędzia (**Wzorzec B** — konwencja ręcznych wpisów z sierpnia, decyzja stylistyczna, nie bug; wciąż otwarta jako "Faza 4 audytu contentu", patrz Backlog)
+- **Faza 3 — masowa regeneracja ~50 wpisów przez panel:** ~20 zaakceptowanych w całości, ~15 częściowo, ~8 odrzuconych (regeneracja pogorszyła dane), **4 wpisy usunięte jako martwe/rebrandowane produkty:** Legora (dane skażone, firma na sprzedaż), Tokenless (rebranding na "Touchy"), Hotjar (wchłonięty przez Contentsquare), PilotCite (rebranding na "AEO Mantis")
+- RODO/DPA/hosting UE zebrane web searchem dla ~35 narzędzi (m.in. n8n, UiPath, Mixpanel, Contentsquare/Hotjar — hosting UE potwierdzony; Fathom, Linear — potwierdzone "Nie")
+- **Nowe funkcje panelu:** ręczna edycja `description_pl`/`best_for_pl` (wolny tekst, `fb571b0`), `pricing_model` (select, `398c151`) i `name` (input, `793ef84`) w modalu "Edytuj" — niezależnie od "Zweryfikuj przez AI"
+
+**Potwierdzony wzorzec:** regeneracja AI systematycznie gubi polski kontekst rynkowy wpisany ręcznie w sierpniu (Rossum straciło wzmiankę o KSeF, Surfer SEO i Woodpecker.co straciły fakt bycia polskimi firmami z Wrocławia).
+---
+
+## ✅ Audyt `website_url` całego katalogu (16–19.09) — zamknięty
+
+- Jednorazowy skrypt PHP (`scraper/url_audit.php`) + workflow GitHub Actions (`cc5fd5f`; workflow `url-audit-oneshot.yml` usunięty 20.09 po zamknięciu audytu): **283 sprawdzone, 43 oflagowane (~15%)**
+- 7 przypadków doprowadzonych do końca, m.in.:
+  - **3 kolejne wpisy usunięte:** Drift (przejęty, stał się "1mind" w Salesloft), Causal (wchłonięty przez Lucanet/xP&A), Understudy (domena to teraz Orchestra.ai)
+  - **1 naprawiony:** Brainware — błędnie przypisany do Kofax, faktycznie Hyland; URL/nazwa/kategoria/cennik/logo poprawione, opis czeka na decyzję
+  - **1 fałszywy alarm:** MailBroom
+- **Łącznie w wątku audytu contentu (13–19.09) usunięto 7 produktów:** Legora, Tokenless, Hotjar, PilotCite, Drift, Causal, Understudy. Stan bazy 20.09: **284 zatwierdzone**, 48 odrzuconych, 10 kategorii (zapytanie do Supabase `status=eq.approved`)
+- **Otwarte:** pozostałe ~37 oflagowanych URL-i (głównie HTTP 403 / konsolidacje domen, niska pilność), Amorphic Labs (możliwa nazwa firmy vs. produkt), decyzja ws. opisu Brainware
+
+---
+
+## ✅ Refaktoryzacja panelu admina — zakładka "Narzędzia" (15.09)
+
+**Diagnoza:** problemem nie był rozmiar/paginacja, tylko gęstość interakcji — 6 zawsze widocznych mini-formularzy na wiersz, ~20 elementów DOM/wiersz.
+
+**Zrobione:**
+- Wyszukiwanie po nazwie + filtr kategorii + sortowalne nagłówki, parametry URL współdzielone z paginacją przez `tools_tab_url()` (`f7b26dd`)
+- Modal edycji (`#edit-modal`) — wszystkie pola jednym PATCH przez wspólny `patchTool()`, zastępuje 3 zduplikowane funkcje `save*` (`cc1a12c`)
+- Stare mini-formularze zastąpione read-only badge'ami (`785306f`): **6→0 pól formularza, 9→3 przyciski/wiersz, −36% rozmiaru szablonu wiersza**
+- Modal później rozszerzony o edycję `description_pl`/`best_for_pl`/`pricing_model`/`name` (patrz sekcja Content wyżej)
+
+---
+
+## 📣 Growth — status na 20.09
+
+- ✅ **Post 1 LinkedIn (RODO/AI Act) OPUBLIKOWANY 19.09.2026**
+- Post 2 LinkedIn — wciąż tylko draft w Notion
+- Cold outreach — nadal nie rozpoczęty
 
 ---
 
@@ -229,11 +295,11 @@ Pełna lista i uzasadnienia: Notion, sekcja "Sesja UX 2026-09-13".
 **🔴 Wysoki priorytet**
 - [x] Hero strony głównej nie komunikuje wyróżnika RODO/AI Act/UE (jest tylko na `/premium`)
 - [x] Badge RODO/DPA na `[slug].astro` czyta się jak "niezgodny", nie "nie zweryfikowano"
-- [ ] Ceny w PLN (deklarowany wyróżnik) nie są widoczne nigdzie w UI
+- [x] Ceny w PLN nie są widoczne w UI — rozstrzygnięte 15.09: deklaracja wyróżnika skorygowana do "RODO + AI Act" (fill rate 0,9%), UI renderowania świadomie odłożone
 
 **🟡 Średni priorytet**
-- [ ] Badge AI Act "minimalny" na ~90% kart bez zróżnicowania wizualnego od rzadszych, ważniejszych poziomów
-- [ ] Brak widocznego pola wyszukiwania tekstowego na `/narzedzia/` (tylko pigułki kategorii)
+- [x] Badge AI Act "minimalny" na ~90% kart bez zróżnicowania wizualnego — wyciszony do szarego (15.09)
+- [x] Brak widocznego pola wyszukiwania tekstowego na `/narzedzia/` — dodane (15.09)
 - [ ] Strona główna duplikuje `/narzedzia/` zamiast pełnić odrębną rolę
 
 **🟢 Niski priorytet**
@@ -259,9 +325,9 @@ Pełna lista i uzasadnienia: Notion, sekcja "Sesja UX 2026-09-13".
   w jedno `'false'` — do naprawy razem z "kolejne wymiary filtrowania w UI (cennik, AI Act)"
   jeśli/gdy powstanie filtr po statusie zgodności na `/narzedzia/`.
 
-Pozostałe punkty audytu (ceny PLN niewidoczne, badge AI Act bez zróżnicowania, brak
-wyszukiwania tekstowego, duplikacja homepage/`/narzedzia/`, social proof "Najpopularniejszy",
-"Podobne narzędzia" tylko wg kategorii) — nadal otwarte, pełna lista w Notion.
+Pozostałe punkty audytu: ceny PLN, badge AI Act i wyszukiwanie tekstowe — zamknięte 15.09
+(patrz sekcja "Sesja UX 2026-09-13/15" wyżej). Nadal otwarte (niski priorytet): duplikacja
+homepage/`/narzedzia/`, social proof "Najpopularniejszy", "Podobne narzędzia" tylko wg kategorii.
 
 ---
 
@@ -270,12 +336,23 @@ wyszukiwania tekstowego, duplikacja homepage/`/narzedzia/`, social proof "Najpop
 ### 🗺️ Plan działań (ustalony 23.08, wciąż aktualny)
 
 1. ✅ Nowe źródła NiFi (Priorytet #1) — zrobione (YC-OSS API)
-2. **Faza 1 — Wznowienie growth** — LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 260+ narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
+2. **Faza 1 — Wznowienie growth** — LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 284 zatwierdzonych narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
+   - ✅ Post 1 LinkedIn (RODO/AI Act) — opublikowany 19.09.2026
+   - [ ] Post 2 LinkedIn — wciąż tylko draft w Notion
+   - [ ] Cold outreach — nadal nie rozpoczęty
 3. **Faza 2 — Monetyzacja etap 2** — AdSense po przekroczeniu 1000 UV/mc (obecnie realny ruch zewnętrzny wciąż daleko od progu); rozważyć 2-3 kolejne programy afiliacyjne
 4. **Faza 3** — Newsletter, raport branżowy PDF (po ustabilizowaniu ruchu/bazy odbiorców)
 5. **Faza 4 — Artykuły o AI** — świadomie odłożone (ryzyko szkodliwości błędów, praw autorskich, art. 50 ust. 4 AI Act, koszt czasowy); wrócić gdy ruch i jakość pipeline'u dojrzeją
 
+### 🔵 Faza 4 audytu contentu — decyzja stylistyczna (Wzorzec B)
+> Uwaga: to numeracja faz *audytu jakości języka* (13–19.09), niezależna od "Fazy 4 — Artykuły o AI" z planu działań powyżej.
+- [ ] ~55 wpisów w stylu 1-zdaniowym bez nazwy narzędzia (konwencja ręcznych wpisów z sierpnia) — zdecydować: zostawić jako świadomy styl czy ujednolicić wg `CONTENT-GUIDE.md`. Niska pilność, decyzja stylistyczna, nie bug
+
 ### 🟡 Inne otwarte punkty
+- [ ] Pozostałe ~37 oflagowanych URL-i z audytu `website_url` (głównie HTTP 403 / konsolidacje domen, niska pilność)
+- [ ] Amorphic Labs — możliwa nazwa firmy zamiast nazwy produktu
+- [ ] Brainware — decyzja ws. opisu (URL/nazwa/kategoria/cennik/logo już poprawione)
+- [ ] Badge "Najpopularniejszy" na `/premium` — usunięcie zlecone, wykonanie do potwierdzenia (na 20.09 nadal w `premium.astro:95` na `main`)
 - [ ] Podpięcie wypłat Stripe/PayPal w PartnerStack (ręcznie, Pablo)
 - [ ] Newsletter, raport branżowy PDF, konta premium@/newsletter@
 - [ ] Rozważyć rozszerzenie YC-OSS o dodatkowe tagi (`saas.json`, `b2b.json`) jeśli sam tag AI okaże się za wąski/za szeroki
@@ -292,9 +369,9 @@ wyszukiwania tekstowego, duplikacja homepage/`/narzedzia/`, social proof "Najpop
 | Frontend | Astro 6 + Tailwind CSS v4 | SSG, 10 ikon kategorii SVG duotone |
 | ETL / Scraping | Apache NiFi 2.9.0 | Lokalnie Windows, **4 źródła** (HN/BetaList/Product Hunt/YC-OSS API), dwuwarstwowy filtr jakości |
 | AI opisy (pipeline) | OpenAI gpt-4o-mini | Zwraca best_for_pl, is_real_product; YC branch ma dodatkowy source_context |
-| AI weryfikacja (admin) | OpenAI gpt-4o-mini | `response_format: json_object`, kategoria AI Act hint dla 7/10 kategorii, logo fix wdrożony |
+| AI weryfikacja (admin) | OpenAI gpt-4o-mini | `response_format: json_object`, kategoria AI Act hint dla 7/10 kategorii, logo fix wdrożony, reguły jakości języka (wg `CONTENT-GUIDE.md`), cytaty RODO/DPA/UE jako evidence (bez oceny) |
 | Baza danych | Supabase PostgreSQL free | eu-central-1; 10 kategorii; trigger `promote_scrape_to_tools()` |
-| Admin panel | PHP + Supabase REST API | /admin/index.php, /admin/affiliate.php, /admin/verify_tool.php |
+| Admin panel | PHP + Supabase REST API | /admin/index.php, /admin/affiliate.php, /admin/verify_tool.php, /admin/logs.php |
 | Hosting | Cyberfolks (LiteSpeed) | Frontend + PHP admin + webhook |
 | CDN / ochrona | Cloudflare | SSL Full, Redirect Rules (www→apex) |
 | CI/CD | GitHub Actions | Auto-deploy, workflow_dispatch, SCP całego admin/ |
