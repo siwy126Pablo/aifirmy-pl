@@ -217,7 +217,7 @@ Realizacja punktów z audytu UX (pełna lista i historia rund: `UX-AUDIT.md`, No
 
 ## ✅ Audyt `website_url` całego katalogu (16–19.09) — zamknięty
 
-- Jednorazowy skrypt PHP (`scraper/url_audit.php`) + workflow GitHub Actions (`cc5fd5f`; workflow `url-audit-oneshot.yml` usunięty 20.09 po zamknięciu audytu): **283 sprawdzone, 43 oflagowane (~15%)**
+- Skrypt PHP (`scraper/url_audit.php`) + workflow GitHub Actions (`cc5fd5f`; workflow `url-audit-oneshot.yml` przekształcony 20.09 na cykliczny `url-audit.yml` — co kwartał, 1.01/1.04/1.07/1.10 o 4:00 UTC + ręcznie; katalog rośnie, a firmy stale znikają, rebrandują się i zmieniają domeny, więc potrzebny jest stały nadzór nad URL-ami, nie tylko jednorazowy; najbliższy przebieg 1.10.2026): **283 sprawdzone, 43 oflagowane (~15%)**
 - 7 przypadków doprowadzonych do końca, m.in.:
   - **3 kolejne wpisy usunięte:** Drift (przejęty, stał się "1mind" w Salesloft), Causal (wchłonięty przez Lucanet/xP&A), Understudy (domena to teraz Orchestra.ai)
   - **1 naprawiony:** Brainware — błędnie przypisany do Kofax, faktycznie Hyland; URL/nazwa/kategoria/cennik/logo poprawione, opis czeka na decyzję
@@ -350,6 +350,7 @@ homepage/`/narzedzia/`, social proof "Najpopularniejszy", "Podobne narzędzia" t
 
 ### 🟡 Inne otwarte punkty
 - [ ] Pozostałe ~37 oflagowanych URL-i z audytu `website_url` (głównie HTTP 403 / konsolidacje domen, niska pilność)
+- [ ] Kwartalny audyt URL (`url-audit.yml`): skrypt nie powiadamia o flagowanych wpisach (job kończy się zielono) — po każdym przebiegu przejrzeć wyniki w `admin/logs.php` (source=`url_audit`) lub w artefakcie CSV. Skrypt nie odróżnia nowych flag od znanych, więc ~37 obecnych będzie wracać co kwartał; rozważyć dedup/`last_checked` dopiero gdy to zacznie przeszkadzać
 - [ ] Amorphic Labs — możliwa nazwa firmy zamiast nazwy produktu
 - [ ] Brainware — decyzja ws. opisu (URL/nazwa/kategoria/cennik/logo już poprawione)
 - [ ] Badge "Najpopularniejszy" na `/premium` — usunięcie zlecone, wykonanie do potwierdzenia (na 20.09 nadal w `premium.astro:95` na `main`)

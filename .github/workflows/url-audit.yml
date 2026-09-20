@@ -1,0 +1,25 @@
+name: URL Audit (kwartalny)
+
+on:
+  schedule:
+    - cron: '0 4 1 */3 *'   # 1. dnia miesiąca co 3 miesiące (sty/kwi/lip/paź), 4:00 UTC — po pilocie YC (3:00 UTC)
+  workflow_dispatch: {}      # ręczne uruchomienie między cyklami, np. po dużej partii nowych wpisów
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Run URL audit
+        env:
+          SUPABASE_URL:      ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+        run: php scraper/url_audit.php
+      - name: Upload CSV report
+        uses: actions/upload-artifact@v4
+        with:
+          name: url-audit-report
+          path: scraper/reports/*.csv

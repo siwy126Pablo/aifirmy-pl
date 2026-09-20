@@ -359,7 +359,7 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 ## [v0.17] — 2026-09-16/19 (audyt `website_url` całego katalogu)
 
 ### Zrobione
-- ✅ Jednorazowy skrypt PHP (`scraper/url_audit.php`) + workflow (`cc5fd5f`; workflow `url-audit-oneshot.yml` usunięty 20.09 po zamknięciu audytu): 283 sprawdzone, 43 oflagowane (~15%)
+- ✅ Skrypt PHP (`scraper/url_audit.php`) + workflow (`cc5fd5f`; workflow `url-audit-oneshot.yml` przekształcony 20.09 na cykliczny `url-audit.yml` — co kwartał + ręcznie; katalog rośnie, potrzebny stały nadzór nad URL-ami, nie tylko jednorazowy): 283 sprawdzone, 43 oflagowane (~15%)
 - ✅ 7 przypadków doprowadzonych do końca: 3 usunięte (Drift → 1mind/Salesloft, Causal → Lucanet/xP&A, Understudy → Orchestra.ai), 1 naprawiony (Brainware: Kofax → Hyland), 1 fałszywy alarm (MailBroom)
 - ✅ Łącznie w audycie contentu (13–19.09) usunięto 7 produktów (Legora, Tokenless, Hotjar, PilotCite, Drift, Causal, Understudy); stan bazy 20.09: 284 zatwierdzone
 

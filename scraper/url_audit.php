@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-// Jednorazowy skrypt weryfikacyjny: sprawdza website_url wszystkich narzędzi
+// Skrypt weryfikacyjny (uruchamiany kwartalnie przez
+// .github/workflows/url-audit.yml oraz ręcznie): sprawdza website_url wszystkich narzędzi
 // status='approved' w tabeli tools. Tylko zbiera dane (kod HTTP, finalny URL
 // po przekierowaniach, <title>) do RĘCZNEGO przeglądu — nie ocenia, czy
 // treść strony faktycznie pasuje do narzędzia (to wymaga osądu, nie regexa),
