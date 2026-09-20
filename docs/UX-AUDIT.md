@@ -101,6 +101,8 @@ _(brak otwartych punktów wysokiego priorytetu — oba przeniesione do "✅ Zamk
 
 **Nie sprawdzone tej rundy (zakładam bez zmian):** pusta przestrzeń w sidebarze, ceny PLN, wyszukiwanie tekstowe na /narzedzia/.
 
+**Aktualizacja 19.09:** wyszukiwanie tekstowe na `/narzedzia/` (punkt 🟡) potwierdzone jako zrobione — pole "Szukaj narzędzia po nazwie lub opisie..." działa na produkcji.
+
 ---
 
 *Utworzono: 2026-09-10. Aktualizuj po każdej sesji — nowa sekcja na dole, nie nadpisuj historii.*

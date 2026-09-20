@@ -83,4 +83,16 @@ Ocena strony jako systemu graficznego: czy typografia, kolory i ikony tworzą sp
 
 ---
 
+### Sesja 2026-09-19 (naprawa obu punktów 🔴)
+
+**Zrobione i zweryfikowane na żywo na produkcji:**
+- Krój pisma: Inter, self-hosted przez `@fontsource/inter` (`5c68209`), tylko wagi faktycznie używane (400/500/600/700), pełne pliki wagowe (nie `-latin`/`-latin-ext`) ze względu na poprawny `unicode-range`. Fallback stack zachowany po Inter. Zweryfikowane: 8/28 plików realnie załadowanych na produkcji, polskie znaki diakrytyczne renderują się poprawnie.
+- Paleta kolorów: nowe, rozróżnialne kolory dla "Zarządzanie projektami" (hue 217, środek luki teal→blue) i "Cyberbezpieczeństwo AI" (hue 130, środek luki amber→emerald) — `4e504b3`, poprawka gamutu w `c93f7f0`. Kolor tekstu "Zarządzanie projektami" pierwotnie poza gamutem sRGB (R liniowe ujemne) — naprawione do jawnie w-gamucie `oklch(56% 0.1 217)` = `#00829b`, granica gamutu wyznaczona wyszukiwaniem binarnym (C≈0.100019), zweryfikowana dwiema niezależnymi metodami konwersji zgodnymi do 1e-9. Zweryfikowane wizualnie na produkcji: oba kolory jednoznacznie rozróżnialne.
+
+**Przy okazji odkryte:** wyszukiwanie tekstowe na `/narzedzia/` (punkt 🟡 z tej samej listy) już istnieje — zrobione poza tą sesją, potwierdzone na żywo.
+
+**Zamknięte:** oba punkty 🔴. Zostają: skala typograficzna (`<h2>` niekonsekwentne, brak `<h3>`), rozjazd pola `icon` w DB vs. renderowanie — oba 🟡.
+
+---
+
 *Utworzono: 2026-09-10, w reakcji na brak tej sesji przy pierwotnym audycie "grafik UI". Aktualizuj po każdej sesji — nowa sekcja na dole, nie nadpisuj historii.*
