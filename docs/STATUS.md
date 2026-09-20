@@ -206,24 +206,24 @@ Realizacja punktów z audytu UX (pełna lista i historia rund: `UX-AUDIT.md`, No
 
 **Zrobione:**
 - `CONTENT-GUIDE.md` napisany i zaakceptowany (`c7cbb1f`) — źródło prawdy dla tonu/copy, analogiczne do `ARCHITECTURE.md` dla kodu
-- `verify_tool.php` — prompt wzmocniony o reguły jakości języka: diakrytyki, zgodność gramatyczna, długość 2 zdań, bez tonu marketingowego, bez podwójnego "Dla: Dla...", wymuszona 3. osoba, bez etykiet pól typu "Tagline:" w treści (`4fed1fe`, `6dd180c`)
+- `verify_tool.php` — prompt wzmocniony o reguły jakości języka: diakrytyki, zgodność gramatyczna, długość 2 zdań, bez tonu marketingowego, bez podwójnego "Dla: Dla...", wymuszona 3. osoba, bez etykiet pól typu "Tagline:" w treści (`4fed1fe`, `6dd180c`); ostatnie trzy to reguły 5–7 promptu, zweryfikowane na ~20 żywych przypadkach, zero nawrotów
 - **Pełny audyt ~245/300 wpisów** (ręczny, Chrome) — ~61 jednoznacznych błędów: Wzorzec A "Dla: Dla..." ×35, mieszanie osób ×12, gramatyka ×7, diakrytyki ×4 + pojedyncze (Crisp: "Tagline:" w treści, Legora: wymieszane dane, rows-ai/rows: możliwy duplikat, yolo-auto-api: możliwa halucynacja modelu "Qwen3.8-27B"). Do tego ~55 przypadków stylu 1-zdaniowego bez nazwy narzędzia (**Wzorzec B** — konwencja ręcznych wpisów z sierpnia, decyzja stylistyczna, nie bug; wciąż otwarta jako "Faza 4 audytu contentu", patrz Backlog)
 - **Faza 3 — masowa regeneracja ~50 wpisów przez panel:** ~20 zaakceptowanych w całości, ~15 częściowo, ~8 odrzuconych (regeneracja pogorszyła dane), **4 wpisy usunięte jako martwe/rebrandowane produkty:** Legora (dane skażone, firma na sprzedaż), Tokenless (rebranding na "Touchy"), Hotjar (wchłonięty przez Contentsquare), PilotCite (rebranding na "AEO Mantis")
 - RODO/DPA/hosting UE zebrane web searchem dla ~35 narzędzi (m.in. n8n, UiPath, Mixpanel, Contentsquare/Hotjar — hosting UE potwierdzony; Fathom, Linear — potwierdzone "Nie")
-- **Nowe funkcje panelu:** ręczna edycja `description_pl`/`best_for_pl` (wolny tekst, `fb571b0`), `pricing_model` (select, `398c151`) i `name` (input, `793ef84`) w modalu "Edytuj" — niezależnie od "Zweryfikuj przez AI"
+- **Nowe funkcje panelu:** ręczna edycja `description_pl`/`best_for_pl` (wolny tekst, `fb571b0`), `pricing_model` (select, `398c151`) i `name` (input, `793ef84`) w modalu "Edytuj" — niezależnie od "Zweryfikuj przez AI" (przydatne, gdy regeneracja daje gorszy wynik niż to, co już jest w bazie). `name` ma `maxlength="30"` — limit czysto UI-owy (potwierdzone: brak CHECK constraint na kolumnie w bazie); po zapisie nazwa w wierszu tabeli jest synchronizowana bez przeładowania
 
-**Potwierdzony wzorzec:** regeneracja AI systematycznie gubi polski kontekst rynkowy wpisany ręcznie w sierpniu (Rossum straciło wzmiankę o KSeF, Surfer SEO i Woodpecker.co straciły fakt bycia polskimi firmami z Wrocławia).
+**Potwierdzony wzorzec:** regeneracja AI systematycznie gubi polski kontekst rynkowy wpisany ręcznie w sierpniu (Rossum straciło wzmiankę o KSeF, Surfer SEO i Woodpecker.co straciły fakt bycia polskimi firmami z Wrocławia). Potwierdzone też na Exact Online, Typeform i UiPath. Surfer SEO to polska firma z Wrocławia (potwierdzone w KRS), Woodpecker.co jest notowany na GPW (WPR) — żaden opis w bazie tego dziś nie wspomina, ręczne dopisanie do rozważenia (patrz Backlog).
 ---
 
 ## ✅ Audyt `website_url` całego katalogu (16–19.09) — zamknięty
 
-- Skrypt PHP (`scraper/url_audit.php`) + workflow GitHub Actions (`cc5fd5f`; workflow `url-audit-oneshot.yml` przekształcony 20.09 na cykliczny `url-audit.yml` — co kwartał, 1.01/1.04/1.07/1.10 o 4:00 UTC + ręcznie; katalog rośnie, a firmy stale znikają, rebrandują się i zmieniają domeny, więc potrzebny jest stały nadzór nad URL-ami, nie tylko jednorazowy; najbliższy przebieg 1.10.2026): **283 sprawdzone, 43 oflagowane (~15%)**
+- Skrypt PHP (`scraper/url_audit.php`) + workflow GitHub Actions (`cc5fd5f`; workflow `url-audit-oneshot.yml` przekształcony 20.09 na cykliczny `url-audit.yml` — co kwartał, 1.01/1.04/1.07/1.10 o 4:00 UTC + ręcznie; katalog rośnie, a firmy stale znikają, rebrandują się i zmieniają domeny, więc potrzebny jest stały nadzór nad URL-ami, nie tylko jednorazowy; najbliższy przebieg 1.10.2026): **283 sprawdzone, 43 oflagowane (~15%)** (kryteria flagi: host mismatch / kod HTTP ≠ 200 / timeout)
 - 7 przypadków doprowadzonych do końca, m.in.:
   - **3 kolejne wpisy usunięte:** Drift (przejęty, stał się "1mind" w Salesloft), Causal (wchłonięty przez Lucanet/xP&A), Understudy (domena to teraz Orchestra.ai)
-  - **1 naprawiony:** Brainware — błędnie przypisany do Kofax, faktycznie Hyland; URL/nazwa/kategoria/cennik/logo poprawione, opis czeka na decyzję
+  - **1 naprawiony:** Brainware — błędnie przypisany do Kofax, faktycznie Hyland; URL (`hyland.com/en/solutions/products/brainware-intelligent-capture`)/nazwa/kategoria/cennik/logo poprawione, opis czeka na decyzję (nowa wersja jest poprawna co do firmy, ale bez polskiego kontekstu z oryginału)
   - **1 fałszywy alarm:** MailBroom
 - **Łącznie w wątku audytu contentu (13–19.09) usunięto 7 produktów:** Legora, Tokenless, Hotjar, PilotCite, Drift, Causal, Understudy. Stan bazy 20.09: **284 zatwierdzone**, 48 odrzuconych, 10 kategorii (zapytanie do Supabase `status=eq.approved`)
-- **Otwarte:** pozostałe ~37 oflagowanych URL-i (głównie HTTP 403 / konsolidacje domen, niska pilność), Amorphic Labs (możliwa nazwa firmy vs. produkt), decyzja ws. opisu Brainware
+- **Otwarte:** pozostałe ~37 oflagowanych URL-i (głównie HTTP 403 = blokady botów, nie martwe strony, oraz legalne konsolidacje domen dużych firm — np. Notion, Freshworks, Segment/Twilio, Zendesk/Klaus; niska pilność), Amorphic Labs (możliwa nazwa firmy vs. produkt), decyzja ws. opisu Brainware
 
 ---
 
@@ -352,8 +352,9 @@ homepage/`/narzedzia/`, social proof "Najpopularniejszy", "Podobne narzędzia" t
 - [ ] Pozostałe ~37 oflagowanych URL-i z audytu `website_url` (głównie HTTP 403 / konsolidacje domen, niska pilność)
 - [ ] Kwartalny audyt URL (`url-audit.yml`): skrypt nie powiadamia o flagowanych wpisach (job kończy się zielono) — po każdym przebiegu przejrzeć wyniki w `admin/logs.php` (source=`url_audit`) lub w artefakcie CSV. Skrypt nie odróżnia nowych flag od znanych, więc ~37 obecnych będzie wracać co kwartał; rozważyć dedup/`last_checked` dopiero gdy to zacznie przeszkadzać
 - [ ] **Weryfikacja pierwszego przebiegu `url-audit.yml` (1.10.2026 lub najbliższa okazja ręcznego odpalenia).** **Właściciel: sesja techniczna z Claude Code (lub Pablo ręcznie) — NIE sesja strategiczna/analityczna.** Po pierwszym rzeczywistym uruchomieniu (zaplanowanym lub przez `workflow_dispatch`) sprawdzić w `admin/logs.php` (source=`url_audit`) albo w artefakcie CSV, czy mechanizm faktycznie zadziałał end-to-end na żywym przebiegu, nie tylko przy wcześniejszych testach ręcznych. Ten sam wzorzec weryfikacji co przy pierwszym rzeczywistym teście kroku czyszczącego w `deploy.yml` (09.09.2026)
-- [ ] Amorphic Labs — możliwa nazwa firmy zamiast nazwy produktu
-- [ ] Brainware — decyzja ws. opisu (URL/nazwa/kategoria/cennik/logo już poprawione)
+- [ ] Amorphic Labs — możliwa nazwa firmy zamiast nazwy produktu; sprawdzić, czy nazwa w bazie powinna brzmieć "AgentMuxer"
+- [ ] Brainware — decyzja ws. opisu (URL/nazwa/kategoria/cennik/logo już poprawione; nowy opis poprawny co do firmy, ale bez polskiego kontekstu z oryginału)
+- [ ] Surfer SEO i Woodpecker.co — obie polskie firmy z Wrocławia (Woodpecker notowany na GPW: WPR), żaden opis w bazie tego nie wspomina — rozważyć ręczne dopisanie przez modal "Edytuj"
 - [ ] Badge "Najpopularniejszy" na `/premium` — usunięcie zlecone, wykonanie do potwierdzenia (na 20.09 nadal w `premium.astro:95` na `main`)
 - [ ] Podpięcie wypłat Stripe/PayPal w PartnerStack (ręcznie, Pablo)
 - [ ] Newsletter, raport branżowy PDF, konta premium@/newsletter@

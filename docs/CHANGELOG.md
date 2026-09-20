@@ -337,15 +337,15 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ### Zrobione
 - ✅ `CONTENT-GUIDE.md` — źródło prawdy dla tonu i jakości copy (`c7cbb1f`)
-- ✅ `verify_tool.php` — reguły jakości języka w prompcie (diakrytyki, gramatyka, długość, ton, 3. osoba, bez etykiet pól) (`4fed1fe`, `6dd180c`)
+- ✅ `verify_tool.php` — reguły jakości języka w prompcie (diakrytyki, gramatyka, długość, ton, 3. osoba, bez etykiet pól) (`4fed1fe`, `6dd180c`); reguły 5–7 (bez podwójnego "Dla:", 3. osoba, bez etykiet) zweryfikowane na ~20 żywych przypadkach, zero nawrotów
 - ✅ Audyt ~245/300 wpisów: ~61 jednoznacznych błędów (Wzorzec A "Dla: Dla..." ×35, mieszanie osób ×12, gramatyka ×7, diakrytyki ×4 + pojedyncze) i ~55 wpisów w stylu Wzorca B
 - ✅ Masowa regeneracja ~50 wpisów przez panel: ~20 przyjętych w całości, ~15 częściowo, ~8 odrzuconych
 - ✅ 4 wpisy usunięte jako martwe/rebrandowane: Legora, Tokenless (→ Touchy), Hotjar (→ Contentsquare), PilotCite (→ AEO Mantis)
 - ✅ RODO/DPA/hosting UE zebrane dla ~35 narzędzi przez web search
-- ✅ Modal "Edytuj": ręczna edycja `description_pl`/`best_for_pl` (`fb571b0`), `pricing_model` (`398c151`), `name` (`793ef84`)
+- ✅ Modal "Edytuj": ręczna edycja `description_pl`/`best_for_pl` (`fb571b0`), `pricing_model` (`398c151`), `name` (`793ef84`); `name` z `maxlength="30"` (limit czysto UI-owy — brak CHECK constraint w bazie), nazwa w wierszu tabeli synchronizowana po zapisie
 
 ### Odkrycia / problemy
-- Regeneracja AI systematycznie gubi polski kontekst rynkowy z ręcznych wpisów (Rossum — KSeF; Surfer SEO, Woodpecker.co — polskie firmy z Wrocławia)
+- Regeneracja AI systematycznie gubi polski kontekst rynkowy z ręcznych wpisów (Rossum — KSeF; Surfer SEO, Woodpecker.co — polskie firmy z Wrocławia; potwierdzone też na Exact Online, Typeform, UiPath). Surfer SEO potwierdzony w KRS, Woodpecker.co notowany na GPW (WPR) — żaden opis w bazie tego nie wspomina, ręczne dopisanie do rozważenia
 - Możliwa halucynacja modelu "Qwen3.8-27B" w yolo-auto-api, możliwy duplikat rows-ai/rows — do sprawdzenia
 
 ### Zmieniam podejście do
@@ -360,14 +360,14 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ### Zrobione
 - ✅ Skrypt PHP (`scraper/url_audit.php`) + workflow (`cc5fd5f`; workflow `url-audit-oneshot.yml` przekształcony 20.09 na cykliczny `url-audit.yml` — co kwartał + ręcznie; katalog rośnie, potrzebny stały nadzór nad URL-ami, nie tylko jednorazowy): 283 sprawdzone, 43 oflagowane (~15%)
-- ✅ 7 przypadków doprowadzonych do końca: 3 usunięte (Drift → 1mind/Salesloft, Causal → Lucanet/xP&A, Understudy → Orchestra.ai), 1 naprawiony (Brainware: Kofax → Hyland), 1 fałszywy alarm (MailBroom)
+- ✅ 7 przypadków doprowadzonych do końca: 3 usunięte (Drift → 1mind/Salesloft, Causal → Lucanet/xP&A, Understudy → Orchestra.ai), 1 naprawiony (Brainware: Kofax → Hyland, `website_url` → `hyland.com/en/solutions/products/brainware-intelligent-capture`), 1 fałszywy alarm (MailBroom)
 - ✅ Łącznie w audycie contentu (13–19.09) usunięto 7 produktów (Legora, Tokenless, Hotjar, PilotCite, Drift, Causal, Understudy); stan bazy 20.09: 284 zatwierdzone
 
 ### Odkrycia / problemy
-- ~15% `website_url` w katalogu oflagowane. Wśród przypadków doprowadzonych do końca: produkty przejęte/rebrandowane i błędne przypisanie do innej firmy (Brainware); pozostałe ~37 to głównie HTTP 403 i konsolidacje domen
+- ~15% `website_url` w katalogu oflagowane. Wśród przypadków doprowadzonych do końca: produkty przejęte/rebrandowane i błędne przypisanie do innej firmy (Brainware); pozostałe ~37 to głównie HTTP 403 (blokady botów, nie martwe strony) i legalne konsolidacje domen (np. Notion, Freshworks, Segment/Twilio, Zendesk/Klaus)
 
 ### Następny krok
-- Pozostałe ~37 oflagowanych URL-i (niska pilność), Amorphic Labs (nazwa firmy vs. produkt), decyzja ws. opisu Brainware
+- Pozostałe ~37 oflagowanych URL-i (niska pilność), Amorphic Labs (nazwa firmy vs. produkt — sprawdzić, czy powinno być "AgentMuxer"), decyzja ws. opisu Brainware (poprawny co do firmy, ale bez polskiego kontekstu z oryginału)
 
 ---
 
