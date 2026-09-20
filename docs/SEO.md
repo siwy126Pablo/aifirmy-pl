@@ -65,7 +65,7 @@ Wzorzec: `"{Nazwa} — aifirmy.pl"` (potwierdzone live). Nie zawiera kategorii a
 Dla katalogu, gdzie **unikalny wyróżnik to RODO/AI Act** (PLN — bonus, nie core, patrz niżej), title nie wykorzystuje tego do przechwytywania long-tail zapytań typu "[narzędzie] RODO", "[narzędzie] AI Act ryzyko".
 
 **Potencjalny kierunek (do decyzji, nie do wdrożenia bez ustalenia z Pablo):**
-`"{Nazwa} — opis, cena, RODO | aifirmy.pl"` lub podobny wzorzec z kategorią/wyróżnikiem.
+`"{Nazwa} — opis, RODO | aifirmy.pl"` lub podobny wzorzec z kategorią/wyróżnikiem.
 Wymaga przemyślenia długości (Google przycina ~60 znaków) i testu na kilku przykładach przed zmianą globalnego szablonu.
 
 ### 3. Potwierdzone live: badge RODO "✗ Nie" (już znany punkt z audytu UX 13.09)
