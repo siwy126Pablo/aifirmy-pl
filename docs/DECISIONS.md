@@ -187,4 +187,22 @@ Programy afiliacyjne będą się pojawiać częściej. Osobna tabela pozwala trz
 
 ---
 
+## ADR-010 — Działalność nierejestrowana: limit przychodu i próg alarmowy
+**Data:** wrzesień 2026 (20.09.2026)
+**Status:** ⏳ Do potwierdzenia z księgowym
+
+**Kontekst:**
+Infrastruktura monetyzacji jest live (Stripe + affiliate), przychód = 0 na 2026-09-20. Właściciel projektu nie ma zarejestrowanej działalności gospodarczej.
+
+**Fakty (do potwierdzenia z księgowym):**
+- Od 2026 r. limit działalności nierejestrowanej jest kwartalny: 225% płacy minimalnej (4 806 zł) = **10 813,50 zł**
+- Do limitu liczy się przychód należny z całej działalności (Stripe + affiliate łącznie)
+- Po przekroczeniu limitu jest 7 dni na rejestrację w CEIDG
+
+**Decyzja robocza:** próg alarmowy ~60% limitu (≈ 6 488 zł przychodu należnego w kwartale).
+
+**Uwaga:** wpis zawiera wyłącznie powyższe fakty — nie stanowi porady prawnej ani podatkowej. Wszystkie liczby i zasady wymagają potwierdzenia z księgowym.
+
+---
+
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

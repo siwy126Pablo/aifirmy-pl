@@ -7,7 +7,7 @@
 
 | Element | Status |
 |---|---|
-| **Faza** | Projekt live, generujący przychód. Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09). Ruch organiczny rośnie tydzień do tygodnia. 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. |
+| **Faza** | Projekt live, infrastruktura monetyzacji działa (Stripe + affiliate), przychód = 0 (stan na 20.09.2026). Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09). Ruch organiczny rośnie tydzień do tygodnia. 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. |
 | **Domena** | ✅ aifirmy.pl (Cyberfolks) + www→apex redirect (Cloudflare) |
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
 | **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii |
@@ -15,7 +15,7 @@
 | **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09), hero z wyróżnikiem RODO/AI Act/UE (13.09), tri-state RODO/DPA/EU hosting (14.09), wyszukiwanie tekstowe na `/narzedzia/` (15.09), font Inter (19.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
 | **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony), panel logów błędów (activity_log, 13.09), modal edycji + wyszukiwanie/filtr/sortowanie w zakładce "Narzędzia" (15–19.09), "Znalezione sygnały" RODO/DPA/UE w weryfikacji (14.09) |
-| **Monetyzacja** | ✅ Stripe Live mode, checkout + webhook, email po zakupie |
+| **Monetyzacja** | ✅ Infrastruktura live: Stripe Live mode, checkout + webhook, email po zakupie — przychód = 0 na 2026-09-20 |
 | **Affiliate** | ✅ ClickUp/PartnerStack aktywny |
 | **Analytics** | ✅ Search Console (główne źródło prawdy) + AWStats; ⚠️ GA4 niewiarygodne (patrz niżej) |
 
@@ -279,6 +279,9 @@ Search Console pokazywał konsekwentny wzrost ruchu, ale GA4 uparcie pokazywał 
 | ~06.08 | 8 | 144-155 |
 | 23.08 | 12 | 198 |
 | ~30.08 | 15 | 198 |
+| 20.09 | 11 (1,76 tys. wyświetleń, okno 28 dni) | — |
+
+> ⚠️ **Okno czasowe kolumny "Kliknięcia" dla wierszy do ~30.08 jest niepewne** — nie wiadomo, czy to były 7 czy 28 dni. Wiersz 20.09 (bazowy) ma potwierdzone okno 28 dni, więc nie należy go bezpośrednio porównywać z wcześniejszymi wierszami. Od 20.09 zapisywać okno razem z liczbą.
 
 Konsekwentny, przyspieszający wzrost. Ciekawy wzorzec: strony narzędzi z tytułem zawierającym starą + nową nazwę po rebrandingu (np. "Brevo (dawniej Sendinblue)") notują nieproporcjonalnie duży wzrost wyświetleń — możliwy sygnał do świadomego stosowania przy innych narzędziach po zmianie nazwy.
 
