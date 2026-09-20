@@ -29,7 +29,7 @@ Kontynuujemy: [opisz co robisz].
 
 ## Project overview
 
-**aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market, with a unique differentiator: every listing is tagged for RODO compliance and EU AI Act risk level — no other Polish AI catalog does this. PLN pricing is shown where available (price_from_pln, ~1% fill rate as of 2026-09, manual-entry only via "Dodaj wpis"), not a systemic differentiator yet. Live on Cyberfolks, generating revenue (Stripe live + affiliate). ~260+ tools across **10 categories** as of September 2026.
+**aifirmy.pl** — a Polish-language catalog and content aggregator for AI tools, SaaS, courses, and startups targeting the PL/EU/global market, with a unique differentiator: every listing is tagged for RODO compliance and EU AI Act risk level — no other Polish AI catalog does this. PLN pricing is shown where available (price_from_pln, ~1% fill rate as of 2026-09, manual-entry only via "Dodaj wpis"), not a systemic differentiator yet. Live on Cyberfolks, generating revenue (Stripe live + affiliate). 284 approved tools across **10 categories** as of 2026-09-20.
 
 ## Tech stack (current)
 
@@ -412,9 +412,9 @@ PORT=3000
 - `config/db.php` — admin session password
 - `config/openai.php` — `define('OPENAI_API_KEY', 'sk-...')` for `verify_tool.php`. **Required for admin panel to load at all.**
 
-## Current status (as of 2026-09-05)
+## Current status (as of 2026-09-20)
 
-Live, revenue-generating (Stripe + affiliate), catalog grown from ~90 to ~260+ tools. 4th NiFi source (YC-OSS API) and 10th category (Cyberbezpieczeństwo AI) both shipped and verified. `verify_tool.php` logo detection fixed. Search Console shows a consistent week-over-week traffic increase (see STATUS.md for the trend table); GA4 is known-unreliable (see Analytics section above).
+Live, revenue-generating (Stripe + affiliate), catalog grown from ~90 to 284 approved tools. 4th NiFi source (YC-OSS API) and 10th category (Cyberbezpieczeństwo AI) both shipped and verified. `verify_tool.php` logo detection fixed. Since 2026-09-05: the UX audit is closed (homepage hero now states the RODO/AI Act/EU differentiator, RODO/DPA/EU-hosting are tri-state fields, text search on `/narzedzia/`); the content audit is closed (`docs/CONTENT-GUIDE.md` is the source of truth for copy tone/quality, ~61 unambiguous language errors found and addressed, 7 dead/rebranded products removed); the full `website_url` audit is closed (283 checked, 43 flagged, ~37 low-priority still open); the admin "Narzędzia" tab was refactored (edit modal, search/filter/sort). First LinkedIn post published 2026-09-19; cold outreach not started. Search Console shows a consistent week-over-week traffic increase (see STATUS.md for the trend table); GA4 is known-unreliable (see Analytics section above). Full history: STATUS.md / CHANGELOG.md.
 
 **Immediate next priorities (per the roadmap agreed 2026-08-23):**
 1. Resume growth activities (LinkedIn posts — drafts revised and saved in Notion — and cold outreach), paused since ~July pending catalog growth, which has now happened
