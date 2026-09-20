@@ -18,10 +18,21 @@ function generate_uuid_v4(): string {
     );
 }
 
+// Wartość kolumny activity_log.source dla bieżącego uruchomienia. Domyślnie
+// 'scraper:yc_ai_pilot' (zachowanie sprzed dodania kolejnych źródeł); run.php
+// ustawia właściwą wartość dla wybranego --source.
+function scraper_log_source(?string $set = null): string {
+    static $source = 'scraper:yc_ai_pilot';
+    if ($set !== null) {
+        $source = $set;
+    }
+    return $source;
+}
+
 function scraper_log(string $level, string $message, array $context = [], ?string $runId = null): void {
     try {
         sb_post('activity_log', [
-            'source'  => 'scraper:yc_ai_pilot',
+            'source'  => scraper_log_source(),
             'level'   => $level,
             'message' => $message,
             'context' => $context,
