@@ -171,6 +171,7 @@ cold outreach) + zbieranie realnego feedbacku.
 | Data | Posty LinkedIn | Maile cold outreach | Odpowiedzi/feedback |
 |---|---|---|---|
 | 2026-09-13 | 0 | 0 | 0 |
+| 2026-09-19 | 1 | 0 | — |
 
 ### Zadania z tej sesji
 - [ ] Opublikować 2 gotowe posty LinkedIn (drafty w Notion)
