@@ -65,7 +65,8 @@ Wzorzec: `"{Nazwa} — aifirmy.pl"` (potwierdzone live). Nie zawiera kategorii a
 Dla katalogu, gdzie **unikalny wyróżnik to RODO/AI Act** (PLN — bonus, nie core, patrz niżej), title nie wykorzystuje tego do przechwytywania long-tail zapytań typu "[narzędzie] RODO", "[narzędzie] AI Act ryzyko".
 
 **Potencjalny kierunek (do decyzji, nie do wdrożenia bez ustalenia z Pablo):**
-`"{Nazwa} — opis, RODO | aifirmy.pl"` lub podobny wzorzec z kategorią/wyróżnikiem.
+`"{Nazwa} — opis, RODO | aifirmy.pl"` lub podobny wzorzec z kategorią/wyróżnikiem RODO/AI Act.
+Cena celowo pominięta — przy 0,9% pokryciu `price_from_pln` wzorzec z ceną byłby pusty/mylący dla ~99% stron; do rewizji dopiero przy wyższym fill rate.
 Wymaga przemyślenia długości (Google przycina ~60 znaków) i testu na kilku przykładach przed zmianą globalnego szablonu.
 
 ### 3. Potwierdzone live: badge RODO "✗ Nie" (już znany punkt z audytu UX 13.09)
@@ -200,7 +201,7 @@ Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo
 
 **Kontekst:** przy synchronizacji tego pliku z repo, Claude Code zauważył, że wersja SEO.md z tej sesji cofa korektę z commita `f5d6222` — traktowała ceny PLN jako wciąż aktywny, "utracony" wyróżnik SEO.
 
-**Poprawione:** `CHANGELOG.md` v0.14 (13-15.09) dokumentuje jawną decyzję: pozycjonowanie zmienione z "RODO + AI Act + PLN" na **"RODO + AI Act"** (PLN jako bonus, nie core) — powód: `price_from_pln` ma tylko 0,9% pokrycia (3/329 wpisów). Dwa miejsca w tym pliku (sekcja o `<title>` i sekcja "Otwarte punkty") błędnie sugerowały, że brak cen PLN w UI to otwarta strata SEO do naprawienia — poprawione, żeby odzwierciedlać, że to świadomy, rozstrzygnięty kompromis, nie otwarty temat.
+**Poprawione:** `CHANGELOG.md` v0.14 (13-15.09) dokumentuje jawną decyzję: pozycjonowanie zmienione z "RODO + AI Act + PLN" na **"RODO + AI Act"** (PLN jako bonus, nie core) — powód: `price_from_pln` ma tylko 0,9% pokrycia (3/329 wpisów). Trzy miejsca w tym pliku błędnie sugerowały, że brak cen PLN w UI to otwarta strata SEO do naprawienia: sekcja o `<title>` (x2 — diagnoza i proponowany wzorzec z "ceną") oraz sekcja "Otwarte punkty". Wszystkie poprawione, żeby odzwierciedlać, że to świadomy, rozstrzygnięty kompromis, nie otwarty temat. Trzecie miejsce (proponowany wzorzec `<title>` z "ceną") zostało przeoczone przy pierwszej korekcie i doprecyzowane dopiero po ponownym przeglądzie zsynchronizowanego pliku.
 
 **Nauka na przyszłość:** przy pisaniu SEO.md sprawdzać `CHANGELOG.md`/`DECISIONS.md` pod kątem świeżych zmian pozycjonowania, nie tylko `STATUS.md`/`CONTENT-GUIDE.md` — decyzje strategiczne (jak ta o PLN) czasem żyją tylko w `CHANGELOG.md` bez formalnego ADR.
 
