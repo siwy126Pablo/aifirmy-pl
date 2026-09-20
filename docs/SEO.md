@@ -61,8 +61,8 @@ Problemy:
 Prawdopodobnie nie odosobniony przypadek — `CONTENT-GUIDE.md` już flaguje "ton marketingowy" jako pozycję do audytu próbki 15-20 wpisów. Warto przy następnym audycie contentowym specyficznie sprawdzić opisy pod kątem tego, czy tekst nadaje się na meta description (SERP-safe), nie tylko pod kątem tonu na stronie.
 
 ### 2. Title tag generyczny na wszystkich stronach narzędzi
-Wzorzec: `"{Nazwa} — aifirmy.pl"` (potwierdzone live). Nie zawiera kategorii ani wyróżnika (RODO/AI Act/cena).
-Dla katalogu, gdzie **unikalny wyróżnik to właśnie RODO/AI Act**, title nie wykorzystuje tego do przechwytywania long-tail zapytań typu "[narzędzie] RODO", "[narzędzie] cena PLN", "[narzędzie] AI Act ryzyko".
+Wzorzec: `"{Nazwa} — aifirmy.pl"` (potwierdzone live). Nie zawiera kategorii ani wyróżnika (RODO/AI Act).
+Dla katalogu, gdzie **unikalny wyróżnik to RODO/AI Act** (PLN — bonus, nie core, patrz niżej), title nie wykorzystuje tego do przechwytywania long-tail zapytań typu "[narzędzie] RODO", "[narzędzie] AI Act ryzyko".
 
 **Potencjalny kierunek (do decyzji, nie do wdrożenia bez ustalenia z Pablo):**
 `"{Nazwa} — opis, cena, RODO | aifirmy.pl"` lub podobny wzorzec z kategorią/wyróżnikiem.
@@ -103,19 +103,19 @@ CTR średni **0,8%**, średnia pozycja **18,5**. CTR 0,8% przy pozycji ~18 nie j
 | Strona wykryta — obecnie niezindeksowana | Systemy Google | 14 | ✅ Normalny zaległy crawl budget |
 | Nie znaleziono (404) | Strona internetowa | 1 | 🟢 Pojedynczy przypadek, niski priorytet — zidentyfikować URL |
 
-**⚠️ Nowe ustalenie — "Strona zawiera przekierowanie" (91 stron, status weryfikacji: Niepowodzenie, próba walidacji z 01.08 nieudana 05.08):**
-Trend rośnie od połowy czerwca, w ostatnich tygodniach plateau ~85-91. Przykładowe URL-e z tabeli:
-`narzedzia/architecture-diagram-ai` (bez trailing slash), `narzedzia/pilotcite`, `narzedzia/gamma` (bez trailing slash),
-oraz dwa **`http://` (nie https!)**: `kategoria/prawo-compliance`, `kategoria/finanse`.
+**✅ Ustalone (13.09, przez GSC "Sprawdzenie adresu URL" + weryfikację live w przeglądarce):**
+Sprawdzony przypadek `http://aifirmy.pl/kategoria/finanse`. Narzędzie inspekcji URL w GSC pokazało dwie strony odsyłające:
+`https://aifirmy.pl/kategoria/finanse/` (poprawna, kanoniczna) oraz **`http://aifirmy.pl/narzedzia/lexi-by-infakt/`** —
+czyli Google w pewnym momencie zeskanował stronę narzędzia `lexi-by-infakt` przez `http://` (nie https), a względny
+link do kategorii (`/kategoria/finanse/`) odziedziczył wtedy protokół strony, z której został znaleziony.
 
-Interpretacja: większość to prawdopodobnie zwykłe, nieszkodliwe warianty URL (bez trailing slash) poprawnie
-przekierowujące do kanonicznej wersji — to oczekiwane zachowanie, nie błąd. **Ale dwa warianty `http://`
-zasługują na osobne sprawdzenie:** czy to tylko stare, historyczne wpisy z indeksu Google sprzed wymuszenia
-HTTPS (nieszkodliwe, będą wygasać same), czy jest gdzieś aktywne źródło nadal generujące linki `http://`
-(np. stary wpis w sitemapie, zewnętrzny link, dawny cache) — **nie potwierdzone w tej sesji, wymaga dalszego
-sprawdzenia** (np. `curl -I http://aifirmy.pl/kategoria/finanse` żeby zweryfikować że przekierowanie 301→https
-faktycznie działa, plus przegląd czy `astro.config.mjs`/sitemap nigdy nie generuje protokołu http). Warto też
-sprawdzić w zakładce "Sprawdź szczegóły" w GSC dokładną przyczynę niepowodzenia walidacji z 05.08.
+Weryfikacja: aktualny kod źródłowy generuje link poprawnie — `href="/kategoria/finanse/"` (sprawdzone przez DOM,
+rozwiązuje się do `https://...`). Sama strona `http://aifirmy.pl/narzedzia/lexi-by-infakt/` dziś **poprawnie
+przekierowuje** do wersji https+slash (sprawdzone bezpośrednią nawigacją w przeglądarce). **Wniosek: to rezydualny,
+historyczny wpis w indeksie Google (najpewniej sprzed dodania reguły Cloudflare 31.08, albo z okresu przejściowego),
+nie aktywnie generowany błąd.** Nie wymaga zmiany w kodzie — powinien wygasnąć z indeksu Google samoistnie w miarę
+ponownego skanowania. Nie ma potrzeby dalszej akcji, poza obserwacją czy liczba "Strona zawiera przekierowanie"
+(91) faktycznie spada w kolejnych tygodniach zamiast rosnąć.
 
 **Backlinki:** tylko 1 potwierdzony zewnętrzny backlink w całej historii projektu (piperic.com → wpis o Descript, 23.08).
 
@@ -127,6 +127,8 @@ Z `STATUS.md`, sesja UX 13.09 (część nakłada się bezpośrednio na SEO/CTR):
 - Hero strony głównej nie komunikuje wyróżnika RODO/AI Act/UE (tylko na `/premium`) — traci szansę na trafienie w intencję wyszukiwania już na landing page
 - Brak widocznego pola wyszukiwania tekstowego na `/narzedzia/` — tylko pigułki kategorii
 
+**Skorygowane w tej sesji:** `CHANGELOG.md` v0.14 dokumentuje jawną decyzję (13-15.09) o zmianie pozycjonowania z "RODO + AI Act + PLN" na **"RODO + AI Act"** (PLN jako bonus, nie core) — powód: `price_from_pln` ma tylko 0,9% pokrycia (3/329 wpisów), za mało żeby budować wokół tego UI czy przekaz SEO. To rozstrzyga, nie otwarty temat: brak cen PLN w UI **nie jest** utraconą okazją SEO do naprawienia teraz, tylko świadomym kompromisem do rewizji dopiero przy wyższym fill rate.
+
 Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo pokrywa się z SEO):
 - Diakrytyki, zgodność gramatyczna, ton marketingowy — wszystko to trafia do meta description/treści widocznej w SERP
 
@@ -136,18 +138,18 @@ Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo
 
 **Wysoki priorytet (realny problem SEO, nie tylko kosmetyka):**
 1. ~~Zweryfikować świeży stan indeksacji w Search Console~~ ✅ **Zrobione tą sesją (przez connector Chrome)** — 275 zaindeksowanych, rośnie, nieaktualna obawa
-2. Sprawdzić źródło dwóch `http://` (nie https) URL-i w raporcie "Strona zawiera przekierowanie" (91 stron) — czy to tylko stary indeks, czy aktywnie generowane linki
+2. ~~Sprawdzić źródło dwóch `http://` URL-i~~ ✅ **Zrobione tą sesją** — historyczny wpis w indeksie Google, kod jest poprawny, redirect działa, nie wymaga akcji
 3. Przejrzeć próbkę meta descriptions pod kątem superlatywów/halucynacji (nie tylko treść na stronie, ale konkretnie pole trafiające do `<meta description>`/OG/Twitter) — rozszerzyć checklistę `CONTENT-GUIDE.md` sekcja 5 o tę optykę
 
 **Średni priorytet:**
-3. Rozważyć wzbogacenie `<title>` o kategorię/wyróżnik zamiast generycznego `"{Nazwa} — aifirmy.pl"` — wymaga decyzji o dokładnym wzorcu i testu na próbce przed globalną zmianą
-4. Dodać `BreadcrumbList` JSON-LD (tani do wdrożenia, poprawia rich snippets)
+4. Rozważyć wzbogacenie `<title>` o kategorię/wyróżnik zamiast generycznego `"{Nazwa} — aifirmy.pl"` — wymaga decyzji o dokładnym wzorcu i testu na próbce przed globalną zmianą
+5. Dodać `BreadcrumbList` JSON-LD (tani do wdrożenia, poprawia rich snippets)
 
 **Niski priorytet / do obserwacji:**
-5. Monitorować, czy badge RODO/DPA "✗ Nie" ma mierzalny wpływ SEO (niepewne, ale warto mieć na radarze przy okazji naprawy UX)
+6. Monitorować, czy badge RODO/DPA "✗ Nie" ma mierzalny wpływ SEO (niepewne, ale warto mieć na radarze przy okazji naprawy UX)
 
 **Nie-SEO, ale blokujące SEO pośrednio (już znane, patrz STATUS.md):**
-6. Brak backlinków poza jednym przypadkiem — to pytanie o dystrybucję (LinkedIn/outreach), nie o technikalia strony. Zgodnie z sesją strategiczną 13.09 to i tak już priorytet #1 projektu.
+7. Brak backlinków poza jednym przypadkiem — to pytanie o dystrybucję (LinkedIn/outreach), nie o technikalia strony. Zgodnie z sesją strategiczną 13.09 to i tak już priorytet #1 projektu.
 
 ---
 
@@ -185,6 +187,22 @@ Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo
 - Pozostałe kategorie niezindeksowanych stron (50 alternatywne/kanoniczne, 18 zeskanowane-nie zindeksowane, 14 wykryte-nie zindeksowane, 1× 404) ocenione jako normalne/oczekiwane dla rosnącego katalogu
 
 **Otwarte na następną sesję:** ustalić źródło `http://` URL-i; sprawdzić szczegóły niepowodzenia walidacji z 05.08 w GSC ("Sprawdź szczegóły"); zidentyfikować konkretny URL za pojedynczym 404.
+
+### Sesja 2026-09-13, część 3 (zamknięcie wątku http://, przez connector Chrome)
+
+**Zrobione:** GSC → Sprawdzenie adresu URL dla `http://aifirmy.pl/kategoria/finanse`; inspekcja DOM na `narzedzia/lexi-by-infakt/` (źródło linku); weryfikacja redirectu bezpośrednią nawigacją w przeglądarce.
+
+**Znalezione:** strona odsyłająca to `http://aifirmy.pl/narzedzia/lexi-by-infakt/` — Google zeskanował tę stronę kiedyś przez http, a względny link do kategorii odziedziczył wtedy ten protokół. Aktualny kod generuje link poprawnie (`href="/kategoria/finanse/"`), a http:// wersja strony dziś poprawnie przekierowuje do https+slash. **Wniosek: rezydualny, historyczny wpis w indeksie, nie aktywny błąd — zamknięte, bez akcji.**
+
+**Otwarte na następną sesję:** próbka audytu meta descriptions (5-10 losowych narzędzi, punkt priorytetowy #3 w rekomendacjach); obserwacja czy liczba "Strona zawiera przekierowanie" (91) spada w kolejnych tygodniach; zidentyfikować konkretny URL za pojedynczym 404.
+
+### Sesja 2026-09-20, część 4 (korekta po uwadze Claude Code — regresja pozycjonowania PLN)
+
+**Kontekst:** przy synchronizacji tego pliku z repo, Claude Code zauważył, że wersja SEO.md z tej sesji cofa korektę z commita `f5d6222` — traktowała ceny PLN jako wciąż aktywny, "utracony" wyróżnik SEO.
+
+**Poprawione:** `CHANGELOG.md` v0.14 (13-15.09) dokumentuje jawną decyzję: pozycjonowanie zmienione z "RODO + AI Act + PLN" na **"RODO + AI Act"** (PLN jako bonus, nie core) — powód: `price_from_pln` ma tylko 0,9% pokrycia (3/329 wpisów). Dwa miejsca w tym pliku (sekcja o `<title>` i sekcja "Otwarte punkty") błędnie sugerowały, że brak cen PLN w UI to otwarta strata SEO do naprawienia — poprawione, żeby odzwierciedlać, że to świadomy, rozstrzygnięty kompromis, nie otwarty temat.
+
+**Nauka na przyszłość:** przy pisaniu SEO.md sprawdzać `CHANGELOG.md`/`DECISIONS.md` pod kątem świeżych zmian pozycjonowania, nie tylko `STATUS.md`/`CONTENT-GUIDE.md` — decyzje strategiczne (jak ta o PLN) czasem żyją tylko w `CHANGELOG.md` bez formalnego ADR.
 
 ---
 

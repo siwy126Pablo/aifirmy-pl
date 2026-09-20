@@ -66,7 +66,7 @@ aifirmy-pl/
 ├── nifi-flows/              ← NiFi flow exports (.json) — export manually after UI changes, one-line JSON so git diff shows "1 line changed" even for large edits (normal)
 ├── db/
 │   └── migrations/          ← PostgreSQL SQL migrations (not always used — schema changes often made directly in Supabase SQL Editor)
-└── docs/                    ← ARCHITECTURE.md, DECISIONS.md, CHANGELOG.md, STATUS.md
+└── docs/                    ← ARCHITECTURE.md, DECISIONS.md, CHANGELOG.md, STATUS.md, SEO.md
 ```
 
 **Not in repo (server-only, never committed):**
