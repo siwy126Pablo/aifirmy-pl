@@ -196,7 +196,7 @@ Realizacja punktów z audytu UX (pełna lista i historia rund: `UX-AUDIT.md`, No
 
 **Otwarte (niski priorytet):**
 - Duplikacja strony głównej i `/narzedzia/`
-- Badge "Najpopularniejszy" na `/premium` — prompt do usunięcia dany, **wykonanie niepotwierdzone**. Stan kodu na 20.09: badge nadal jest w `frontend/src/pages/premium.astro:95` (`pkg.highlight`) na `main`, więc usunięcie nie trafiło do repo (sprawdzić, czy nie leży niewypchnięte na drugim komputerze)
+- ~~Badge "Najpopularniejszy" na `/premium`~~ — ✅ usunięty 2026-09-20 (`1a4b3b9`, `premium.astro`); poprzednie usunięcie nie trafiło do repo. Styl wyróżnienia karty Dofollow (ramka/tło/przycisk) bez zmian
 - "Podobne narzędzia" tylko wg kategorii, nie prawdziwego podobieństwa
 - Meta Pagefind zlewa `false`/`null` (patrz sekcja audytu UX niżej)
 
@@ -306,7 +306,7 @@ Pełna lista i uzasadnienia: Notion, sekcja "Sesja UX 2026-09-13".
 - [ ] Strona główna duplikuje `/narzedzia/` zamiast pełnić odrębną rolę
 
 **🟢 Niski priorytet**
-- [ ] "Najpopularniejszy" na pakiecie Featured (`/premium`) — zweryfikować czy to prawdziwe dane
+- [x] "Najpopularniejszy" na pakiecie Featured (`/premium`) — badge usunięty 2026-09-20
 - [ ] "Podobne narzędzia" to tylko ta sama kategoria, nie prawdziwe podobieństwo
 
 ---
@@ -330,7 +330,7 @@ Pełna lista i uzasadnienia: Notion, sekcja "Sesja UX 2026-09-13".
 
 Pozostałe punkty audytu: ceny PLN, badge AI Act i wyszukiwanie tekstowe — zamknięte 15.09
 (patrz sekcja "Sesja UX 2026-09-13/15" wyżej). Nadal otwarte (niski priorytet): duplikacja
-homepage/`/narzedzia/`, social proof "Najpopularniejszy", "Podobne narzędzia" tylko wg kategorii.
+homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "Najpopularniejszy" na `/premium` — usunięty 20.09).
 
 ---
 
@@ -358,7 +358,7 @@ homepage/`/narzedzia/`, social proof "Najpopularniejszy", "Podobne narzędzia" t
 - [ ] Amorphic Labs — możliwa nazwa firmy zamiast nazwy produktu; sprawdzić, czy nazwa w bazie powinna brzmieć "AgentMuxer"
 - [ ] Brainware — decyzja ws. opisu (URL/nazwa/kategoria/cennik/logo już poprawione; nowy opis poprawny co do firmy, ale bez polskiego kontekstu z oryginału)
 - [ ] Surfer SEO i Woodpecker.co — obie polskie firmy z Wrocławia (Woodpecker notowany na GPW: WPR), żaden opis w bazie tego nie wspomina — rozważyć ręczne dopisanie przez modal "Edytuj"
-- [ ] Badge "Najpopularniejszy" na `/premium` — usunięcie zlecone, wykonanie do potwierdzenia (na 20.09 nadal w `premium.astro:95` na `main`)
+- [x] Badge "Najpopularniejszy" na `/premium` — usunięty 2026-09-20 (`1a4b3b9`)
 - [ ] Podpięcie wypłat Stripe/PayPal w PartnerStack (ręcznie, Pablo)
 - [ ] Newsletter, raport branżowy PDF, konta premium@/newsletter@
 - [ ] Rozważyć rozszerzenie YC-OSS o dodatkowe tagi (`saas.json`, `b2b.json`) jeśli sam tag AI okaże się za wąski/za szeroki
