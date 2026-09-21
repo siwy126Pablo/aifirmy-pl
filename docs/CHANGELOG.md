@@ -379,7 +379,42 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 ### Następny krok
 - Post 2 LinkedIn (draft w Notion) i start cold outreachu — wciąż nierozpoczęte
 
+---
 
+## [v0.19] — 2026-09-21 (kill-switch sprzedaży Premium + znalezisko http→https)
+
+### Zrobione
+- ✅ **G0 — kill-switch publicznego zakupu Featured** (`admin/checkout.php` +
+  `frontend/src/pages/premium.astro`, flaga `SALES_ENABLED = false` w obu plikach):
+  do czasu wyjaśnienia z księgowym warunku 60 miesięcy dla działalności
+  nierejestrowanej (`DECISIONS.md` ADR-010) sprzedaż pakietów Premium jest
+  wstrzymana. `checkout.php` odrzuca każde żądanie (redirect na
+  `/premium/?error=sales_paused`) zanim dotknie Stripe SDK; `premium.astro`
+  wyłącza przyciski "Kup teraz" i pokazuje neutralny baner z zaproszeniem do
+  bezpłatnego programu pilotażowego. `webhook.php` nietknięty.
+- ✅ ADR-010 zaktualizowane: wcześniejsza JDG (zawieszona 31.01.2022, zamknięta
+  11.12.2023) najprawdopodobniej wyklucza kwalifikację jako działalność
+  nierejestrowana do 1.02.2027 — status zmieniony na "do pisemnego potwierdzenia
+  z księgowym", dopisane konsekwencje robocze (wypłaty PartnerStack wstrzymane,
+  tripwire na pierwszą realną prowizję affiliate).
+
+### Odkrycia / problemy
+- 🐛 **`http://aifirmy.pl` nie przekierowuje 301 na `https://`** — serwuje pełną
+  treść strony bezpośrednio pod http (200 OK, brak nagłówka `Location`),
+  potwierdzone zarówno na stronie narzędzia (`/narzedzia/lempire-lemlist-ekosystem/`)
+  jak i na stronie głównej, więc problem jest site-wide, nie per-URL. Canonical
+  tag jest poprawny (`https://aifirmy.pl/.../`), ale — tak jak przy wcześniejszym
+  buggu www→apex (sierpień 2026) — canonical nie zastępuje twardego 301.
+  **Naprawa po stronie Cloudflare (Redirect Rule `http://*` → `https://${1}`),
+  jeszcze niewykonana** — wymaga działania w panelu Cloudflare, nie w kodzie.
+
+### Następny krok
+- Cloudflare: dodać Redirect Rule wymuszającą https (albo włączyć "Always Use HTTPS")
+- Po deployu G0: zweryfikować na żywo, że `/premium` pokazuje wyłączone przyciski
+  i że bezpośredni POST na `/admin/checkout.php` faktycznie redirectuje zamiast
+  tworzyć sesję Stripe
+
+---
 
 ```
 ## [v0.X] — [data]
