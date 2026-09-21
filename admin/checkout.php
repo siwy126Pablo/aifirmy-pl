@@ -13,6 +13,16 @@ declare(strict_types=1);
  *        define('STRIPE_SECRET_KEY', 'sk_live_...');
  */
 
+// ---- Kill switch: sprzedaż wstrzymana do decyzji prawnej (DECISIONS.md ADR-010) ----
+// Nie rusza webhook.php — istniejące/testowe sesje Stripe nadal się rozliczają.
+// Druga lokalizacja tej samej flagi: frontend/src/pages/premium.astro (SALES_ENABLED) —
+// przełączać obie razem.
+const SALES_ENABLED = false;
+if (!SALES_ENABLED) {
+    header('Location: /premium/?error=sales_paused');
+    exit;
+}
+
 // ---- Autoload — composer (prod) lub local dev ----
 $vendor_paths = [
     '/home/siwy126/domains/aifirmy.pl/private_html/vendor/autoload.php', // Cyberfolks (poza webroot)
