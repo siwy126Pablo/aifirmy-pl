@@ -7,11 +7,11 @@
 
 | Element | Status |
 |---|---|
-| **Faza** | Projekt live, infrastruktura monetyzacji działa (Stripe + affiliate), przychód = 0 (stan na 20.09.2026). Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09). Ruch organiczny rośnie tydzień do tygodnia. 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. |
+| **Faza** | Projekt live, infrastruktura monetyzacji działa (Stripe + affiliate), przychód = 0 (stan na 20.09.2026). Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09). Ruch organiczny rośnie tydzień do tygodnia. 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. **Pipeline ETL w pełni zmigrowany z NiFi na GitHub Actions (PHP), NiFi zatrzymany (20.09).** |
 | **Domena** | ✅ aifirmy.pl (Cyberfolks) + www→apex redirect (Cloudflare) |
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
 | **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii |
-| **Pipeline NiFi** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API, dwuwarstwowy filtr jakości |
+| **Pipeline (scraping)** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API — **PHP + GitHub Actions** (`scraper/`), dwuwarstwowy filtr jakości. NiFi (lokalnie, Windows) zdecommissionowany 20.09, flow zachowany w repo jako historyczny fallback |
 | **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09), hero z wyróżnikiem RODO/AI Act/UE (13.09), tri-state RODO/DPA/EU hosting (14.09), wyszukiwanie tekstowe na `/narzedzia/` (15.09), font Inter (19.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
 | **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony), panel logów błędów (activity_log, 13.09), modal edycji + wyszukiwanie/filtr/sortowanie w zakładce "Narzędzia" (15–19.09), "Znalezione sygnały" RODO/DPA/UE w weryfikacji (14.09) |
@@ -57,7 +57,7 @@ Strategia i nisza, baza danych (6→7 tabel), pipeline NiFi (3 źródła: HN/Bet
 
 **Dlaczego to działa lepiej:** każda firma przeszła realny proces finansowania YC (eliminuje kategorię "artykuł/esej" halucynacji), pole `website` zawsze wskazuje na prawdziwą domenę (nie na stronę launch-platformy), pola `one_liner`/`long_description` dają OpenAI prawdziwy tekst źródłowy zamiast zgadywania z samej nazwy.
 
-**Architektura nowej gałęzi:**
+**Architektura nowej gałęzi (NiFi, wersja historyczna — od 20.09 zastąpiona przez `scraper/sources/yc_oss.php`, patrz sekcja "Migracja pipeline'u" niżej):**
 ```
 GenerateFlowFile (YC AI Trigger, cron 5:00)
   → InvokeHTTP (GET tags/artificial-intelligence.json)
@@ -114,32 +114,6 @@ Weryfikacja AI świeżych wpisów z YC ujawniła systemową lukę: 3 potwierdzon
 ## ✅ Dokończenie strony detalu + naprawa krytycznego buga deployu (09.09.2026)
 
 **Zrobione:** trzy commity kończące redesign `[slug].astro` (pasek zgodności, powiększone podobne narzędzia, usunięcie zdublowanego linku CTA) — pełny opis w `CHANGELOG.md` [v0.11].
-
-**Znaleziony podczas weryfikacji na żywo, nie w kodzie:** `deploy.yml` nigdy nie usuwał plików z serwera przy SCP. Efekt: 40 z 41 narzędzi odrzuconych/usuniętych w historii projektu (w tym halucynacje z pipeline'u z lipca) miało wciąż żywe, publiczne strony na produkcji. Wyczyszczone ręcznie przez SSH, backup zrobiony, zero wpływu na SEO (potwierdzone w Search Console — te strony nigdy nie zostały odkryte przez Google, bo sitemapa buduje się z tych samych danych co strony).
-
-**Otwarte — priorytet #1:** naprawa `deploy.yml` (mechanizm mirror/`--delete`), żeby problem się nie powtórzył. Wymaga ostrożnej weryfikacji zasięgu (sekrety w `private_html/`, osobny krok deployu dla `admin/`) przed wdrożeniem — nie robić w pośpiechu.
-
-**Nauka:** SSG + SCP-bez-delete to pułapka, która nie ujawnia się przy normalnym testowaniu (katalog poprawnie filtruje po `status='approved'`, więc nikt nie widzi problemu, dopóki nie sprawdzi się konkretnego, nieaktualnego URL-a bezpośrednio).
-
-**Aktualizacja (ten sam wieczór):** priorytet #1 zrealizowany od razu, nie odłożony — `deploy.yml` ma teraz automatyczny krok czyszczący (commit `d62e41c`), więc problem osieroconych stron nie powinien się powtórzyć bez ręcznej interwencji. Zweryfikowane na żywym deployu (GitHub Actions run #152, zielony), zero regresji na sprawdzonej próbce narzędzi. Backup `~/backup-orphaned-20260909/` można skasować.
-
-## ✅ Poprawka paginacji w panelu admina (09.09.2026, ten sam wieczór)
-
-Zgłoszony brak "Yolo" na liście do edycji doprowadził do znalezienia szerszego buga: zakładka "Narzędzia" pokazywała tylko pierwsze 100 z 277 zatwierdzonych narzędzi (zaszyty limit z wczesnej fazy projektu, bez paginacji i bez żadnej sygnalizacji obcięcia). Naprawione (`f3ee5e2`) — dodana paginacja z bezpiecznym rzutowaniem parametru `page` z URL i stabilnym tie-breakerem sortowania. Zweryfikowane na żywo: suma stron = 277, brak duplikatów/pominięć na granicach.
-
-**Świadomie nieruszone:** widoczność narzędzi ze statusem innym niż `approved` (np. odrzuconych jak Yolo) w panelu — obecnie brak takiej zakładki/filtra, nie było dziś potrzebne, zostaje jako otwarty temat na przyszłość jeśli się okaże potrzebny.
-
-## ✅ Faza 2 — filtrowanie katalogu przez Pagefind, strona /narzedzia/ (10.09.2026)
-
-Jedyna rzecz z pierwotnego planu sesji redesignu (08-09.09), która pozostawała otwarta. Nowa strona `/narzedzia/` z pigułkami filtrów kategorii — statyczny fallback (prawdziwe linki do `/kategoria/{slug}/`) + płynne filtrowanie przez Pagefind bez przeładowania, skaluje się do 1000+ narzędzi bez wzrostu wagi strony (próg 60 + "Pokaż więcej"). Przy okazji naprawiony ukryty bug: strona główna renderowała cały katalog (514 KB → 35 KB).
-
-**Otwarte:** UI dla dodatkowych filtrów (cennik, AI Act) — dane już otagowane. Narastanie plików `dist/pagefind/` przy kolejnych buildach — do obserwacji, ten sam typ ryzyka co bug `deploy.yml`.
-
----
-
-## ✅ Panel logowania błędów — activity_log (13.09.2026)
-
-**Kontekst:** błędy z `verify_tool.php` (wyjątki PHP, martwe/404 `website_url`) trafiały wyłącznie do plikowego logu na serwerze (`private_html/logs/verify_debug.log`) — nie było scentralizowanego, przeglądalnego miejsca do monitorowania jakości pipeline'u weryfikacji bez SSH.
 
 **Zrobione:**
 - Nowa tabela `activity_log` (Supabase, RLS z policy insert/select dla `anon`, append-only — brak policy update/delete) — wspólna dla `verify_tool.php` i w przyszłości dla scrapera
@@ -236,6 +210,48 @@ Realizacja punktów z audytu UX (pełna lista i historia rund: `UX-AUDIT.md`, No
 - Modal edycji (`#edit-modal`) — wszystkie pola jednym PATCH przez wspólny `patchTool()`, zastępuje 3 zduplikowane funkcje `save*` (`cc1a12c`)
 - Stare mini-formularze zastąpione read-only badge'ami (`785306f`): **6→0 pól formularza, 9→3 przyciski/wiersz, −36% rozmiaru szablonu wiersza**
 - Modal później rozszerzony o edycję `description_pl`/`best_for_pl`/`pricing_model`/`name` (patrz sekcja Content wyżej)
+
+---
+
+## 🏗️ Migracja pipeline'u z NiFi na GitHub Actions (PHP) — 20.09.2026
+
+**Kontekst:** przy okazji sprawdzania nowego pilota GitHub Actions dla YC-OSS (dodanego w osobnej sesji, poza tą rozmową) okazało się, że po 2 dniach pilot nie rejestrował nowych wpisów. Diagnoza: NiFi (crony 2:00-5:00 CEST) systematycznie "wygrywał wyścig" o te same firmy zanim GitHub Actions (ten sam harmonogram, ale realnie opóźniony o ~5-6h przez znane opóźnienia w kolejce schedulera GitHuba) zdążył się uruchomić — 96/97 kandydatów okazało się duplikatami. Test z pominięciem NiFi na jeden dzień potwierdził: pilot faktycznie wstawia wpisy poprawnie, gdy nie rywalizuje z NiFi.
+
+**Decyzja:** całkowicie zastąpić NiFi (lokalny, na Windows) pipeline'em w GitHub Actions (PHP + cron), nie utrzymywać jako równoległy backup.
+
+### Migracja 3 pozostałych źródeł (HN, BetaList, Product Hunt)
+
+Claude Code zweryfikował logikę **przeciw rzeczywistemu eksportowi NiFi** (`aifirmy-main-flow-v2.json`), nie przeciw opisowi w dokumentacji — zgodnie z ustaloną zasadą projektu o rozjazdach dokumentacja-vs-rzeczywistość. Znalazł dwa realne rozjazdy po drodze:
+
+1. **Filtr `type=story` w Product Hunt nigdy nie istniał w NiFi** — `hn_type=story` był stałą wpisywaną w `UpdateAttribute`, nie warunkiem filtrującym. Pominięty w migracji, udokumentowany w kodzie.
+2. **`source_name` dla BetaList i Product Hunt był błędnie zahardkodowany jako `'hacker_news'`** w NiFi — nigdy nie miały ustawionego `source_name_override` (w przeciwieństwie do YC-OSS, gdzie to naprawiliśmy przy budowie tej gałęzi). To był **prawdziwy, wcześniej nieznany bug jakości danych** w historycznych wpisach z tych dwóch źródeł, nie tylko kwestia parytetu z migracją — naprawiony w nowym kodzie.
+
+**Architektura:** wspólne komponenty (`filters.php` — filtr słów kluczowych z poprawką word-boundary dla "ai", `pipeline.php` — dedup→OpenAI→insert, `atom.php` — parser feedów Atom dla BetaList/PH, `http.php` — helper GET z User-Agent wymaganym przez Product Hunt za Cloudflare), plus per-źródło pliki (`hacker_news.php`, `betalist.php`, `product_hunt.php`) i 3 nowe workflow GitHub Actions (`scrape-hn.yml`, `scrape-betalist.yml`, `scrape-producthunt.yml`), każdy z `workflow_dispatch` do ręcznego testowania.
+
+**Zachowane, znane ograniczenia (parytet z NiFi, nie regresje):** `website_url` dla BetaList/PH nadal wskazuje na stronę listingu, nie domenę produktu (znana luka opisana już wcześniej dla YC); filtr domen to dopasowanie substringu nie hosta (np. `dev.to` łapie też `dev.tools`).
+
+### Wynik testów na żywo (workflow_dispatch, 20.09.2026)
+
+| Źródło | Fetched | Filtered (odrzucone) | Inserted | Duplicates | Errors |
+|---|---|---|---|---|---|
+| HN | 500 | 500 | 0 | 0 | 0 |
+| BetaList | 25 | 24 | 1 | 0 | 0 |
+| Product Hunt | 50 | 50 | 0 | 0 | 0 |
+
+**Wyniki 1:1 zgodne z testem na sucho przeprowadzonym wcześniej przez Claude Code** (uruchomienie prawdziwego kodu z podmienionymi na stuby Supabase/OpenAI). Zero błędów we wszystkich trzech.
+
+**Ważny wniosek strategiczny — nie niespodzianka, potwierdzenie:** HN/BetaList/PH dają bardzo niski wolumen (0-1 kandydat na przebieg) — to dokładnie ten sam problem słabego sygnału, który miesiąc wcześniej skłonił do zbudowania YC-OSS jako Priorytetu #1. Po migracji te trzy źródła pozostaną **marginalne wolumenowo** — YC-OSS jest i pozostanie głównym silnikiem nowych wpisów, reszta to uzupełnienie. Migracja była słuszna (usuwa zależność od lokalnego Windows/NiFi), ale nie należy oczekiwać nagłego wzrostu wolumenu z HN/BetaList/PH tylko dlatego, że działają teraz w chmurze.
+
+### Cutover — NiFi wyłączony (20.09.2026)
+
+Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwierdzeniu, że GitHub Actions poprawnie obsługuje wszystkie źródła. Flow pozostawiony nietknięty na wypadek potrzeby powrotu, tylko zatrzymany. Autostart NiFi w Windows Task Scheduler — do rozważenia wyłączenia (patrz Backlog), skoro pipeline już go nie potrzebuje.
+
+### 📌 Do rozważenia później (świadomie odłożone, nie zapomniane)
+- [ ] Okno kandydatów 24h → 36h w `filters.php` (`CANDIDATE_WINDOW_SECONDS`) — realne ryzyko utraty wpisów w szczelinie między opóźnionymi uruchomieniami GitHub Actions (obserwowane ~5-6h opóźnienia). Celowo odłożone jako osobna decyzja, nie połączona z commitem migracji (jedna zmienna na raz)
+- [ ] Filtr słów kluczowych na pełnym tytule zamiast samej nazwy — dla BetaList przepuściłby 3 wpisy zamiast 1 (na samej nazwie), 9 licząc z opisem z feedu. Zostawione jako parytet z NiFi na start
+- [ ] Sprawdzić w panelu "Odrzucone przez AI" wpis "AI Dubbing" z pierwszego realnego przebiegu BetaList — czy słuszne odrzucenie czy fałszywy negatyw
+- [ ] Wyłączyć autostart NiFi w Windows Task Scheduler (już niepotrzebny) — realna korzyść: komputer nie musi być już stale włączony o 2:00-5:00 dla działania pipeline'u
+- [ ] Skonsolidować własną kopię logiki dedup/insert w `yc_oss.php` do współdzielonego `pipeline.php` używanego przez pozostałe 3 źródła (obecnie niespójne, niska pilność)
 
 ---
 
@@ -338,7 +354,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 
 ### 🗺️ Plan działań (ustalony 23.08, wciąż aktualny)
 
-1. ✅ Nowe źródła NiFi (Priorytet #1) — zrobione (YC-OSS API)
+1. ✅ Nowe źródła danych (Priorytet #1) — zrobione (YC-OSS API, 30.08), **cały pipeline zmigrowany z NiFi na GitHub Actions 20.09**
 2. **Faza 1 — Wznowienie growth** — LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 284 zatwierdzonych narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
    - ✅ Post 1 LinkedIn (RODO/AI Act) — opublikowany 19.09.2026
    - [ ] Post 2 LinkedIn — wciąż tylko draft w Notion
@@ -365,6 +381,11 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] Rozważyć zawężenie okna `launched_at` z 90 do 30 dni po ocenie jakości pierwszej partii
 - [ ] Refaktoryzacja stopki do współdzielonego komponentu `Footer.astro` (obecnie zduplikowana w 6 plikach)
 - [ ] Regularnie przeglądać "Odrzucone przez AI" pod kątem fałszywych negatywów
+- [ ] **Okno kandydatów 24h → 36h** w `scraper/lib/filters.php` (`CANDIDATE_WINDOW_SECONDS`) — realne ryzyko utraty wpisów w szczelinie między opóźnionymi uruchomieniami GitHub Actions (patrz sekcja migracji wyżej)
+- [ ] Filtr słów kluczowych HN/BetaList/PH na pełnym tytule zamiast samej nazwy (rozważyć po ocenie jakości bieżącego parytetu z NiFi)
+- [ ] Sprawdzić w "Odrzucone przez AI" wpis "AI Dubbing" (pierwszy realny przebieg BetaList, 20.09) — słuszne odrzucenie czy fałszywy negatyw
+- [ ] Wyłączyć autostart NiFi w Windows Task Scheduler (pipeline zmigrowany, NiFi już niepotrzebny)
+- [ ] Skonsolidować `yc_oss.php` do współdzielonego `scraper/lib/pipeline.php` (obecnie ma własną, wcześniejszą kopię logiki dedup/insert)
 
 ---
 
@@ -372,15 +393,15 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 
 | Warstwa | Technologia | Uwagi |
 |---|---|---|
-| Frontend | Astro 6 + Tailwind CSS v4 | SSG, 10 ikon kategorii SVG duotone |
-| ETL / Scraping | Apache NiFi 2.9.0 | Lokalnie Windows, **4 źródła** (HN/BetaList/Product Hunt/YC-OSS API), dwuwarstwowy filtr jakości |
+| Frontend | Astro 6 + Tailwind CSS v4 | SSG, 10 ikon kategorii SVG duotone, Pagefind (wyszukiwanie tekstowe) |
+| ETL / Scraping | **PHP scraper + GitHub Actions** (`scraper/`) | **4 źródła** (HN/BetaList/Product Hunt/YC-OSS API), dwuwarstwowy filtr jakości. Zmigrowane z Apache NiFi 2.9.0 (lokalnie Windows) **20.09.2026** — NiFi zatrzymany, flow zachowany w `nifi-flows/` jako historyczny fallback |
 | AI opisy (pipeline) | OpenAI gpt-4o-mini | Zwraca best_for_pl, is_real_product; YC branch ma dodatkowy source_context |
 | AI weryfikacja (admin) | OpenAI gpt-4o-mini | `response_format: json_object`, kategoria AI Act hint dla 7/10 kategorii, logo fix wdrożony, reguły jakości języka (wg `CONTENT-GUIDE.md`), cytaty RODO/DPA/UE jako evidence (bez oceny) |
 | Baza danych | Supabase PostgreSQL free | eu-central-1; 10 kategorii; trigger `promote_scrape_to_tools()` |
 | Admin panel | PHP + Supabase REST API | /admin/index.php, /admin/affiliate.php, /admin/verify_tool.php, /admin/logs.php |
 | Hosting | Cyberfolks (LiteSpeed) | Frontend + PHP admin + webhook |
 | CDN / ochrona | Cloudflare | SSL Full, Redirect Rules (www→apex) |
-| CI/CD | GitHub Actions | Auto-deploy, workflow_dispatch, SCP całego admin/ |
+| CI/CD | GitHub Actions | Auto-deploy, workflow_dispatch, SCP całego admin/, + 4 workflow scrapera (schedule + workflow_dispatch) |
 | Płatności | Stripe (live mode) | checkout.php + webhook.php |
 | Affiliate | PartnerStack (ClickUp) | affiliate_links + admin/affiliate.php |
 | Email | PHPMailer + Cyberfolks SMTP | kontakt@aifirmy.pl |
@@ -392,12 +413,12 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 
 | Problem | Rozwiązanie |
 |---|---|
-| NiFi ReplaceText: `\n` → literalne `n`, `\"` gubi backslash | System message jedną linią, bez cudzysłowów |
-| InvokeHTTP connection pool cache | Stop flow 30s → Start po zmianie konfiguracji |
-| `nifi.cmd status` fałszywy alarm | Sprawdzić `java -version`, logi przed założeniem awarii |
+| NiFi ReplaceText: `\n` → literalne `n`, `\"` gubi backslash | *(historyczne, NiFi zdecommissionowany 20.09)* System message jedną linią, bez cudzysłowów |
+| InvokeHTTP connection pool cache | *(historyczne)* Stop flow 30s → Start po zmianie konfiguracji |
+| `nifi.cmd status` fałszywy alarm | *(historyczne)* Sprawdzić `java -version`, logi przed założeniem awarii |
 | Repo ma prefiks `frontend/` dla kodu Astro | Zawsze `git add frontend/src/...` |
 | PowerShell + nazwy plików z `[...]` | Cudzysłowy wokół ścieżki w `git add` |
-| `contains('x')` w NiFi EL dla krótkich słów | Podciąg, nie całe słowo — użyj `matches('(?i).*\bx\b.*')` |
+| `contains('x')` w NiFi EL dla krótkich słów | *(historyczne)* Podciąg, nie całe słowo — użyj `matches('(?i).*\bx\b.*')`. **W PHP ten sam problem naprawiony przez `preg_match('/\bai\b/i', ...)`** w `scraper/lib/filters.php` |
 | PHP `strict_types` + niepewny JSON z AI | `is_string()` guard przed `trim()`/`mb_strtolower()` |
 | PHP `try/catch (Exception)` nie łapie `TypeError` | Łapać `\Throwable` |
 | Cichy 502 bez logów PHP | Checkpointy czasowe + `register_shutdown_function` |
@@ -410,6 +431,8 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 | Cloudflare "DNS may not be proxying" ostrzeżenie mimo poprawnej konfiguracji | Zweryfikować bezpośrednio w DNS → Records przed zaufaniem ostrzeżeniu UI |
 | GA4 pokazuje zero mimo realnego ruchu | Sprawdzić czy `gtag.js` faktycznie wysyła beacon (nie tylko czy się ładuje) — może być blokowany w trybie "stub" przez adblocki; Search Console/AWStats jako niezależna weryfikacja |
 | `git push` rejected (fetch first) przy pracy na 2 komputerach | Standardowe: `git pull --rebase && git push`; zawsze `git log --oneline` na remote przed dalszą pracą jeśli coś niepokoi |
+| **GitHub Actions `schedule` uruchamia się z dużym opóźnieniem (~5-6h obserwowane)** | Nie zakładać awarii tylko po niezgodności godziny w harmonogramie z faktycznym czasem uruchomienia — sprawdzić historię runów w Actions. Przy dwóch konkurujących pipeline'ach (np. NiFi + GitHub Actions) ten, który realnie uruchamia się wcześniej, "wygrywa" dedup — nie znaczy to, że drugi jest zepsuty |
+| Stats `inserted: 0` w scraperze mimo `fetched`/`filtered` > 0 | Sprawdzić `duplicates` — może być inne źródło/proces, które już wstawiło te same rekordy pierwsze, zanim dedup zdążył zadziałać w tym uruchomieniu |
 
 ---
 
