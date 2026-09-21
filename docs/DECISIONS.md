@@ -188,18 +188,49 @@ Programy afiliacyjne będą się pojawiać częściej. Osobna tabela pozwala trz
 ---
 
 ## ADR-010 — Działalność nierejestrowana: limit przychodu i próg alarmowy
-**Data:** wrzesień 2026 (20.09.2026)
-**Status:** ⏳ Do potwierdzenia z księgowym
+**Data:** wrzesień 2026 (20.09.2026, poprawka 21.09.2026)
+**Status:** ⏳ do pisemnego potwierdzenia z księgowym
 
 **Kontekst:**
 Infrastruktura monetyzacji jest live (Stripe + affiliate), przychód = 0 na 2026-09-20. Właściciel projektu nie ma zarejestrowanej działalności gospodarczej.
 
+**Poprawka 21.09.2026 — warunek 60 miesięcy prawdopodobnie NIE jest spełniony:**
+Działalność nierejestrowana wymaga (poza limitem przychodu), żeby w ostatnich 60 miesiącach
+(5 latach) właściciel nie prowadził działalności gospodarczej. Właściciel miał wcześniej
+zarejestrowaną JDG: **zawieszoną 31.01.2022, zamkniętą 11.12.2023.** Zawieszenie działalności
+liczy się jak jej niewykonywanie (nie jak jej zamknięcie) — jeśli to prawidłowa interpretacja,
+okres 60 miesięcy liczy się od 31.01.2022, czyli warunek zostałby spełniony **najwcześniej
+1.02.2027**. Do tego czasu bieżąca działalność najprawdopodobniej **nie kwalifikuje się** jako
+działalność nierejestrowana, niezależnie od limitu przychodu poniżej.
+
+**Konsekwencja robocza (do czasu pisemnego potwierdzenia z księgowym):**
+- Brak płatnej sprzedaży — wdrożone jako kill-switch w `admin/checkout.php` +
+  `frontend/src/pages/premium.astro` (`SALES_ENABLED = false`, patrz commit "feat: G0").
+- Wypłaty z programów afiliacyjnych (PartnerStack) na osobę fizyczną wstrzymane — nie
+  podpinać metody wypłaty (Stripe/PayPal), dopóki nie zapadnie decyzja o rejestracji JDG
+  albo księgowy nie potwierdzi pisemnie, że warunek 60 miesięcy jest jednak spełniony.
+- **Tripwire:** pierwsza realna (nie testowa) prowizja affiliate naliczona na koncie
+  PartnerStack ma być natychmiast odnotowana i skonfrontowana z tym ADR przed jakąkolwiek
+  próbą wypłaty lub zaksięgowaniem jej jako przychodu należnego — to sygnał do działania,
+  nie tylko kwota progu kwartalnego.
+- Zaproszenie do "programu pilotażowego" (baner na `/premium` zastępujący płatną sprzedaż)
+  musi pozostać **bezpłatne i bez świadczeń wzajemnych** — żadnej wymiany usługa-za-usługę
+  czy usługa-za-dane, które mogłyby zostać uznane za przychód należny lub za rozpoczęcie
+  działalności zarobkowej przed wyjaśnieniem warunku 60 miesięcy.
+
 **Fakty (do potwierdzenia z księgowym):**
-- Od 2026 r. limit działalności nierejestrowanej jest kwartalny: 225% płacy minimalnej (4 806 zł) = **10 813,50 zł**
+- Limit działalności nierejestrowanej jest kwartalny, liczony jako 225% płacy minimalnej:
+  - 2026: 225% × 4 806 zł = **10 813,50 zł / kwartał**
+  - 2027: 225% × 4 950 zł = **11 137,50 zł / kwartał**
 - Do limitu liczy się przychód należny z całej działalności (Stripe + affiliate łącznie)
 - Po przekroczeniu limitu jest 7 dni na rejestrację w CEIDG
+- Osobny, wcześniejszy warunek (patrz poprawka wyżej): brak prowadzonej działalności
+  gospodarczej w ostatnich 60 miesiącach
 
-**Decyzja robocza:** próg alarmowy ~60% limitu (≈ 6 488 zł przychodu należnego w kwartale).
+**Decyzja robocza:** próg alarmowy ~60% limitu (≈ 6 488 zł przychodu należnego w kwartale,
+2026) — **nieaktualna dopóki warunek 60 miesięcy nie zostanie wyjaśniony**, bo do 1.02.2027
+limit przychodu może być bez znaczenia (działalność nierejestrowana może być niedostępna
+z innego powodu).
 
 **Uwaga:** wpis zawiera wyłącznie powyższe fakty — nie stanowi porady prawnej ani podatkowej. Wszystkie liczby i zasady wymagają potwierdzenia z księgowym.
 
