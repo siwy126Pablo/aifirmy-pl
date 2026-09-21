@@ -89,14 +89,30 @@ const navLinks = [
   </head>
   <body>
     <header class="border-b border-gray-200 bg-white">
-      <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-        <a href="/" class="text-xl font-bold text-indigo-600">aifirmy.pl</a>
-        <nav class="flex items-center gap-6">
+      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-8 px-4 py-4">
+        <a href="/" class="shrink-0 text-xl font-bold text-indigo-600">aifirmy.pl</a>
+        <button
+          type="button"
+          id="nav-toggle"
+          class="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 md:hidden"
+          aria-controls="site-nav"
+          aria-expanded="false"
+          aria-label="Otwórz menu"
+        >
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path data-icon="open" d="M4 6h16M4 12h16M4 18h16" />
+            <path data-icon="close" class="hidden" d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <nav
+          id="site-nav"
+          class="hidden w-full flex-col pt-2 md:flex md:w-auto md:flex-row md:items-center md:gap-6 md:pt-0"
+        >
           {navLinks.map(({ label, href }) => (
             <a
               href={href}
               class={[
-                'text-sm font-medium transition-colors',
+                'py-2 text-sm font-medium transition-colors md:py-0',
                 path === href
                   ? 'text-indigo-600'
                   : 'text-gray-500 hover:text-gray-900',
@@ -108,6 +124,34 @@ const navLinks = [
         </nav>
       </div>
     </header>
+    <script>
+      // Menu mobilne: pokazujemy/ukrywamy jedyny <nav> klasami hidden/flex.
+      // Od breakpointu md klasa md:flex wygrywa z hidden, więc stan przełącznika
+      // nie ma wpływu na desktop.
+      const toggle = document.getElementById('nav-toggle');
+      const menu = document.getElementById('site-nav');
+
+      function setOpen(open: boolean) {
+        if (!toggle || !menu) return;
+        menu.classList.toggle('hidden', !open);
+        menu.classList.toggle('flex', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.setAttribute('aria-label', open ? 'Zamknij menu' : 'Otwórz menu');
+        toggle.querySelector('[data-icon="open"]')?.classList.toggle('hidden', open);
+        toggle.querySelector('[data-icon="close"]')?.classList.toggle('hidden', !open);
+      }
+
+      toggle?.addEventListener('click', () => {
+        setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') {
+          setOpen(false);
+          toggle.focus();
+        }
+      });
+    </script>
     <slot />
     <CookieConsent />
   </body>
