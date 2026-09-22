@@ -95,4 +95,21 @@ Ocena strony jako systemu graficznego: czy typografia, kolory i ikony tworzą sp
 
 ---
 
+### Sesja 2026-09-22 (redesign hero + dark band, prowadzone jako sesja Art Director/UI Designer)
+
+**Zrobione:** nowy token koloru akcentu (`#facc15`) i ink (`#0d0b21`) w `global.css`. Hero przebudowany na asymetryczny układ z highlight-barem pod frazą "RODO i AI Act", nowy podtytuł. Dark band przed stopką zastąpił stary płaski przycisk — dynamiczna liczba narzędzi z bazy, spójny CTA z hero. Commit `3363df6`, zweryfikowany na żywo (preview + produkcja): blob w hero używa dosłownie tej samej klasy `bg-indigo-600` co reszta marki, liczba w dark bandzie realna nie placeholder.
+
+**Nowa, formalna zasada systemu kolorów:**
+- `#facc15` (accent) — wyłącznie akcje wewnętrzne (zostań w katalogu): hero CTA, dark band CTA
+- `indigo-600` — akcje wychodzące (afiliacja/strona producenta): "Odwiedź stronę {narzędzie}" na kartach i stronie narzędzia. Świadomie nietknięte — rozróżnienie kolorem między "zostajesz" a "wychodzisz" ma realną konsekwencję biznesową (najmocniejszy kolor marki nie powinien pchać ruchu do linków afiliacyjnych)
+- Accent nigdy w warstwie danych (karty, badge'e, panel zgodności) — wyłącznie hero i dark band
+
+**Odkryte przy okazji, niezwiązane z tą zmianą:** `frontend/.tmp-shots/` — pełny profil Chrome (cache, Trust Tokens, Sync Data) z 15.09, nigdy niescommitowany, przyczyna nieustalona. Do wyjaśnienia i usunięcia osobno.
+
+**Zamknięte tą sesją:** oba pierwotne punkty 🔴 (font, paleta kategorii) + pełna koncepcja wizualna hero/CTA.
+
+**Zostaje na następną sesję (🟡, realizacja, nie decyzje projektowe):** skala typograficzna, pole `icon` w DB, pusta przestrzeń w sidebarze, ceny PLN.
+
+---
+
 *Utworzono: 2026-09-10, w reakcji na brak tej sesji przy pierwotnym audycie "grafik UI". Aktualizuj po każdej sesji — nowa sekcja na dole, nie nadpisuj historii.*
