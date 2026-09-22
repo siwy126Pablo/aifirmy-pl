@@ -24,4 +24,11 @@
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
     'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Marketing-only akcenty (hero + dark band przed stopką) — NIE używać
+     w warstwie danych (kategorie/AI Act/pricing badges), tam kolor
+     zostaje jak było. Marka pozostaje indigo-600 (Tailwind), celowo bez
+     własnego tokenu dla indygo, żeby nie powielić odcienia. */
+  --color-accent: #facc15;
+  --color-ink: #0d0b21;
 }
