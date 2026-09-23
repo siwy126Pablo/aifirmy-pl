@@ -405,11 +405,10 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
   jak i na stronie głównej, więc problem jest site-wide, nie per-URL. Canonical
   tag jest poprawny (`https://aifirmy.pl/.../`), ale — tak jak przy wcześniejszym
   buggu www→apex (sierpień 2026) — canonical nie zastępuje twardego 301.
-  **Naprawa po stronie Cloudflare (Redirect Rule `http://*` → `https://${1}`),
-  jeszcze niewykonana** — wymaga działania w panelu Cloudflare, nie w kodzie.
+  **✅ Naprawione 21.09.2026 po stronie Cloudflare** — włączone "Always Use HTTPS";
+  weryfikacja `curl`: `http://` zwraca 301 na `https://`.
 
 ### Następny krok
-- Cloudflare: dodać Redirect Rule wymuszającą https (albo włączyć "Always Use HTTPS")
 - Po deployu G0: zweryfikować na żywo, że `/premium` pokazuje wyłączone przyciski
   i że bezpośredni POST na `/admin/checkout.php` faktycznie redirectuje zamiast
   tworzyć sesję Stripe

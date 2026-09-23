@@ -190,6 +190,7 @@ Programy afiliacyjne będą się pojawiać częściej. Osobna tabela pozwala trz
 ## ADR-010 — Działalność nierejestrowana: limit przychodu i próg alarmowy
 **Data:** wrzesień 2026 (20.09.2026, poprawka 21.09.2026)
 **Status:** ⏳ do pisemnego potwierdzenia z księgowym
+**Źródło potwierdzenia:** konsultacja z księgowym, 21.09.2026 — zachować pisemny ślad
 
 **Kontekst:**
 Infrastruktura monetyzacji jest live (Stripe + affiliate), przychód = 0 na 2026-09-20. Właściciel projektu nie ma zarejestrowanej działalności gospodarczej.
