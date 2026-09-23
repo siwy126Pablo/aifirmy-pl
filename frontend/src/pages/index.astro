@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import CompanyCard from '../components/CompanyCard.astro';
 import CategoryIcon from '../components/icons/CategoryIcon.astro';
 import { supabase } from '../lib/supabase';
-import { isActivePremium } from '../lib/premium';
+import { isActivePremium, activePremiumPlan } from '../lib/premium';
 
 const { data: companies, error } = await supabase
   .from('tools')
@@ -132,6 +132,7 @@ function pluralizeTools(n: number): string {
                 url={tool.website_url}
                 slug={tool.slug}
                 isPremium={isPremium}
+                premiumPlan={activePremiumPlan(tool)}
                 affiliateUrl={activeAffiliateLink?.affiliate_url}
                 disclosureText={activeAffiliateLink?.disclosure_text}
                 rodoCompliant={tool.rodo_compliant}

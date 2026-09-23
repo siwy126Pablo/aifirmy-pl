@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import CompanyCard from '../../components/CompanyCard.astro';
 import { supabase } from '../../lib/supabase';
+import { isActivePremium, activePremiumPlan } from '../../lib/premium';
 
 export async function getStaticPaths() {
   const { data: categories } = await supabase
@@ -31,9 +32,7 @@ const { data: tools } = await supabase
   .order('created_at', { ascending: false });
 
 const sorted = [...(tools ?? [])].sort((a, b) => {
-  const aP = a.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
-  const bP = b.premium_listings?.some((p: any) => p.ends_at && new Date(p.ends_at) > new Date()) ? 1 : 0;
-  return bP - aP;
+  return (isActivePremium(b) ? 1 : 0) - (isActivePremium(a) ? 1 : 0);
 });
 
 function pluralize(n: number): string {
@@ -59,9 +58,7 @@ function pluralize(n: number): string {
     {tools && tools.length > 0 ? (
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {sorted.map(tool => {
-          const isPremium = tool.premium_listings?.some(
-            (p: any) => p.ends_at && new Date(p.ends_at) > new Date()
-          );
+          const isPremium = isActivePremium(tool);
           const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
           return (
             <CompanyCard
@@ -72,6 +69,7 @@ function pluralize(n: number): string {
               url={tool.website_url}
               slug={tool.slug}
               isPremium={isPremium}
+              premiumPlan={activePremiumPlan(tool)}
               affiliateUrl={activeAffiliateLink?.affiliate_url}
               disclosureText={activeAffiliateLink?.disclosure_text}
               rodoCompliant={tool.rodo_compliant}

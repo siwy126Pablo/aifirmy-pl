@@ -2,11 +2,12 @@
 import Layout from '../../layouts/Layout.astro';
 import { supabase } from '../../lib/supabase';
 import { categoryColors, categoryColorFallback, aiActRiskColors, pricingLabels, type PricingModel } from '../../lib/category-colors';
+import { activePremiumPlan, PILOT_DISCLOSURE } from '../../lib/premium';
 
 export async function getStaticPaths() {
   const { data: tools } = await supabase
     .from('tools')
-    .select('*, categories(name_pl, slug), tool_tags(tags(name_pl, slug)), affiliate_links(affiliate_url, disclosure_text, active)')
+    .select('*, categories(name_pl, slug), tool_tags(tags(name_pl, slug)), premium_listings(plan, ends_at), affiliate_links(affiliate_url, disclosure_text, active)')
     .eq('status', 'approved');
 
   return tools?.map(tool => ({
@@ -25,6 +26,7 @@ const tags = (tool.tool_tags ?? []).map((tt: any) => tt.tags).filter(Boolean);
 
 const activeAffiliateLink = (tool.affiliate_links ?? []).find((link: any) => link.active);
 const ctaUrl = activeAffiliateLink?.affiliate_url ?? tool.website_url;
+const isPilot = activePremiumPlan(tool) === 'pilot';
 
 let similarTools: any[] = [];
 
@@ -277,6 +279,11 @@ const faqSchema = JSON.stringify({
 
           {activeAffiliateLink && (
             <p class="mt-1 text-xs text-gray-400">{activeAffiliateLink.disclosure_text}</p>
+          )}
+
+          {/* TODO: płatny Featured nie ma tu widocznego ujawnienia — dodać przed ponownym włączeniem sprzedaży (ADR-010). */}
+          {isPilot && (
+            <p class="mt-1 text-xs text-gray-400">Partner pilotażowy. {PILOT_DISCLOSURE}</p>
           )}
 
         </article>

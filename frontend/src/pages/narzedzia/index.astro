@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import CompanyCard from '../../components/CompanyCard.astro';
 import { supabase } from '../../lib/supabase';
-import { isActivePremium } from '../../lib/premium';
+import { isActivePremium, activePremiumPlan } from '../../lib/premium';
 import { aiActRiskColors, pricingLabels, categoryColors } from '../../lib/category-colors';
 
 const { data: companies } = await supabase
@@ -85,6 +85,7 @@ const { data: categoryList } = await supabase
               url={tool.website_url}
               slug={tool.slug}
               isPremium={isPremium}
+              premiumPlan={activePremiumPlan(tool)}
               affiliateUrl={activeAffiliateLink?.affiliate_url}
               disclosureText={activeAffiliateLink?.disclosure_text}
               rodoCompliant={tool.rodo_compliant}
