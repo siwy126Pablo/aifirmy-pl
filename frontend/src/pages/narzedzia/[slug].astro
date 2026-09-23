@@ -100,7 +100,8 @@ const targetSizeText = ((tool.target_size ?? []) as string[])
   .join(', ');
 
 // Pola 3-stanowe (true/false/NULL = nie zweryfikowano) — rodo_compliant,
-// dpa_available, eu_data_hosting od migracji 002_tri_state_compliance_fields.
+// dpa_available, eu_data_hosting od migracji 002_tri_state_compliance_fields;
+// has_pl_ui (i has_pl_support, na froncie niewyświetlane) od 2026-09-23.
 // false to teraz realna, zweryfikowana odpowiedź "nie" (nie domyślny
 // artefakt) — stąd osobny, wyraźny czerwony stan zamiast dawnego
 // dwustanowego true/false collapsed do jednego ✗.
@@ -113,6 +114,7 @@ function triStatePill(value: boolean | null, trueLabel = 'Tak', falseLabel = 'Ni
 const rodoPill = triStatePill(tool.rodo_compliant);
 const dpaPill = triStatePill(tool.dpa_available, 'Dostępna', 'Niedostępna');
 const euHostingPill = triStatePill(tool.eu_data_hosting);
+const uiPill = triStatePill(tool.has_pl_ui);
 
 const aiActRiskEducation: Record<string, string> = {
   minimal: 'Większość narzędzi AI należy do tej kategorii — np. chatboty obsługi klienta bez wpływu na ważne decyzje, filtry spamu, systemy rekomendacji. AI Act nie nakłada tu żadnych obowiązkowych wymogów, jedynie zachęca do dobrowolnych kodeksów postępowania.',
@@ -357,7 +359,11 @@ const faqSchema = JSON.stringify({
             </div>
             <div class="rounded-lg border border-gray-200 p-3">
               <dt class="text-xs text-gray-400">Interfejs PL</dt>
-              <dd class="text-sm font-medium text-gray-700">{tool.has_pl_ui ? '✓ Tak' : '✗ Nie'}</dd>
+              <dd>
+                <span class={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${uiPill.bg} ${uiPill.text}`}>
+                  {uiPill.label}
+                </span>
+              </dd>
             </div>
           </dl>
         </div>

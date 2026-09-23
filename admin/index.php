@@ -113,7 +113,8 @@ function slugify(string $text): string {
 }
 
 // Pola 3-stanowe (true/false/NULL = nie zweryfikowano) — rodo_compliant,
-// dpa_available, eu_data_hosting od migracji 002_tri_state_compliance_fields.
+// dpa_available, eu_data_hosting od migracji 002_tri_state_compliance_fields;
+// has_pl_ui, has_pl_support od 2026-09-23.
 function tri_state_from_post(string $key): ?bool {
     $v = $_POST[$key] ?? 'null';
     if ($v === 'true') return true;
@@ -231,6 +232,8 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'rodo_compliant'  => tri_state_from_post('rodo_compliant'),
             'dpa_available'   => tri_state_from_post('dpa_available'),
             'eu_data_hosting' => tri_state_from_post('eu_data_hosting'),
+            'has_pl_ui'       => tri_state_from_post('has_pl_ui'),
+            'has_pl_support'  => tri_state_from_post('has_pl_support'),
             'ai_act_risk'   => $_POST['ai_act_risk'],
             'status'        => 'approved',
         ]);
@@ -506,7 +509,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         '&order=' . $tools_order .
         '&limit=' . $tools_page_size .
         '&offset=' . $tools_offset .
-        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,description_pl,best_for_pl,rodo_compliant,dpa_available,eu_data_hosting,ai_act_risk,status,ai_verified_at,categories(name_pl)'
+        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,description_pl,best_for_pl,rodo_compliant,dpa_available,eu_data_hosting,has_pl_ui,has_pl_support,ai_act_risk,status,ai_verified_at,categories(name_pl)'
     );
     $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
@@ -544,13 +547,15 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             <th>RODO</th>
             <th>DPA</th>
             <th>Hosting UE</th>
+            <th>Interfejs PL</th>
+            <th>Wsparcie PL</th>
             <th>AI Act</th>
             <th><?php tools_sort_header('Status', 'status', $tools_sort, $tools_dir, $tools_q, $tools_category_id); ?></th>
             <th>Akcja</th>
         </tr>
         <?php foreach ($tools as $tool): ?>
         <tr id="evidence-row-<?= htmlspecialchars($tool['id']) ?>" style="display:none">
-            <td colspan="9" class="evidence-panel">
+            <td colspan="11" class="evidence-panel">
                 <div id="evidence-content-<?= htmlspecialchars($tool['id']) ?>"></div>
                 <div class="evidence-arrow" aria-hidden="true">▼</div>
             </td>
@@ -571,6 +576,8 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             <td><?php render_tri_state_badge($tool['id'], 'rodo', $tool['rodo_compliant']); ?></td>
             <td><?php render_tri_state_badge($tool['id'], 'dpa', $tool['dpa_available']); ?></td>
             <td><?php render_tri_state_badge($tool['id'], 'eu', $tool['eu_data_hosting']); ?></td>
+            <td><?php render_tri_state_badge($tool['id'], 'plui', $tool['has_pl_ui']); ?></td>
+            <td><?php render_tri_state_badge($tool['id'], 'plsupport', $tool['has_pl_support']); ?></td>
             <td><?= htmlspecialchars($tool['ai_act_risk'] ?? '') ?></td>
             <td><span class="badge <?= $tool['status'] === 'approved' ? 'badge-green' : 'badge-gray' ?>"><?= htmlspecialchars($tool['status']) ?></span></td>
             <td>
@@ -596,6 +603,8 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                             'rodo_compliant'  => $tool['rodo_compliant'],
                             'dpa_available'   => $tool['dpa_available'],
                             'eu_data_hosting' => $tool['eu_data_hosting'],
+                            'has_pl_ui'       => $tool['has_pl_ui'],
+                            'has_pl_support'  => $tool['has_pl_support'],
                         ]), ENT_QUOTES) ?>'
                         onclick="openEditModalFromButton(this)"
                     >✏️ Edytuj</button>
@@ -684,6 +693,24 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                     <div>
                         <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Hosting UE</label>
                         <select id="edit-eu_data_hosting" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                            <option value="null">Nie zweryfikowano</option>
+                            <option value="true">Tak</option>
+                            <option value="false">Nie</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div>
+                        <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Interfejs PL</label>
+                        <select id="edit-has_pl_ui" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                            <option value="null">Nie zweryfikowano</option>
+                            <option value="true">Tak</option>
+                            <option value="false">Nie</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Wsparcie PL</label>
+                        <select id="edit-has_pl_support" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
                             <option value="null">Nie zweryfikowano</option>
                             <option value="true">Tak</option>
                             <option value="false">Nie</option>
@@ -783,6 +810,24 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                     </select>
                 </div>
             </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Interfejs PL</label>
+                    <select name="has_pl_ui" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                        <option value="null" selected>Nie zweryfikowano</option>
+                        <option value="true">Tak</option>
+                        <option value="false">Nie</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Wsparcie PL</label>
+                    <select name="has_pl_support" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+                        <option value="null" selected>Nie zweryfikowano</option>
+                        <option value="true">Tak</option>
+                        <option value="false">Nie</option>
+                    </select>
+                </div>
+            </div>
             <button type="submit" name="add_tool" class="btn btn-primary" style="align-self:flex-start;padding:12px 32px">Dodaj narzędzie</button>
         </form>
     </div>
@@ -845,7 +890,7 @@ function patchTool(id, fields, onSuccess) {
 // natywnego typu boolean/null dla <option>) — triStateFromSelect konwertuje
 // to na prawdziwe true/false/null PRZED JSON.stringify, tak żeby PATCH
 // wysłał literalny JSON null (nie string "null"). Używane przez modal
-// edycji (saveEditModal) przy odczycie jego trzech selectów.
+// edycji (saveEditModal) przy odczycie jego pięciu selectów 3-stanowych.
 function triStateFromSelect(value) {
     if (value === 'true') return true;
     if (value === 'false') return false;
@@ -884,6 +929,8 @@ function openEditModal(id, tool) {
     document.getElementById('edit-rodo_compliant').value = triStateToSelectValue(tool.rodo_compliant);
     document.getElementById('edit-dpa_available').value = triStateToSelectValue(tool.dpa_available);
     document.getElementById('edit-eu_data_hosting').value = triStateToSelectValue(tool.eu_data_hosting);
+    document.getElementById('edit-has_pl_ui').value = triStateToSelectValue(tool.has_pl_ui);
+    document.getElementById('edit-has_pl_support').value = triStateToSelectValue(tool.has_pl_support);
     document.getElementById('edit-modal').style.display = 'flex';
 }
 
@@ -916,8 +963,8 @@ function updateTriStateDisplay(id, prefix, value) {
 // Po udanym PATCH z modala: uaktualnia WIDOCZNE wartości w wierszu bez
 // przeładowania strony. Od usunięcia inline mini-formularzy (URL/kategoria/
 // logo/RODO/DPA/Hosting UE) w wierszu do zsynchronizowania zostały: nazwa,
-// tekst kolumny "Kategoria", plakietka modelu cenowego i trzy plakietki
-// 3-stanowe — URL, opis, "Najlepsze dla" i logo nie mają żadnego
+// tekst kolumny "Kategoria", plakietka modelu cenowego i pięć plakietek
+// 3-stanowych — URL, opis, "Najlepsze dla" i logo nie mają żadnego
 // odpowiednika w tabeli.
 function updateRowAfterEdit(id, fields) {
     var nameCell = document.getElementById('name-cell-' + id);
@@ -945,6 +992,8 @@ function updateRowAfterEdit(id, fields) {
     updateTriStateDisplay(id, 'rodo', fields.rodo_compliant);
     updateTriStateDisplay(id, 'dpa', fields.dpa_available);
     updateTriStateDisplay(id, 'eu', fields.eu_data_hosting);
+    updateTriStateDisplay(id, 'plui', fields.has_pl_ui);
+    updateTriStateDisplay(id, 'plsupport', fields.has_pl_support);
 }
 
 function saveEditModal() {
@@ -961,6 +1010,8 @@ function saveEditModal() {
         rodo_compliant:  triStateFromSelect(document.getElementById('edit-rodo_compliant').value),
         dpa_available:   triStateFromSelect(document.getElementById('edit-dpa_available').value),
         eu_data_hosting: triStateFromSelect(document.getElementById('edit-eu_data_hosting').value),
+        has_pl_ui:       triStateFromSelect(document.getElementById('edit-has_pl_ui').value),
+        has_pl_support:  triStateFromSelect(document.getElementById('edit-has_pl_support').value),
     };
     patchTool(id, fields, function() {
         updateRowAfterEdit(id, fields);
