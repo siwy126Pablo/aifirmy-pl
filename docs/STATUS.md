@@ -405,6 +405,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] Wyłączyć autostart NiFi w Windows Task Scheduler (pipeline zmigrowany, NiFi już niepotrzebny)
 - [ ] Skonsolidować `yc_oss.php` do współdzielonego `scraper/lib/pipeline.php` (obecnie ma własną, wcześniejszą kopię logiki dedup/insert)
 - [ ] Rozważyć, czy i kiedy pokazać `has_pl_support` ("Wsparcie PL") na froncie. Od 23.09 jest 3-stanowe i edytowalne w panelu, ale nigdzie niewyświetlane. Siatka "Zgodność i dane" ma 4 kolumny, więc piąty kafelek to osobna decyzja UI. Sensowne dopiero przy wyższym odsetku zweryfikowanych wpisów (obecnie prawie wszystkie NULL)
+- [ ] Rewizja tekstu FAQ dla pola `eu_data_hosting`: obecny generyczny tekst ("nie trzeba polegać na dodatkowych mechanizmach transferu danych poza UE") nie jest precyzyjny dla narzędzi-nakładek na zewnętrzne modele AI (np. humai przesyła treść do Anthropic/Google w USA na podstawie DPF+SCC, mimo że `eu_data_hosting=true` dotyczy tylko infrastruktury/bazy danych w EOG). Rozważyć wariant tekstu FAQ dla tej kategorii narzędzi. Priorytet: niski, do rozważenia przy kolejnym takim przypadku
 
 ---
 
