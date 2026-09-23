@@ -127,8 +127,10 @@ CREATE TABLE tools (
   target_size      TEXT[],
   best_for_pl      TEXT,                          -- one-sentence target audience, AI-generated
   ai_verified_at   TIMESTAMPTZ,                   -- last time "Zweryfikuj przez AI" changes were approved
-  has_pl_ui        BOOLEAN     DEFAULT false,
-  has_pl_support   BOOLEAN     DEFAULT false,
+  has_pl_ui        BOOLEAN,    -- manual-only, NULL = nie zweryfikowano (3-stanowy model od
+                               -- 2026-09-23); brak evidence z verify_tool.php — tylko ręcznie
+  has_pl_support   BOOLEAN,    -- NULL = nie zweryfikowano; ta sama zasada co has_pl_ui.
+                               -- Edytowalne w panelu, świadomie NIE wyświetlane na froncie
   integrations     TEXT[],
   status           TEXT        NOT NULL DEFAULT 'pending'
                                CHECK (status IN ('pending','approved','rejected','premium')),
@@ -230,6 +232,8 @@ $function$;
 
 **Migracja 3-stanowa rodo_compliant/dpa_available/eu_data_hosting (2026-09-14):** `NOT NULL DEFAULT false` zamienione na dopuszczalny `NULL` (= nie zweryfikowano) dla wszystkich trzech pól — patrz `db/migrations/002_tri_state_compliance_fields.sql` dla pełnej treści. Backfill objął tylko wiersze, gdzie `false` było artefaktem defaultu/triggera, nie realną decyzją: **rodo_compliant** 199 NULL / 15 false / 115 true (15 wierszy `source='manual'` z `false` świadomie pominięte w backfillu — te powstały przez ręczne odznaczenie checkboxa w formularzu "Dodaj wpis", więc to rzeczywista decyzja, nie default), **dpa_available** 326 NULL / 3 true, **eu_data_hosting** 326 NULL / 3 true (oba pola nigdy nie mają UI do ustawienia `false` — jedyne 3 wartości `true` w każdym powstały przez bezpośrednią edycję w Supabase, poza panelem admina).
 
+**Migracja 3-stanowa has_pl_ui/has_pl_support (2026-09-23):** oba pola miały ten sam problem fałszywego negatywu (`DEFAULT false` = "nie" zamiast "nie wiadomo"), ale zostały pominięte w migracji z 2026-09-14. SQL wykonany ręcznie w Supabase SQL Editor (bez pliku w `db/migrations/`): `ALTER COLUMN ... SET DEFAULT NULL` + backfill 339 wierszy `false`→`NULL`. Kolumny były już nullable, więc bez `DROP NOT NULL`. Trigger nie wymagał zmian: nie ustawia tych kolumn, więc nowe wiersze dostają default (NULL). Od tej migracji jest **5 pól 3-stanowych**: `rodo_compliant`, `dpa_available`, `eu_data_hosting`, `has_pl_ui`, `has_pl_support`, obsługiwanych w panelu tym samym mechanizmem (`tri_state_from_post()` / `render_tri_state_badge()` / `triStateFromSelect()`).
+
 **⚠️ Known gap:** `website_url` for entries sourced from Product Hunt/BetaList sometimes ends up pointing to the listing page instead of the tool's real domain (this is a `source_url`/`website_url` data quality issue upstream of the trigger, not a trigger bug — carried over unchanged from NiFi into the new PHP scraper). Fixed manually per-case when spotted, or systematically via the quarterly `scraper/url_audit.php` run (see "Documentation rules" section).
 
 ## ETL pipeline — PHP scraper + GitHub Actions (migrated from NiFi 2026-09-20)
@@ -290,7 +294,7 @@ The original NiFi flow (`nifi-flows/aifirmy-main-flow-v2.json`) had HN/BetaList/
 
 ## Admin panel (`admin/`, PHP + Supabase REST API)
 
-- **`admin/index.php`** — tabs: Kolejka (scrape_queue, stage=ai_done) / **Odrzucone przez AI** (stage=ai_rejected) / Narzędzia (tools — search by name, category filter, sortable columns, edit modal with single shared `patchTool()` PATCH for all fields including `description_pl`/`best_for_pl`/`pricing_model`/`name`, per-row **"Zweryfikuj przez AI"** button) / Dodaj wpis (manual add_tool form, includes tri-state RODO/DPA/EU-hosting selects and `price_from_pln`)
+- **`admin/index.php`** — tabs: Kolejka (scrape_queue, stage=ai_done) / **Odrzucone przez AI** (stage=ai_rejected) / Narzędzia (tools — search by name, category filter, sortable columns, edit modal with single shared `patchTool()` PATCH for all fields including `description_pl`/`best_for_pl`/`pricing_model`/`name`, per-row **"Zweryfikuj przez AI"** button) / Dodaj wpis (manual add_tool form, includes tri-state RODO/DPA/EU-hosting/Interfejs PL/Wsparcie PL selects and `price_from_pln`). All 5 tri-state fields also appear as read-only badge columns in the Narzędzia table and as selects in the edit modal
 - **`admin/affiliate.php`** — affiliate_links CRUD, toggle active without reload
 - **`admin/logs.php`** — filterable/paginated `activity_log` viewer (added 2026-09-09), default filter `warning+error`, expandable JSON context, pill colors reuse `aiActRiskColors` from `category-colors.ts` (error≈unacceptable, warning≈limited). `activity_log` is append-only (RLS: insert/select only for `anon`, no update/delete), shared by `verify_tool.php` and the `scraper/` pipeline. Has a reserved (currently unused by `verify_tool.php`) `run_id` UUID column intended for grouping one scraper run's log lines together.
 - **`admin/verify_tool.php`** — POST endpoint, `tool_id` in, `{"old": {...}, "new": {...}}` out:
@@ -349,7 +353,7 @@ deliberate.
 
 ## Frontend FAQ (`[slug].astro`) — expanded 2026-08-31 (commit `6faf053`)
 
-FAQ section now has **6 questions** (was 4): RODO → DPA → EU data hosting → pricing model → AI Act risk → target_size. RODO and AI Act questions now include full plain-language legal explanations (what RODO/DPA/EU-hosting/each AI Act risk level actually means and requires), not just a one-line yes/no — this is deliberate: it's a **general educational explainer per category/risk-level**, the same text for every tool in that bucket, never an AI-generated per-tool legal judgment (that risk was deliberately avoided, same reasoning as the `$CATEGORY_AI_ACT_HINTS` exclusions above). Since the 2026-09-14 tri-state migration, RODO/DPA/EU-hosting FAQ answers and the `[slug].astro` "Zgodność i dane" tiles distinguish 3 states (yes/no/not-yet-verified), not just yes/no.
+FAQ section now has **6 questions** (was 4): RODO → DPA → EU data hosting → pricing model → AI Act risk → target_size. RODO and AI Act questions now include full plain-language legal explanations (what RODO/DPA/EU-hosting/each AI Act risk level actually means and requires), not just a one-line yes/no — this is deliberate: it's a **general educational explainer per category/risk-level**, the same text for every tool in that bucket, never an AI-generated per-tool legal judgment (that risk was deliberately avoided, same reasoning as the `$CATEGORY_AI_ACT_HINTS` exclusions above). Since the 2026-09-14 tri-state migration, RODO/DPA/EU-hosting FAQ answers and the `[slug].astro` "Zgodność i dane" tiles distinguish 3 states (yes/no/not-yet-verified), not just yes/no. Since 2026-09-23 the 4th tile ("Interfejs PL") uses the same `triStatePill()` helper as the RODO/DPA/EU tiles. `has_pl_support` is tri-state and editable in the admin panel but **deliberately not shown on the frontend yet**. The grid has 4 columns; whether and where to show it is a separate UI decision (tracked in the STATUS.md backlog).
 
 JSON-LD `FAQPage` schema is generated automatically from the same `faqs` array used for the visible accordion — don't maintain these separately, that was a deliberate fix to avoid future drift between visible content and structured data.
 

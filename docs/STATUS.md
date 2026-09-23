@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-09-20
+> Ostatnia aktualizacja: 2026-09-23
 
 ---
 
@@ -12,7 +12,7 @@
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
 | **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii |
 | **Pipeline (scraping)** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API — **PHP + GitHub Actions** (`scraper/`), dwuwarstwowy filtr jakości. NiFi (lokalnie, Windows) zdecommissionowany 20.09, flow zachowany w repo jako historyczny fallback |
-| **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09), hero z wyróżnikiem RODO/AI Act/UE (13.09), tri-state RODO/DPA/EU hosting (14.09), wyszukiwanie tekstowe na `/narzedzia/` (15.09), font Inter (19.09) |
+| **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09), hero z wyróżnikiem RODO/AI Act/UE (13.09), tri-state RODO/DPA/EU hosting (14.09) i "Interfejs PL" (23.09), wyszukiwanie tekstowe na `/narzedzia/` (15.09), font Inter (19.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
 | **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony), panel logów błędów (activity_log, 13.09), modal edycji + wyszukiwanie/filtr/sortowanie w zakładce "Narzędzia" (15–19.09), "Znalezione sygnały" RODO/DPA/UE w weryfikacji (14.09) |
 | **Monetyzacja** | ✅ Infrastruktura live: Stripe Live mode, checkout + webhook, email po zakupie — przychód = 0 na 2026-09-20 |
@@ -256,6 +256,22 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 ---
 
+## ✅ `has_pl_ui`/`has_pl_support` jako pola 3-stanowe (23.09.2026)
+
+**Znalezisko:** oba pola miały ten sam problem fałszywego negatywu co RODO/DPA/hosting UE przed migracją `002_tri_state_compliance_fields` (14.09): `DEFAULT false` sprawiał, że "nie sprawdzono" wyglądało jak "nie ma". Frontend pokazywał więc "✗ Nie" w kafelku "Interfejs PL" dla praktycznie całego katalogu. W sesji UX 13–14.09 te dwa pola zostały pominięte.
+
+**Migracja SQL** (ręcznie, Supabase SQL Editor): `ALTER COLUMN ... SET DEFAULT NULL` dla obu kolumn + backfill **339 wierszy** `false`→`NULL`. Kolumny były już nullable, więc bez `DROP NOT NULL`. Trigger `promote_scrape_to_tools()` bez zmian: nie ustawia tych kolumn, więc nowe wpisy z pipeline'u dostają default NULL.
+
+**Zmiany w kodzie** (`7536c82`):
+- **Frontend** (`narzedzia/[slug].astro`): kafelek "Interfejs PL" używa `triStatePill()` (zielony "Tak" / czerwony "Nie" / szary "Nie zweryfikowano"), tak jak RODO/DPA/hosting UE. `has_pl_support` świadomie nadal niewyświetlane (patrz Backlog)
+- **Panel admina** (`admin/index.php`): selecty "Interfejs PL" i "Wsparcie PL" w formularzu "Dodaj wpis" oraz w modalu edycji, dwie nowe kolumny z plakietkami w tabeli "Narzędzia" (aktualizowane po zapisie bez przeładowania)
+
+**Drobne poprawki przy okazji:**
+- `colspan` w ukrytym wierszu "Znalezione sygnały" (evidence) 9→11. Bez tego panel po dodaniu 2 kolumn byłby węższy od tabeli
+- Komentarze w JS mówiące o "trzech" polach/selectach 3-stanowych poprawione na "pięć"
+
+---
+
 ## 📣 Growth — status na 20.09
 
 - ✅ **Post 1 LinkedIn (RODO/AI Act) OPUBLIKOWANY 19.09.2026**
@@ -388,6 +404,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] Sprawdzić w "Odrzucone przez AI" wpis "AI Dubbing" (pierwszy realny przebieg BetaList, 20.09) — słuszne odrzucenie czy fałszywy negatyw
 - [ ] Wyłączyć autostart NiFi w Windows Task Scheduler (pipeline zmigrowany, NiFi już niepotrzebny)
 - [ ] Skonsolidować `yc_oss.php` do współdzielonego `scraper/lib/pipeline.php` (obecnie ma własną, wcześniejszą kopię logiki dedup/insert)
+- [ ] Rozważyć, czy i kiedy pokazać `has_pl_support` ("Wsparcie PL") na froncie. Od 23.09 jest 3-stanowe i edytowalne w panelu, ale nigdzie niewyświetlane. Siatka "Zgodność i dane" ma 4 kolumny, więc piąty kafelek to osobna decyzja UI. Sensowne dopiero przy wyższym odsetku zweryfikowanych wpisów (obecnie prawie wszystkie NULL)
 
 ---
 

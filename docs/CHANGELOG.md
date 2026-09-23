@@ -415,6 +415,29 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.20] — 2026-09-23 (`has_pl_ui`/`has_pl_support` jako pola 3-stanowe)
+
+### Zrobione
+- ✅ **Migracja SQL** (ręcznie, Supabase): `has_pl_ui`/`has_pl_support` z
+  `DEFAULT false` na `DEFAULT NULL` (= nie zweryfikowano) + backfill 339 wierszy
+  `false`→`NULL`. Kolumny były już nullable, więc bez `DROP NOT NULL`
+- ✅ **Kod** (`7536c82`): kafelek "Interfejs PL" na stronie narzędzia używa
+  `triStatePill()` tak jak RODO/DPA/hosting UE; w panelu admina oba pola
+  ("Interfejs PL", "Wsparcie PL") w formularzu "Dodaj wpis", modalu edycji i
+  jako kolumny z plakietkami w tabeli "Narzędzia". Przy okazji `colspan` wiersza
+  evidence 9→11 i komentarze "trzy"→"pięć" pól 3-stanowych
+
+### Odkrycia / problemy
+- Oba pola miały ten sam fałszywy negatyw co RODO/DPA/EU przed 14.09 (frontend
+  pokazywał "✗ Nie" zamiast "nie sprawdzono"), ale zostały pominięte w tamtej
+  migracji. Teraz jest 5 pól 3-stanowych obsługiwanych jednym mechanizmem
+
+### Następny krok
+- `has_pl_support` jest edytowalne, ale nigdzie niewyświetlane na froncie.
+  Decyzja UI odłożona (Backlog w `STATUS.md`)
+
+---
+
 ```
 ## [v0.X] — [data]
 
