@@ -75,7 +75,7 @@ Rozjazd między binarnym badge a niuansowym FAQ — to jest realny problem UX **
 
 ---
 
-## 📈 Trend ruchu i indeksowania — dane live z GSC (13.09.2026, przez connector Chrome)
+## 📈 Trend ruchu i indeksowania — dane live z GSC (aktualizowane przez connector Chrome)
 
 | Data | Kliknięcia (GSC) | Zaindeksowane strony |
 |---|---|---|
@@ -84,7 +84,8 @@ Rozjazd między binarnym badge a niuansowym FAQ — to jest realny problem UX **
 | ~06.08 | 8 | 144-155 |
 | 23.08 | 12 | 198 |
 | ~30.08 | 15 | 198 |
-| **13.09 (live)** | **19** *(ostatnie 3 mies.)* | **275** *(dane GSC na 04.09)* |
+| 13.09 (live) | 19 *(ostatnie 3 mies.)* | 275 *(dane GSC na 04.09)* |
+| **20.09 (live)** | **24** *(ostatnie 3 mies.)* | **303** *(niezindeksowane: 203)* |
 
 **Rozstrzygnięcie wcześniejszej obserwacji "utknęło na 198":** ✅ nieaktualne — to był po prostu brak nowszego
 pomiaru w STATUS.md po 30.08, nie realny problem indeksacji. Indeksacja rośnie razem z katalogiem.
@@ -122,6 +123,29 @@ ponownego skanowania. Nie ma potrzeby dalszej akcji, poza obserwacją czy liczba
 
 ---
 
+## 🔷 Microsoft / Bing Webmaster Tools (dodane 20.09.2026, przez connector Chrome)
+
+Witryna dodana w Bing Webmaster Tools (~15.09). Stan bardzo inny niż w Google:
+
+| | Google | Bing |
+|---|---|---|
+| Zaindeksowane strony | 303 | **1** (tylko strona główna) |
+| Kliknięcia (3 mies.) | 24 | **0** |
+| Wyświetlenia (3 mies.) | 2,8 tys. | **0** |
+
+Sitemapa działa poprawnie (zgłoszona 10.09, ostatnio przeczytana 20.09, status "Success", 305 URL-i
+wykrytych — spójne z Google). Bing *wie* o wszystkich stronach, ale nie przeszedł jeszcze z "wykryte"
+do "zaindeksowane" poza stroną główną — normalne dla świeżo dodanej witryny, Bing indeksuje wolniej
+niż Google.
+
+**IndexNow nie jest skonfigurowany** — protokół Microsoftu (wspierany też częściowo przez Yandex) do
+natychmiastowego powiadamiania wyszukiwarki o nowych/zmienionych stronach zamiast czekania na crawler.
+Przy regularnym dodawaniu nowych narzędzi do katalogu, tani sposób na przyspieszenie indeksacji w Bing.
+**Rekomendacja (niski/średni priorytet):** rozważyć wdrożenie IndexNow.
+
+**Do obserwacji w kolejnych sesjach:** czy liczba zaindeksowanych stron w Bing rośnie z tygodnia na
+tydzień (sitemapa jest poprawna, więc brak wzrostu po kilku tygodniach byłby sygnałem wartym zbadania).
+
 ## 🎯 Otwarte punkty z innych dokumentów, istotne dla SEO
 
 Z `STATUS.md`, sesja UX 13.09 (część nakłada się bezpośrednio na SEO/CTR):
@@ -157,6 +181,7 @@ Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo
 ## 🔁 Format cyklicznej sesji (checklist na start)
 
 1. **Search Console** (jeśli podłączony konektor, użyj go zamiast ręcznych liczb): kliknięcia, wyświetlenia, zaindeksowane strony, nowe błędy Coverage
+1b. **Bing Webmaster Tools**: te same metryki co GSC, plus status sitemapy i IndexNow
 2. **AWStats**: realny ruch vs. boty (GA4 nadal traktujemy jako niewiarygodne)
 3. **Backlinki**: nowe od ostatniej sesji (GSC → Links, lub ręcznie)
 4. **Spot-check 2-3 nowych stron narzędzi**: title/meta/schema/trailing slash/ton opisu
@@ -204,6 +229,19 @@ Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo
 **Poprawione:** `CHANGELOG.md` v0.14 (13-15.09) dokumentuje jawną decyzję: pozycjonowanie zmienione z "RODO + AI Act + PLN" na **"RODO + AI Act"** (PLN jako bonus, nie core) — powód: `price_from_pln` ma tylko 0,9% pokrycia (3/329 wpisów). Trzy miejsca w tym pliku błędnie sugerowały, że brak cen PLN w UI to otwarta strata SEO do naprawienia: sekcja o `<title>` (x2 — diagnoza i proponowany wzorzec z "ceną") oraz sekcja "Otwarte punkty". Wszystkie poprawione, żeby odzwierciedlać, że to świadomy, rozstrzygnięty kompromis, nie otwarty temat. Trzecie miejsce (proponowany wzorzec `<title>` z "ceną") zostało przeoczone przy pierwszej korekcie i doprecyzowane dopiero po ponownym przeglądzie zsynchronizowanego pliku.
 
 **Nauka na przyszłość:** przy pisaniu SEO.md sprawdzać `CHANGELOG.md`/`DECISIONS.md` pod kątem świeżych zmian pozycjonowania, nie tylko `STATUS.md`/`CONTENT-GUIDE.md` — decyzje strategiczne (jak ta o PLN) czasem żyją tylko w `CHANGELOG.md` bez formalnego ADR.
+
+### Sesja 2026-09-20, część 5 (Bing Webmaster Tools, przez connector Chrome)
+
+**Zrobione:** odświeżenie danych GSC (24 kliknięcia, 2,8 tys. wyświetleń, 303 zaindeksowane — wzrost
+zgodny z trendem); pierwsze sprawdzenie Bing Webmaster Tools (Site Explorer, Sitemaps, IndexNow,
+Search Performance).
+
+**Znalezione:** Bing ma poprawnie działającą sitemapę (305 URL wykrytych, zgodne z Google), ale
+zaindeksowaną tylko stronę główną — reszta czeka na crawl. Zero ruchu z Bing w 3 mies. (oczekiwane,
+witryna dodana ~15.09). IndexNow nieskonfigurowany — możliwość przyspieszenia indeksacji.
+
+**Otwarte na następną sesję:** sprawdzić czy liczba zaindeksowanych stron w Bing rośnie; próbka audytu
+meta descriptions (wciąż otwarte z poprzednich sesji); rozważyć IndexNow.
 
 ---
 
