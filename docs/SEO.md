@@ -181,12 +181,12 @@ Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo
 ## 🔁 Format cyklicznej sesji (checklist na start)
 
 1. **Search Console** (jeśli podłączony konektor, użyj go zamiast ręcznych liczb): kliknięcia, wyświetlenia, zaindeksowane strony, nowe błędy Coverage
-1b. **Bing Webmaster Tools**: te same metryki co GSC, plus status sitemapy i IndexNow
-2. **AWStats**: realny ruch vs. boty (GA4 nadal traktujemy jako niewiarygodne)
-3. **Backlinki**: nowe od ostatniej sesji (GSC → Links, lub ręcznie)
-4. **Spot-check 2-3 nowych stron narzędzi**: title/meta/schema/trailing slash/ton opisu
-5. **Przegląd otwartych punktów** z tego pliku i z `STATUS.md` backlog dot. SEO
-6. Dopisać `## Sesja YYYY-MM-DD` na dole tego pliku + zaktualizować zadania w Notion (sekcja P001)
+2. **Bing Webmaster Tools**: te same metryki co GSC, plus status sitemapy i IndexNow
+3. **AWStats**: realny ruch vs. boty (GA4 nadal traktujemy jako niewiarygodne)
+4. **Backlinki**: nowe od ostatniej sesji (GSC → Links, lub ręcznie)
+5. **Spot-check 2-3 nowych stron narzędzi**: title/meta/schema/trailing slash/ton opisu
+6. **Przegląd otwartych punktów** z tego pliku i z `STATUS.md` backlog dot. SEO
+7. Dopisać `## Sesja YYYY-MM-DD` na dole tego pliku + zaktualizować zadania w Notion (sekcja P001)
 
 ---
 
