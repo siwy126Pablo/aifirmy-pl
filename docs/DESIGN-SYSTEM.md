@@ -112,4 +112,18 @@ Ocena strony jako systemu graficznego: czy typografia, kolory i ikony tworzą sp
 
 ---
 
+### Sesja 2026-09-26 (pivot: od "spłaszczonych ikon" do ilustracji riso — powód "AI purple problem")
+
+**Kontekst:** zgłoszenie do katalogu narzędzia wizualnie niemal identycznego ze stroną — sygnał, że strony budowane przez Claude są rozpoznawalnie podobne do siebie. Pierwotne zlecenie ("zrób ikony mniej płaskie, bardziej 3D/glassmorphism") zostało uznane za leczenie objawu, nie przyczyny — research trendów 2026 pokazał, że (a) glassmorphism jest w spadku, (b) fioletowo-gradientowa, "AI-startupowa" estetyka jest realnym, nazwanym w literaturze problemem rozpoznawalności. Zamiast poprawiać ikony, zdecydowano zastąpić dekoracyjny blob w hero (płaskie kształty CSS `bg-indigo-600`/`bg-accent`, commit `3363df6`) ilustracją w stylu risografii — ograniczona paleta, ziarno druku, offset rejestracji — jako świadome odejście od gradientowego klisza.
+
+**Zrobione:** wygenerowano w Midjourney (V8, subskrypcja własna) dwa warianty checkmarka w stylu riso po kilku iteracjach promptu. Oba pobrane jako realne upscale'y (U1/U4, tryb Subtle), zweryfikowane jako 1024×1024 z widocznym ziarnem.
+
+**Weryfikacja koloru (zmierzone):** tło/pomarańcz `H≈37-39°, S≈0.97-0.99, V≈0.96-0.98` vs. marka `#FACC15` (`H=48°, S=0.92, V=0.98`); checkmark indigo `H≈247-248°, S≈0.72-0.76, V≈0.45-0.46` vs. marka `#4F46E5` (`H=243°, S=0.69, V=0.90`). Odcień obu kolorów bardzo blisko marki, jedyna realna rozbieżność to jasność indigo (0.45 vs 0.90 — drukarski granat, nie jasne cyfrowe indigo). Próbna twarda korekta (H/S na wartości marki, jasność piksela zachowana) pokazana side-by-side — poprawia tło, ale nie potrafi podnieść jasności indigo bez spłaszczenia farby riso.
+
+**Decyzja:** zachować oryginalne kolory Midjourney. Uzasadnienie: (1) druk riso nie odtwarza cyfrowych hexów idealnie — to część estetyki; (2) wymuszenie jasnego indigo cofnęłoby całą decyzję tej sesji; (3) ilustracja to dekoracyjny akcent, nie element UI wymagający pixel-perfect zgodności koloru.
+
+**Zaimplementowane (ta sama sesja):** hero — blob z `3363df6` zastąpiony `<Image>` (400px/2x, WebP, alt=""); dark band — mały checkmark 80-96px nad licznikiem narzędzi. Wersja dark-bandu przerobiona na przezroczyste tło (usunięty kremowy prostokąt z oryginalnego pliku MJ, żeby nie wyglądał jak naklejka na ciemnym tle).
+
+---
+
 *Utworzono: 2026-09-10, w reakcji na brak tej sesji przy pierwotnym audycie "grafik UI". Aktualizuj po każdej sesji — nowa sekcja na dole, nie nadpisuj historii.*
