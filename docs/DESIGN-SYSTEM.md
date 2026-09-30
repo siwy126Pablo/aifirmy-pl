@@ -13,22 +13,22 @@
 
 Ocena strony jako systemu graficznego: czy typografia, kolory i ikony tworzą spójny, skalowalny język wizualny, czy są zbiorem lokalnych, dobrych-w-danym-momencie decyzji podjętych sesja po sesji. Metoda: pomiar bezpośrednio w DOM (computed styles), nie ocena wizualna ze zrzutów — to jedyny sposób żeby odróżnić "wygląda spójnie" od "jest spójne".
 
-## 📊 Stan obecny (sesja 10.09.2026, zmierzone w DOM)
+## 📊 Stan obecny (pomiar w DOM 10.09.2026, zaktualizowane 30.09.2026)
 
 | Element | Ustalenie |
 |---|---|
-| Typografia | `font-family: ui-sans-serif, system-ui` — brak wybranego kroju, domyślny stos systemowy |
+| Typografia | ✅ Inter, self-hosted przez `@fontsource/inter` (19.09, `5c68209`), fallback stack systemowy po Inter. *(10.09: brak wybranego kroju, `ui-sans-serif, system-ui`)* |
 | Skala nagłówków | Brak zdefiniowanej skali — `<h2>` używany zarówno dla etykiet sekcji (14px) jak i tytułów kart (18px), brak `<h3>` na stronie głównej |
 | Kolor marki (logo/CTA/akcent hero) | ✅ Idealnie spójny — identyczna wartość `oklch` we wszystkich 3 zmierzonych miejscach |
 | Ikonografia kategorii | ✅ W pełni spójna technicznie — identyczny viewBox/stroke-width/styl we wszystkich 10 ikonach |
-| Paleta kolorów kafli kategorii | Częściowo systemowa (spójna jasność/nasycenie) — ale wyczerpana: 2 z 10 kategorii mają niemal identyczny, bezbarwny kolor |
+| Paleta kolorów kafli kategorii | ✅ Systemowa (spójna jasność/nasycenie) i rozróżnialna — "Zarządzanie projektami" (hue 217) i "Cyberbezpieczeństwo AI" (hue 130) dostały nowe kolory 19.09 (`4e504b3`, `c93f7f0`). *(10.09: 2 z 10 kategorii niemal identyczne i bezbarwne)* |
 | Kształt odznak (border-radius) | ✅ Spójny — wszystkie badge'e używają pełnego zaokrąglenia |
 | Powiązanie pola `icon` w DB z realnym renderowaniem | ❌ Rozjazd udokumentowany w `CLAUDE.md` — DB trzyma nazwę wg Tabler Icons, front dopasowuje ikonę po nazwie kategorii, nie po tym polu |
 
 ## 🔴 Wysoki priorytet
 
-- [ ] **Brak wybranego kroju pisma.** Strona renderuje się inaczej typograficznie w zależności od systemu operacyjnego odwiedzającego — zero kontroli nad tożsamością typograficzną marki. Wymaga decyzji: webfont (Google Fonts / self-hosted) dopasowany do charakteru katalogu B2B (czytelny, neutralny, nie ozdobny).
-- [ ] **Paleta kolorów kategorii wyczerpuje się przy obecnej liczbie kategorii.** "Zarządzanie projektami" (63 narzędzia, największa kategoria) i "Cyberbezpieczeństwo AI" mają praktycznie identyczny, bezbarwny kolor tła ikony. Wymaga przeglądu całej palety 10 kolorów naraz (nie punktowej zamiany jednego), żeby zapewnić realną rozróżnialność.
+- [x] ~~**Brak wybranego kroju pisma.**~~ *(zamknięte 19.09 — Inter, patrz sesja 2026-09-19)* Strona renderuje się inaczej typograficznie w zależności od systemu operacyjnego odwiedzającego — zero kontroli nad tożsamością typograficzną marki. Wymaga decyzji: webfont (Google Fonts / self-hosted) dopasowany do charakteru katalogu B2B (czytelny, neutralny, nie ozdobny).
+- [x] ~~**Paleta kolorów kategorii wyczerpuje się przy obecnej liczbie kategorii.**~~ *(zamknięte 19.09 — nowe hue, patrz sesja 2026-09-19)* "Zarządzanie projektami" (63 narzędzia, największa kategoria) i "Cyberbezpieczeństwo AI" mają praktycznie identyczny, bezbarwny kolor tła ikony. Wymaga przeglądu całej palety 10 kolorów naraz (nie punktowej zamiany jednego), żeby zapewnić realną rozróżnialność.
 
 ## 🟡 Średni priorytet
 
@@ -123,6 +123,18 @@ Ocena strony jako systemu graficznego: czy typografia, kolory i ikony tworzą sp
 **Decyzja:** zachować oryginalne kolory Midjourney. Uzasadnienie: (1) druk riso nie odtwarza cyfrowych hexów idealnie — to część estetyki; (2) wymuszenie jasnego indigo cofnęłoby całą decyzję tej sesji; (3) ilustracja to dekoracyjny akcent, nie element UI wymagający pixel-perfect zgodności koloru.
 
 **Zaimplementowane (ta sama sesja):** hero — blob z `3363df6` zastąpiony `<Image>` (400px/2x, WebP, alt=""); dark band — mały checkmark 80-96px nad licznikiem narzędzi. Wersja dark-bandu przerobiona na przezroczyste tło (usunięty kremowy prostokąt z oryginalnego pliku MJ, żeby nie wyglądał jak naklejka na ciemnym tle).
+
+---
+
+### Sesja 2026-09-30 (porządki dokumentu + weryfikacja zasady kolorów z 22.09 po zmianie z 26.09)
+
+**Poprawione:** tabela "Stan obecny" i sekcja 🔴 pokazywały krój pisma i paletę kategorii jako otwarte, mimo zamknięcia 19.09 — zaktualizowane w miejscu (stan z 10.09 zostawiony w nawiasie).
+
+**Weryfikacja zasady accent vs. indigo (22.09) — nadal aktualna, z jednym doprecyzowaniem.** Sprawdzone w kodzie: `bg-accent` występuje tylko w hero (highlight-bar pod "RODO i AI Act" + CTA) i w CTA dark bandu; "Odwiedź stronę {narzędzie}" nadal `bg-indigo-600`; accentu brak w warstwie danych. Zmiana z 26.09 usunęła jedynie dekoracyjny blob (`bg-indigo-600` + `bg-accent`), który nie był akcją, więc podział "zostajesz" (accent) / "wychodzisz" (indigo) nie ucierpiał.
+
+**Doprecyzowanie:** zasada dotyczy wyłącznie kolorów UI z tokenów (`--color-accent`, `indigo-600`). Ilustracja riso to raster z własnymi kolorami (pomarańcz H≈38°, drukarski granat o jasności ≈0.45), świadomie niedopasowanymi do hexów marki (decyzja 26.09). Nie podlega tej zasadzie i nie należy z niej pobierać wartości kolorów do tokenów. Uwaga do sformułowania z 22.09: accent to dziś nie tylko CTA, ale też highlight-bar w hero, czyli element typograficzny, nie akcja. Mieści się w "wyłącznie hero i dark band".
+
+**Otwarte (bez zmian):** 🟡 skala typograficzna, 🟡 pole `icon` w DB, 🟢 znak marki; `frontend/.tmp-shots/` z sesji 22.09 nadal istnieje na dysku (dodany do `.gitignore` lokalnie, niescommitowane), więc nieusunięty.
 
 ---
 
