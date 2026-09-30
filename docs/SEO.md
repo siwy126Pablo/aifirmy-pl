@@ -243,6 +243,32 @@ witryna dodana ~15.09). IndexNow nieskonfigurowany — możliwość przyspieszen
 **Otwarte na następną sesję:** sprawdzić czy liczba zaindeksowanych stron w Bing rośnie; próbka audytu
 meta descriptions (wciąż otwarte z poprzednich sesji); rozważyć IndexNow.
 
+### Sesja 2026-09-30 (korekta ustalenia z sesji 2026-09-13, część 3 — http://)
+
+**Korekta:** wniosek z 13.09 ("rezydualny, historyczny wpis w indeksie, nie aktywny błąd — zamknięte, bez akcji")
+był **błędny**. Jak dokumentuje `CHANGELOG.md` [v0.19] (21.09), `http://aifirmy.pl` był realnym, aktywnym,
+**site-wide** błędem: każda strona pod `http://` zwracała 200 OK z pełną treścią, bez 301 na `https://`
+(potwierdzone `curl` zarówno na stronie narzędzia, jak i na stronie głównej). Naprawione 21.09.2026 po stronie
+Cloudflare — włączone "Always Use HTTPS"; `curl` potwierdza 301 `http://` → `https://`. Oryginalne sekcje z 13.09
+(wyżej w tym pliku) zostawione bez zmian jako zapis historii.
+
+**Najbardziej prawdopodobne źródło błędnego wniosku — HSTS w przeglądarce:** test z 13.09 polegał na bezpośredniej
+nawigacji do `http://aifirmy.pl/narzedzia/lexi-by-infakt/` w przeglądarce Pabla (przez connector Chrome). Jeśli
+przeglądarka miała zapamiętaną politykę HSTS dla domeny z wcześniejszych wizyt, sama po cichu przepisała `http://` na
+`https://` **przed wysłaniem żądania** (wewnętrzny redirect 307 w przeglądarce, żądanie http nigdy nie trafia do
+serwera). Wynik "przekierowuje na https" był więc fałszywie pozytywny: pokazywał zachowanie przeglądarki, nie serwera.
+Prawdziwy klient bez zapamiętanego HSTS (Googlebot, `curl`, nowa przeglądarka) wysyłał żądanie http i dostawał
+200 zamiast 301. Tłumaczy to też, dlaczego Google w ogóle miał w indeksie URL-e `http://` i względne linki
+dziedziczące ten protokół: to nie był artefakt historyczny, tylko stan bieżący.
+
+**Nauka na przyszłość:** redirecty (http→https, www→apex, trailing slash) weryfikować **`curl -sI`** (albo innym
+klientem bez stanu), nie nawigacją w przeglądarce. Przeglądarka z historią wizyt może ukryć brak redirectu po stronie
+serwera przez HSTS, cache 301 lub autouzupełnianie. Szczególnie ważne przy testach przez connector Chrome, bo to
+przeglądarka Pabla z pełną historią domeny.
+
+**Otwarte na następną sesję:** sprawdzić w GSC, czy liczba "Strona zawiera przekierowanie" (91 na 13.09) i
+wpisy `http://` zaczęły spadać po naprawie z 21.09.
+
 ---
 
 *Utworzono: 2026-09-13. Aktualizuj po każdej sesji SEO — nowa sekcja na dole, nie nadpisuj historii.*
