@@ -438,6 +438,20 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.21] — 2026-09-30 (growth — start cold outreachu)
+
+### Zrobione
+- ✅ **Cold outreach ruszył (po 23.09)** — wysłane min. 3 wiadomości (Fabraix,
+  OneCli, erinys); przygotowane kolejne 6 z wybranych 9 firm. Zamyka status
+  "nierozpoczęte" z [v0.18]
+
+### Następny krok
+- Wysłać pozostałe 6 przygotowanych wiadomości
+- Odnotowywać odpowiedzi/feedback w tabeli "Trend aktywności growth" w `STATUS.md`
+- Post 2 LinkedIn — wciąż tylko draft w Notion
+
+---
+
 ```
 ## [v0.X] — [data]
 

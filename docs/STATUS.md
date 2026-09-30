@@ -147,6 +147,7 @@ cold outreach) + zbieranie realnego feedbacku.
 |---|---|---|---|
 | 2026-09-13 | 0 | 0 | 0 |
 | 2026-09-19 | 1 | 0 | — |
+| 2026-09-30 | 1 | min. 3 (Fabraix, OneCli, erinys) + 6 przygotowanych | — |
 
 ### Zadania z tej sesji
 - [x] Post 1 LinkedIn opublikowany (19.09)
@@ -272,11 +273,11 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 ---
 
-## 📣 Growth — status na 20.09
+## 📣 Growth — status na 30.09
 
 - ✅ **Post 1 LinkedIn (RODO/AI Act) OPUBLIKOWANY 19.09.2026**
 - Post 2 LinkedIn — wciąż tylko draft w Notion
-- Cold outreach — nadal nie rozpoczęty
+- 🟡 **Cold outreach — ROZPOCZĘTY (po 23.09)**: wysłane min. 3 wiadomości (Fabraix, OneCli, erinys), przygotowane kolejne 6 z wybranych 9 firm
 
 ---
 
@@ -376,7 +377,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 2. **Faza 1 — Wznowienie growth** — LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 284 zatwierdzonych narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
    - ✅ Post 1 LinkedIn (RODO/AI Act) — opublikowany 19.09.2026
    - [ ] Post 2 LinkedIn — wciąż tylko draft w Notion
-   - [ ] Cold outreach — nadal nie rozpoczęty
+   - [ ] Cold outreach — w toku (ruszył po 23.09): wysłane min. 3 wiadomości (Fabraix, OneCli, erinys), kolejne 6 z wybranych 9 firm przygotowanych do wysyłki
 3. **Faza 2 — Monetyzacja etap 2** — AdSense po przekroczeniu 1000 UV/mc (obecnie realny ruch zewnętrzny wciąż daleko od progu); rozważyć 2-3 kolejne programy afiliacyjne
 4. **Faza 3** — Newsletter, raport branżowy PDF (po ustabilizowaniu ruchu/bazy odbiorców)
 5. **Faza 4 — Artykuły o AI** — świadomie odłożone (ryzyko szkodliwości błędów, praw autorskich, art. 50 ust. 4 AI Act, koszt czasowy); wrócić gdy ruch i jakość pipeline'u dojrzeją
