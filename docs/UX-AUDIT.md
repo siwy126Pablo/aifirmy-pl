@@ -25,7 +25,11 @@ Cykliczny (co jakiś czas, bez sztywnego harmonogramu) przegląd wyglądu i uży
 | `/narzedzia/` (filtrowanie przez Pagefind) | ✅ Wdrożona 10.09 |
 | Responsywność (sprawdzone: 390px mobile) | ✅ Nawigacja, karty, pigułki filtrów, hero+sidebar, panel zgodności — wszystko poprawnie się składa |
 | Hero strony głównej — komunikacja wyróżnika (RODO/AI Act/UE) | ✅ Naprawiona 13.09 |
-| Badge RODO/DPA/Interfejs PL — czytelność stanu "niezweryfikowane" | ✅ Naprawiona 14.09 (pełna migracja modelu danych na 3-stanowy, nie tylko poprawka wizualna — patrz szczegóły w sesji niżej) |
+| Hero + dark band — warstwa wizualna | ✅ Redesign 22.09 (`3363df6`): asymetryczny układ, highlight-bar pod "RODO i AI Act", dark band z dynamiczną liczbą narzędzi przed stopką. 26.09 (`e54dda1`): dekoracyjny blob CSS zastąpiony ilustracją riso (checkmark) w hero i dark bandzie — szczegóły w `DESIGN-SYSTEM.md` |
+| Badge RODO/DPA/hosting UE — czytelność stanu "niezweryfikowane" | ✅ Naprawiona 14.09 (pełna migracja modelu danych na 3-stanowy, nie tylko poprawka wizualna — patrz szczegóły w sesji niżej) |
+| Badge Interfejs PL (`has_pl_ui`) — czytelność stanu "niezweryfikowane" | ✅ Naprawiona 23.09 (ta sama migracja na model 3-stanowy, pominięta 14.09 — `CHANGELOG.md` [v0.20]). `has_pl_support` 3-stanowe, ale świadomie niewyświetlane na froncie (decyzja UI w backlogu `STATUS.md`) |
+| Wyszukiwanie tekstowe na `/narzedzia/` | ✅ Wdrożone 15.09 (`2976272`), potwierdzone na produkcji 19.09 |
+| Sidebar "W skrócie" na stronie detalu | ❌ Otwarte — pusta przestrzeń na dole panelu przy mniejszej liczbie wypełnionych pól (nieweryfikowane od 10.09, patrz 🟡) |
 | Ceny w PLN w UI | ❌ Brak mimo istniejących danych (`price_from_pln`) (deklarowany wyróżnik skorygowany w dokumentacji 15.09 — PLN pricing to teraz opcjonalny bonus, nie systemowa cecha; formularz dodawania odblokowany, UI renderowania świadomie odłożone do wyższego fill rate) |
 
 ## 🔴 Wysoki priorytet
@@ -36,7 +40,6 @@ _(brak otwartych punktów wysokiego priorytetu — oba przeniesione do "✅ Zamk
 
 - [ ] **Pusta przestrzeń w sidebarze "W skrócie" na stronie detalu.** Gdy narzędzie ma mniej wypełnionych pól (np. brak `eu_data_hosting`), panel po prawej (dopasowany wysokością do hero w gridzie) zostaje z zauważalnym pustym obszarem na dole. Wygląda na niedokończone, nie na "mniej danych do pokazania".
 - [ ] **Ceny w PLN nigdzie nie są widoczne w UI** — tylko kategoria (Darmowe/Freemium/Płatne/Open source). `price_from_pln` istnieje w schemacie od początku, nigdy nie trafił do UI. Deklaracja skorygowana w dokumentacji 15.09 — PLN pricing to teraz opcjonalny bonus, nie systemowa cecha; formularz "Dodaj wpis" odblokowany dla tego pola na przyszłość, samo UI renderowania świadomie odłożone do wyższego fill rate (dziś ~1%).
-- [ ] **Brak wyszukiwania tekstowego na `/narzedzia/`** — tylko pigułki kategorii. Pagefind (wdrożony 10.09) już obsługuje wolny tekst, brakuje tylko pola wyszukiwania w interfejsie — relatywnie tani krok na już istniejącym fundamencie.
 
 ## 🟢 Niski priorytet / do obserwacji
 
@@ -49,6 +52,7 @@ _(brak otwartych punktów wysokiego priorytetu — oba przeniesione do "✅ Zamk
 - ~~Niespójny wygląd karty między stronami~~ — rozwiązane 10.09 (patrz `CHANGELOG.md`, commit `75dfa6f`).
 - ~~Hero strony głównej nie komunikuje unikalnego wyróżnika~~ — rozwiązane 13.09: nagłówek/podtytuł teraz komunikują RODO/AI Act.
 - ~~Badge'e "✗ Nie" czytają się jak zarzut, nie jak brak informacji~~ — rozwiązane 14.09: pełna migracja modelu danych `rodo_compliant`/`dpa_available`/`eu_data_hosting` na 3-stanowy (NULL = nie zweryfikowano), nie tylko poprawka wizualna. Patrz szczegóły w sesji 2026-09-13/15 niżej.
+- ~~Brak wyszukiwania tekstowego na `/narzedzia/`~~ — rozwiązane 15.09 (`2976272`): pole "Szukaj narzędzia po nazwie lub opisie..." na Pagefind, połączone z filtrem kategorii; potwierdzone na produkcji 19.09.
 
 ---
 
@@ -102,6 +106,14 @@ _(brak otwartych punktów wysokiego priorytetu — oba przeniesione do "✅ Zamk
 **Nie sprawdzone tej rundy (zakładam bez zmian):** pusta przestrzeń w sidebarze, ceny PLN, wyszukiwanie tekstowe na /narzedzia/.
 
 **Aktualizacja 19.09:** wyszukiwanie tekstowe na `/narzedzia/` (punkt 🟡) potwierdzone jako zrobione — pole "Szukaj narzędzia po nazwie lub opisie..." działa na produkcji.
+
+---
+
+### Sesja 2026-09-30 (porządki dokumentu, bez przeglądu żywej strony)
+
+**Poprawione wewnętrzne niespójności:** punkt "Brak wyszukiwania tekstowego" przeniesiony z 🟡 do "✅ Zamknięte" (był zrobiony od 15.09, tylko checkbox nie został odhaczony); w tabeli "Stan obecny" wiersz badge'y rozbity na RODO/DPA/hosting UE (14.09) i Interfejs PL (23.09, wcześniej błędnie pod datą 14.09); dodane wiersze: wyszukiwanie tekstowe, sidebar "W skrócie", warstwa wizualna hero/dark band (22.09 i 26.09, dotąd udokumentowane tylko w `DESIGN-SYSTEM.md`).
+
+**Otwarte na następną sesję:** zweryfikować na żywo sidebar "W skrócie" (ostatnio sprawdzany 10.09); "Podobne narzędzia" tylko wg kategorii i "Najpopularniejszy" na `/premium` (z sesji 13/15.09, poza listami priorytetów — tekstu "Najpopularniejszy" nie ma już w `premium.astro`, prawdopodobnie do zamknięcia).
 
 ---
 
