@@ -15,7 +15,7 @@
 | **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09), hero z wyróżnikiem RODO/AI Act/UE (13.09), tri-state RODO/DPA/EU hosting (14.09) i "Interfejs PL" (23.09), wyszukiwanie tekstowe na `/narzedzia/` (15.09), font Inter (19.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
 | **Panel admina** | ✅ PHP + Supabase REST API, "Odrzucone przez AI", "Zweryfikuj przez AI" (logo fix wdrożony), panel logów błędów (activity_log, 13.09), modal edycji + wyszukiwanie/filtr/sortowanie w zakładce "Narzędzia" (15–19.09), "Znalezione sygnały" RODO/DPA/UE w weryfikacji (14.09) |
-| **Monetyzacja** | ✅ Infrastruktura live: Stripe Live mode, checkout + webhook, email po zakupie — przychód = 0 na 2026-09-20 |
+| **Monetyzacja** | ✅ Infrastruktura live: Stripe Live mode, checkout + webhook, email po zakupie — przychód = 0 na 2026-09-20 — sprzedaż Premium wstrzymana kill-switchem (`SALES_ENABLED=false`, 21.09, ADR-010) do czasu potwierdzenia z księgowym |
 | **Affiliate** | ✅ ClickUp/PartnerStack aktywny |
 | **Analytics** | ✅ Search Console (główne źródło prawdy) + AWStats; ⚠️ GA4 niewiarygodne (patrz niżej) |
 
@@ -254,6 +254,7 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 - [ ] Sprawdzić w panelu "Odrzucone przez AI" wpis "AI Dubbing" z pierwszego realnego przebiegu BetaList — czy słuszne odrzucenie czy fałszywy negatyw
 - [ ] Wyłączyć autostart NiFi w Windows Task Scheduler (już niepotrzebny) — realna korzyść: komputer nie musi być już stale włączony o 2:00-5:00 dla działania pipeline'u
 - [ ] Skonsolidować własną kopię logiki dedup/insert w `yc_oss.php` do współdzielonego `pipeline.php` używanego przez pozostałe 3 źródła (obecnie niespójne, niska pilność)
+- [ ] Korekta cronów pod zmianę czasu (CEST→CET, 25.10.2026) we **wszystkich 4 workflow scrapera** (`scrape-hn.yml`, `scrape-betalist.yml`, `scrape-producthunt.yml`, `scrape-yc-pilot.yml`). Po pełnej migracji z 20.09 wszystkie mają ten sam problem, nie tylko dawny pilot YC-OSS: cron GitHub Actions działa w UTC, więc godziny 0:00–3:00 UTC (dziś 2:00–5:00 czasu polskiego) po zmianie czasu przesuną się o 1h wcześniej (1:00–4:00). Każdy plik ma już komentarz "do sprawdzenia po zmianie na czas zimowy". Niska pilność, bo opóźnienia schedulera GitHuba (~5-6h) i tak dominują nad przesunięciem o 1h
 
 ---
 
