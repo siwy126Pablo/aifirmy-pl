@@ -94,6 +94,11 @@ CREATE TABLE affiliate_links (
 Zarządzane przez `admin/affiliate.php`. Gdy aktywny link istnieje dla danego `tool_id`, strona detalu narzędzia (`/narzedzia/[slug]`) używa `affiliate_url` zamiast `website_url` i wyświetla `disclosure_text` pod CTA. (ADR-009)
 
 ## Pipeline NiFi
+
+> ⚠️ **ZARCHIWIZOWANE — NiFi zdecommisjonowany 20.09.2026, zastąpiony przez `scraper/` (PHP + GitHub Actions).**
+> Nie opisuje aktualnego pipeline'u — patrz `STATUS.md` sekcja "🏗️ Migracja pipeline'u z NiFi na GitHub Actions"
+> dla pełnej historii, `CLAUDE.md` sekcja "ETL pipeline" dla stanu obecnego.
+
 ```
 Hacker News API (Product Hunt zablokowany — 403 Cloudflare)
   → GenerateFlowFile (timer 60s)
@@ -146,6 +151,9 @@ Format: JSON { description, category, tags, segment }
 - [ ] Node.js vs Python dla backend API (ADR-005)
 
 ## Status (czerwiec 2026)
+
+> ⚠️ **Historyczny snapshot z czerwca 2026, nie aktualny status.** Aktualny stan projektu: `STATUS.md`.
+
 - Domena: ✅ aifirmy.pl (Cyberfolks)
 - Repo: ✅ github.com/siwy126Pablo/aifirmy-pl
 - Baza: ✅ Supabase (6 tabel, 9 kategorii, 3 wpisy seed)
