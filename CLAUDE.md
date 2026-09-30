@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🗺️ Mapa dokumentacji
+
+- **Aktualny stan** (czytaj zawsze na start sesji, edytowane w miejscu): `docs/STATUS.md`, `docs/ARCHITECTURE.md`
+- **Cykliczny log z otwartymi punktami** (przejrzyj sekcje "otwarte"/"do rozważenia"; historia sesji dopisywana na dole): `docs/SEO.md`, `docs/CONTENT-GUIDE.md`, `docs/DESIGN-SYSTEM.md`, `docs/UX-AUDIT.md`
+- **Append-only historia decyzji** (nigdy nie edytuj wstecz, tylko dopisuj): `docs/CHANGELOG.md`, `docs/DECISIONS.md`
+- **Zarchiwizowane** (nieaktywna architektura / jednorazowe snapshoty, tylko kontekst historyczny): `nifi-flows/` (eksport flow NiFi, zdecommisjonowany 20.09.2026), `docs/03_projekt-aifirmy.md` (kontekst projektu z czerwca 2026), `docs/pakiet-poprawek-3.md` (brief zadań z audytu 13.09)
+
 ## 🔗 Project links (use these in every session)
 
 | Resource | URL |
