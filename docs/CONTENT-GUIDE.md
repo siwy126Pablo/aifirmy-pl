@@ -45,6 +45,7 @@ FAQ (RODO/DPA/EU hosting/AI Act) to edukacyjne wyjaśnienia ogólne per kategori
 
 Reguły:
 - Niuans zamiast binarności: brak potwierdzenia ≠ potwierdzone naruszenie. Język typu "brak potwierdzonej zgodności" zamiast "niezgodne"
+- Wartość `false` w polach `rodo_compliant` / `dpa_available` / `eu_data_hosting` ustawiamy wyłącznie wtedy, gdy dostawca sam to deklaruje (oficjalna dokumentacja). W pozostałych przypadkach pole zostaje `NULL` (Nie zweryfikowano)
 - Każde wyjaśnienie kończy się praktyczną wskazówką ("warto zweryfikować przed wdrożeniem"), nie zostawia czytelnika z samym faktem
 - Zawsze neutralny ton prawny — nie strasz, nie uspokajaj, informuj
 - **Spójność z UI:** treść FAQ i etykiety badge'y muszą komunikować to samo. Jeśli FAQ mówi "nie potwierdzono", badge nie może mówić "Nie" (patrz otwarty punkt w sekcji 5 — już zgłoszony w sesji UX 13.09)

@@ -129,7 +129,7 @@ const faqs = [
     answer: tool.rodo_compliant === true
       ? 'Tak. Zgodność z RODO oznacza, że dostawca zobowiązuje się przetwarzać dane osobowe zgodnie z unijnym rozporządzeniem o ochronie danych — masz prawo do informacji, dostępu, poprawiania i usunięcia swoich danych, a dostawca musi zgłaszać naruszenia bezpieczeństwa.'
       : tool.rodo_compliant === false
-      ? 'Nie. Ten dostawca został zweryfikowany jako niezgodny z RODO (lub sam deklaruje brak zgodności) — jeśli planujesz przetwarzać dane osobowe klientów lub pracowników za pomocą tego narzędzia, skonsultuj to z działem prawnym lub IOD przed wdrożeniem.'
+      ? 'Nie. Dostawca nie potwierdza zgodności z RODO (np. deklaruje, że proces jest w toku lub że jej nie spełnia) — jeśli planujesz przetwarzać dane osobowe klientów lub pracowników za pomocą tego narzędzia, skonsultuj to z działem prawnym lub IOD przed wdrożeniem.'
       : 'Zgodność z RODO nie została jeszcze zweryfikowana dla tego narzędzia. Brak potwierdzenia nie musi oznaczać naruszenia przepisów, ale przed wdrożeniem warto samodzielnie zweryfikować politykę prywatności dostawcy, zwłaszcza jeśli przetwarzasz dane osobowe klientów lub pracowników.',
   },
   {
@@ -138,7 +138,7 @@ const faqs = [
       + (tool.dpa_available === true
         ? ' Ten dostawca oferuje gotową umowę DPA — możesz ją podpisać przed rozpoczęciem korzystania z narzędzia.'
         : tool.dpa_available === false
-        ? ' Ten dostawca zweryfikowany został jako nieoferujący umowy DPA — jeśli planujesz przetwarzać dane osobowe za pomocą tego narzędzia, może to być utrudnione lub niezgodne z RODO; skonsultuj to z dostawcą lub działem prawnym przed wdrożeniem.'
+        ? ' Dostawca deklaruje, że nie oferuje umowy DPA — jeśli planujesz przetwarzać dane osobowe za pomocą tego narzędzia, może to być utrudnione lub niezgodne z RODO; skonsultuj to z dostawcą lub działem prawnym przed wdrożeniem.'
         : ' Dostępność umowy DPA nie została jeszcze zweryfikowana — jeśli planujesz przetwarzać dane osobowe, zapytaj dostawcę bezpośrednio przed wdrożeniem.'),
   },
   {
@@ -147,7 +147,7 @@ const faqs = [
       + (tool.eu_data_hosting === true
         ? ' To narzędzie przetwarza dane na terenie UE.'
         : tool.eu_data_hosting === false
-        ? ' To narzędzie zostało zweryfikowane jako przetwarzające dane poza UE — dostawca musi zapewnić mechanizm transferu zgodny z RODO (np. Standardowe Klauzule Umowne); warto potwierdzić to bezpośrednio u dostawcy przed wdrożeniem.'
+        ? ' Dostawca deklaruje przetwarzanie danych poza UE (np. wyłącznie w USA) — musi zapewnić mechanizm transferu zgodny z RODO (np. Standardowe Klauzule Umowne); warto potwierdzić to bezpośrednio u dostawcy przed wdrożeniem.'
         : ' Lokalizacja przetwarzania danych nie została jeszcze zweryfikowana — jeśli dane mogą być przetwarzane poza UE, dostawca powinien zapewnić mechanizm transferu zgodny z RODO (np. Standardowe Klauzule Umowne); warto to zweryfikować przed wdrożeniem.'),
   },
   {
