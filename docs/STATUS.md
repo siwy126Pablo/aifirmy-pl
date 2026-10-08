@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-09-23
+> Ostatnia aktualizacja: 2026-10-08
 
 ---
 
@@ -148,11 +148,12 @@ cold outreach) + zbieranie realnego feedbacku.
 | 2026-09-13 | 0 | 0 | 0 |
 | 2026-09-19 | 1 | 0 | — |
 | 2026-09-30 | 1 | min. 3 (Fabraix, OneCli, erinys) + 6 przygotowanych | — |
+| 2026-10-08 | 2 (Post 1: 19.09, Post 2: 08.10) | 3 (runda 2: Vespper, hiloop, Traceforce) + 9 z rundy 1 | 1 (Vespper, tego samego dnia: hosting UE + RODO, bez dokumentu) |
 
 ### Zadania z tej sesji
 - [x] Post 1 LinkedIn opublikowany (19.09)
-- [ ] Post 2 LinkedIn opublikować (draft w Notion)
-- [ ] Rozpocząć cold outreach — ustalić minimalny tygodniowy commitment i zacząć
+- [x] Post 2 LinkedIn opublikowany (08.10)
+- [x] Rozpocząć cold outreach — ruszył po 23.09; runda 1: 9 firm (do 03.10), runda 2: 3 firmy (08.10). Minimalny tygodniowy commitment wciąż nieustalony
 - [ ] Zebrać 3–5 nieformalnych rozmów/feedbacków od użytkowników/klientów katalogu
 - [ ] Powtarzać rytuał sesji strategicznej: trend ruchu + bilans czasu produkt/growth + 1 decyzja na sesję
 
@@ -274,11 +275,12 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 ---
 
-## 📣 Growth — status na 30.09
+## 📣 Growth — status na 08.10
 
 - ✅ **Post 1 LinkedIn (RODO/AI Act) OPUBLIKOWANY 19.09.2026**
-- Post 2 LinkedIn — wciąż tylko draft w Notion
-- 🟡 **Cold outreach — ROZPOCZĘTY (po 23.09)**: wysłane min. 3 wiadomości (Fabraix, OneCli, erinys), przygotowane kolejne 6 z wybranych 9 firm
+- ✅ **Post 2 LinkedIn (5 narzędzi: n8n, Make, Rossum, Surfer SEO, Woodpecker) OPUBLIKOWANY 08.10.2026**, z komentarzem z linkiem https://aifirmy.pl. Grafika v2 z poprawioną linią Make ("Region danych w UE · DPA w warunkach usługi"); v1 miała nieaktualne "DPA w planach płatnych"
+- 🟡 **Cold outreach — w toku**: runda 1 — 9 firm (do 03.10); runda 2 (08.10) — 3 maile (Vespper, hiloop, Traceforce). Follow-upy do Fabraix, OneCLI, Erinys i Billow AI Labs nadal otwarte
+- 💬 **Pierwsza odpowiedź — Vespper** (podpis "Topaz", tego samego dnia): "yes to all, we do eu hosting and gdpr". Publiczne strony Vespper (Security, Privacy) nie wspominają o hostingu UE, RODO ani DPA (SOC 2 "w toku", self-hosting tylko enterprise); obecne `dpa_available=true` w katalogu nie ma publicznego źródła. 08.10 wysłano prośbę o link/dokument. **Pól w katalogu nie zmieniamy do otrzymania źródła**
 
 ---
 
@@ -377,8 +379,8 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 1. ✅ Nowe źródła danych (Priorytet #1) — zrobione (YC-OSS API, 30.08), **cały pipeline zmigrowany z NiFi na GitHub Actions 20.09**
 2. **Faza 1 — Wznowienie growth** — LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 284 zatwierdzonych narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
    - ✅ Post 1 LinkedIn (RODO/AI Act) — opublikowany 19.09.2026
-   - [ ] Post 2 LinkedIn — wciąż tylko draft w Notion
-   - [ ] Cold outreach — w toku (ruszył po 23.09): wysłane min. 3 wiadomości (Fabraix, OneCli, erinys), kolejne 6 z wybranych 9 firm przygotowanych do wysyłki
+   - ✅ Post 2 LinkedIn (5 narzędzi) — opublikowany 08.10.2026
+   - [ ] Cold outreach — w toku: runda 1 — 9 firm (do 03.10), runda 2 — 3 maile (08.10: Vespper, hiloop, Traceforce); 1 odpowiedź (Vespper, czekamy na dokument). Follow-upy do Fabraix, OneCLI, Erinys, Billow AI Labs otwarte
 3. **Faza 2 — Monetyzacja etap 2** — AdSense po przekroczeniu 1000 UV/mc (obecnie realny ruch zewnętrzny wciąż daleko od progu); rozważyć 2-3 kolejne programy afiliacyjne
 4. **Faza 3** — Newsletter, raport branżowy PDF (po ustabilizowaniu ruchu/bazy odbiorców)
 5. **Faza 4 — Artykuły o AI** — świadomie odłożone (ryzyko szkodliwości błędów, praw autorskich, art. 50 ust. 4 AI Act, koszt czasowy); wrócić gdy ruch i jakość pipeline'u dojrzeją
@@ -408,6 +410,8 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] Skonsolidować `yc_oss.php` do współdzielonego `scraper/lib/pipeline.php` (obecnie ma własną, wcześniejszą kopię logiki dedup/insert)
 - [ ] Rozważyć, czy i kiedy pokazać `has_pl_support` ("Wsparcie PL") na froncie. Od 23.09 jest 3-stanowe i edytowalne w panelu, ale nigdzie niewyświetlane. Siatka "Zgodność i dane" ma 4 kolumny, więc piąty kafelek to osobna decyzja UI. Sensowne dopiero przy wyższym odsetku zweryfikowanych wpisów (obecnie prawie wszystkie NULL)
 - [ ] Rewizja tekstu FAQ dla pola `eu_data_hosting`: obecny generyczny tekst ("nie trzeba polegać na dodatkowych mechanizmach transferu danych poza UE") nie jest precyzyjny dla narzędzi-nakładek na zewnętrzne modele AI (np. humai przesyła treść do Anthropic/Google w USA na podstawie DPF+SCC, mimo że `eu_data_hosting=true` dotyczy tylko infrastruktury/bazy danych w EOG). Rozważyć wariant tekstu FAQ dla tej kategorii narzędzi. Priorytet: niski, do rozważenia przy kolejnym takim przypadku
+- [ ] Przegląd/poprawa wpisów Traceforce i hiloop (opis, kategoria): Traceforce ma "Prawo i compliance", faktycznie bezpieczeństwo AI na urządzeniach (monitoring aplikacji AI, konektorów MCP, agentów CLI); hiloop ma "Zarządzanie projektami", faktycznie "autoresearch jako usługa". Przy okazji przegląd małych wpisów z potoku ("Platforma AI do X") pod kątem zmyśleń/błędnych opisów, zanim trafią do outreachu (08.10 usunięte z tego powodu: Comply.ai, PrevailComply, Florin). Niska pilność
+- [ ] Vespper — po odpowiedzi z linkiem/dokumentem ustawić RODO/hosting UE/DPA w panelu i zweryfikować źródło obecnego `dpa_available=true` (brak publicznego źródła na 08.10)
 
 ---
 

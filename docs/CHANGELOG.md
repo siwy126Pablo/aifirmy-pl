@@ -452,6 +452,34 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.22] — 2026-10-08 (growth: Post 2 + outreach runda 2)
+
+### Zrobione
+- ✅ **Post 2 LinkedIn opublikowany** (5 narzędzi: n8n, Make, Rossum, Surfer SEO,
+  Woodpecker) z komentarzem z linkiem do aifirmy.pl. Grafika v2 poprawiła linię
+  Make na "Region danych w UE · DPA w warunkach usługi" (v1: nieaktualne "DPA w
+  planach płatnych")
+- ✅ **Cold outreach, runda 2** — 3 maile (Vespper, hiloop, Traceforce). Runda 1
+  (9 firm, do 03.10) bez zmian
+- ✅ **Pierwsza odpowiedź: Vespper** (tego samego dnia) — deklaracja hostingu UE
+  i RODO, bez dokumentu. Wysłana prośba o link/dokument; pola w katalogu bez zmian
+
+### Odkrycia / problemy
+- Przy wyborze celów outreachu usunięte 3 wpisy: Comply.ai (domena na sprzedaż),
+  PrevailComply (w rzeczywistości płatna lista płac dla podwykonawców robót
+  publicznych w USA), Florin (broker ubezpieczeń biznesowych, nie "ubezpieczyciel
+  z algorytmami"). Małe wpisy z potoku ("Platforma AI do X") bywają zmyślone lub
+  błędnie opisane
+- Traceforce i hiloop mają błędne kategorie (jeszcze niepoprawione)
+- `dpa_available=true` przy Vespper nie ma publicznego źródła
+
+### Następny krok
+- Follow-upy do Fabraix, OneCLI, Erinys, Billow AI Labs
+- Po odpowiedzi Vespper z dokumentem: ustawić pola RODO/hosting/DPA w panelu
+- Przegląd małych wpisów przed kolejną rundą outreachu (Backlog w `STATUS.md`)
+
+---
+
 ```
 ## [v0.X] — [data]
 
