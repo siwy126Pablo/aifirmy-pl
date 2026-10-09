@@ -480,6 +480,31 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.23] — 2026-10-09 (poprawa wpisów Traceforce i hiloop, follow-upy outreachu)
+
+### Zrobione
+- ✅ Traceforce: kategoria → Cyberbezpieczeństwo AI, cennik → Płatne
+  (trial ≠ freemium), opis i "Dla" przepisane wg CONTENT-GUIDE.md
+- ✅ hiloop: kategoria → Automatyzacja procesów (tymczasowo), cennik → Płatne,
+  opis bez żargonu ("autoresearch" opisane jako efekt), "Dla" przepisane
+- ✅ Zmiany wprowadzone w panelu admina, deploy przez workflow_dispatch
+- ✅ Follow-upy do Fabraix, OneCLI, Erinys, Billow AI Labs wysłane — ostatnia
+  wiadomość do tych firm, bez dalszych ponowień
+
+### Odkrycia / problemy
+- Oba wpisy z potoku miały błędny pricing_model "Freemium" (domyślna wartość
+  z triggera/AI), mimo braku stałego planu darmowego
+- Luka w taksonomii: brak kategorii dla infrastruktury ML / narzędzi
+  deweloperskich AI (hiloop, prawdopodobnie też Rystic i Otis)
+
+### Następny krok
+- Decyzja ws. nowej kategorii (Backlog w STATUS.md)
+- Przegląd małych wpisów z potoku przed kolejną rundą outreachu
+- Brak odpowiedzi od tej czwórki → zamknąć jako "bez odpowiedzi" w rejestrze
+  wysyłek, bez kolejnych prób
+
+---
+
 ```
 ## [v0.X] — [data]
 

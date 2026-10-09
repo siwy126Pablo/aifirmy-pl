@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-10-08
+> Ostatnia aktualizacja: 2026-10-09
 
 ---
 
@@ -149,6 +149,7 @@ cold outreach) + zbieranie realnego feedbacku.
 | 2026-09-19 | 1 | 0 | — |
 | 2026-09-30 | 1 | min. 3 (Fabraix, OneCli, erinys) + 6 przygotowanych | — |
 | 2026-10-08 | 2 (Post 1: 19.09, Post 2: 08.10) | 3 (runda 2: Vespper, hiloop, Traceforce) + 9 z rundy 1 | 1 (Vespper, tego samego dnia: hosting UE + RODO, bez dokumentu) |
+| 2026-10-09 | 2 | 12 (runda 1: 9, runda 2: 3) + 4 follow-upy (Fabraix, OneCLI, Erinys, Billow AI Labs — ostatnie) | 1 (Vespper, czekamy na dokument) |
 
 ### Zadania z tej sesji
 - [x] Post 1 LinkedIn opublikowany (19.09)
@@ -275,11 +276,11 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 ---
 
-## 📣 Growth — status na 08.10
+## 📣 Growth — status na 09.10
 
 - ✅ **Post 1 LinkedIn (RODO/AI Act) OPUBLIKOWANY 19.09.2026**
 - ✅ **Post 2 LinkedIn (5 narzędzi: n8n, Make, Rossum, Surfer SEO, Woodpecker) OPUBLIKOWANY 08.10.2026**, z komentarzem z linkiem https://aifirmy.pl. Grafika v2 z poprawioną linią Make ("Region danych w UE · DPA w warunkach usługi"); v1 miała nieaktualne "DPA w planach płatnych"
-- 🟡 **Cold outreach — w toku**: runda 1 — 9 firm (do 03.10); runda 2 (08.10) — 3 maile (Vespper, hiloop, Traceforce). Follow-upy do Fabraix, OneCLI, Erinys i Billow AI Labs nadal otwarte
+- 🟡 **Cold outreach — w toku**: runda 1 — 9 firm (do 03.10); runda 2 (08.10) — 3 maile (Vespper, hiloop, Traceforce). Follow-upy do Fabraix, OneCLI, Erinys i Billow AI Labs wysłane 09.10 — ostatnia wiadomość do tych firm, bez dalszych ponowień
 - 💬 **Pierwsza odpowiedź — Vespper** (podpis "Topaz", tego samego dnia): "yes to all, we do eu hosting and gdpr". Publiczne strony Vespper (Security, Privacy) nie wspominają o hostingu UE, RODO ani DPA (SOC 2 "w toku", self-hosting tylko enterprise); obecne `dpa_available=true` w katalogu nie ma publicznego źródła. 08.10 wysłano prośbę o link/dokument. **Pól w katalogu nie zmieniamy do otrzymania źródła**
 
 ---
@@ -380,7 +381,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 2. **Faza 1 — Wznowienie growth** — LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 284 zatwierdzonych narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
    - ✅ Post 1 LinkedIn (RODO/AI Act) — opublikowany 19.09.2026
    - ✅ Post 2 LinkedIn (5 narzędzi) — opublikowany 08.10.2026
-   - [ ] Cold outreach — w toku: runda 1 — 9 firm (do 03.10), runda 2 — 3 maile (08.10: Vespper, hiloop, Traceforce); 1 odpowiedź (Vespper, czekamy na dokument). Follow-upy do Fabraix, OneCLI, Erinys, Billow AI Labs otwarte
+   - [ ] Cold outreach — w toku: runda 1 — 9 firm (do 03.10), runda 2 — 3 maile (08.10: Vespper, hiloop, Traceforce); 1 odpowiedź (Vespper, czekamy na dokument). Follow-upy do Fabraix, OneCLI, Erinys, Billow AI Labs wysłane 09.10 (ostatnie, bez dalszych ponowień)
 3. **Faza 2 — Monetyzacja etap 2** — AdSense po przekroczeniu 1000 UV/mc (obecnie realny ruch zewnętrzny wciąż daleko od progu); rozważyć 2-3 kolejne programy afiliacyjne
 4. **Faza 3** — Newsletter, raport branżowy PDF (po ustabilizowaniu ruchu/bazy odbiorców)
 5. **Faza 4 — Artykuły o AI** — świadomie odłożone (ryzyko szkodliwości błędów, praw autorskich, art. 50 ust. 4 AI Act, koszt czasowy); wrócić gdy ruch i jakość pipeline'u dojrzeją
@@ -410,7 +411,25 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] Skonsolidować `yc_oss.php` do współdzielonego `scraper/lib/pipeline.php` (obecnie ma własną, wcześniejszą kopię logiki dedup/insert)
 - [ ] Rozważyć, czy i kiedy pokazać `has_pl_support` ("Wsparcie PL") na froncie. Od 23.09 jest 3-stanowe i edytowalne w panelu, ale nigdzie niewyświetlane. Siatka "Zgodność i dane" ma 4 kolumny, więc piąty kafelek to osobna decyzja UI. Sensowne dopiero przy wyższym odsetku zweryfikowanych wpisów (obecnie prawie wszystkie NULL)
 - [ ] Rewizja tekstu FAQ dla pola `eu_data_hosting`: obecny generyczny tekst ("nie trzeba polegać na dodatkowych mechanizmach transferu danych poza UE") nie jest precyzyjny dla narzędzi-nakładek na zewnętrzne modele AI (np. humai przesyła treść do Anthropic/Google w USA na podstawie DPF+SCC, mimo że `eu_data_hosting=true` dotyczy tylko infrastruktury/bazy danych w EOG). Rozważyć wariant tekstu FAQ dla tej kategorii narzędzi. Priorytet: niski, do rozważenia przy kolejnym takim przypadku
-- [ ] Przegląd/poprawa wpisów Traceforce i hiloop (opis, kategoria): Traceforce ma "Prawo i compliance", faktycznie bezpieczeństwo AI na urządzeniach (monitoring aplikacji AI, konektorów MCP, agentów CLI); hiloop ma "Zarządzanie projektami", faktycznie "autoresearch jako usługa". Przy okazji przegląd małych wpisów z potoku ("Platforma AI do X") pod kątem zmyśleń/błędnych opisów, zanim trafią do outreachu (08.10 usunięte z tego powodu: Comply.ai, PrevailComply, Florin). Niska pilność
+- [x] Traceforce i hiloop poprawione 09.10 (panel, zweryfikowane ze stronami producentów i profilem YC):
+  Traceforce: kategoria Prawo i compliance → Cyberbezpieczeństwo AI, cennik
+  Freemium → Płatne (tylko 30-dniowy trial na 10 urządzeń, potem Pro per
+  urządzenie / Enterprise), nowy opis i "Dla".
+  hiloop: kategoria Zarządzanie projektami → Automatyzacja procesów
+  (tymczasowo, patrz punkt o luce w taksonomii), cennik Freemium → Płatne
+  (brak publicznego cennika, tylko kontakt/wczesny dostęp), nowy opis i "Dla".
+- [ ] Przegląd małych wpisów z potoku ("Platforma AI do X") pod kątem
+  zmyśleń/błędnych opisów, zanim trafią do outreachu (08.10 usunięte z tego
+  powodu: Comply.ai, PrevailComply, Florin). Niska pilność.
+- [ ] Luka w taksonomii: brak kategorii dla infrastruktury ML / narzędzi
+  deweloperskich AI. hiloop tymczasowo w "Automatyzacja procesów"; w
+  "Zarządzanie projektami" prawdopodobnie błędnie siedzą też Rystic (symulacja
+  API dla agentów) i Otis (lokalny agent AI). Do decyzji: nowa, 11. kategoria
+  (np. "Narzędzia dla deweloperów AI") vs. dopasowanie do istniejących.
+  Analogiczny sygnał jak przy dodaniu "Cyberbezpieczeństwo AI" (01.09).
+  Nowa kategoria wymaga zmian w: tabeli categories, prompcie
+  scraper/lib/openai.php, verify_tool.php (kategorie pobierane z bazy),
+  category-colors.ts, CategoryIcon.astro.
 - [ ] Vespper — po odpowiedzi z linkiem/dokumentem ustawić RODO/hosting UE/DPA w panelu i zweryfikować źródło obecnego `dpa_available=true` (brak publicznego źródła na 08.10)
 
 ---
