@@ -237,4 +237,34 @@ z innego powodu).
 
 ---
 
+## ADR-011 — Kierunek projektu po ocenie growth
+**Data:** 10.10.2026
+**Status:** ✅ Przyjęte
+
+**Kontekst:**
+Plan z 23.08 (potwierdzony w sesji strategicznej 13.09) stawiał na Fazę 1: LinkedIn + cold outreach. Wynik po ~3 tygodniach:
+- Post 1 (19.09): 112 wyświetleń, 4 reakcje, 0 komentarzy poza własnym
+- Post 2 (08.10): 45 wyświetleń, 0 reakcji, 0 komentarzy poza własnym
+- Cold outreach: 12 firm (+4 follow-upy), 1 odpowiedź (Vespper)
+- Feedback od użytkowników katalogu: 0
+- Ruch organiczny (GSC, okno 28 dni do 19.09): 11 kliknięć, 1 751 wyświetleń (+86% względem poprzedniego okna)
+
+Featured to płatna widoczność — bez ruchu nie ma produktu do sprzedania. Wąskim gardłem jest ruch na stronie, nie dystrybucja. Profil LinkedIn (122 obserwujących, głównie branża danych) nie dociera do klientów Featured (dostawców narzędzi) ani do ich użytkowników.
+
+**Decyzja:**
+1. Główny czas → katalog: nowe wpisy i jakość istniejących stron (dane RODO/DPA/hosting, opisy) + tanie poprawki SEO (title, meta). Bez rozwoju nowych funkcji.
+2. Wyjątek od pkt 1: naprawy jakości danych (np. prompt pipeline'u w scraper/lib/openai.php bez polskich znaków).
+3. LinkedIn nie jest kanałem growth. Posty tylko przy konkretnej okazji, bez dedykowanej pracy graficznej.
+4. Outreach minimalny, bez stałego limitu tygodniowego. Cel: weryfikacja danych u dostawców i prośba o link do wpisu (backlink), nie sprzedaż.
+5. Blokada developmentu z sesji strategicznej 13.09 — zakończona, zastąpiona pkt 1.
+
+**Punkt kontrolny (~25.01.2027, przed możliwym startem sprzedaży 1.02.2027 — patrz ADR-010):**
+Kliknięcia z Google Search Console, okno 28 dni.
+- Poniżej 100 → Featured nie startuje; projekt w trybie utrzymania (wpisy, bez inwestycji czasu w rozwój).
+- 100 lub więcej → przygotowanie startu Featured.
+
+**Zastępuje:** priorytet Fazy 1 (LinkedIn + cold outreach) z planu 23.08 i decyzji roboczej 13.09.
+
+---
+
 *Aktualizuj przy każdej ważnej decyzji technicznej.*
