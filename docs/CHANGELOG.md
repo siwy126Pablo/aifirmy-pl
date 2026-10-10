@@ -505,6 +505,19 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.24] — 2026-10-10 (zmiana kierunku: ADR-011)
+
+### Zrobione
+- ✅ Ocena Fazy 1 growth: Post 2 (45 wyświetleń, 0 reakcji), Post 1 (112 wyświetleń, 4 reakcje), outreach 12 firm + 4 follow-upy, 1 odpowiedź (Vespper), 0 feedbacku od użytkowników
+- ✅ ADR-011 (`08ddb37`): główny czas → katalog + tanie SEO; LinkedIn nie jest kanałem growth; outreach minimalny (weryfikacja danych + backlinki); blokada developmentu z 13.09 zakończona; punkt kontrolny ~25.01.2027 — 100 kliknięć GSC / 28 dni
+- ✅ CLAUDE.md (`097bcb7`), STATUS.md + SEO.md (`851000d`) zaktualizowane wg ADR-011
+
+### Następny krok
+- Naprawa promptu pipeline'u (`scraper/lib/openai.php`, brak polskich znaków) przed dalszym przyrostem wpisów
+- Świeży pomiar GSC (ostatni wpis w tabeli ruchu: 19.09)
+
+---
+
 ```
 ## [v0.X] — [data]
 
