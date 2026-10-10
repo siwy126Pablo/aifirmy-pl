@@ -174,7 +174,7 @@ Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo
 6. Monitorować, czy badge RODO/DPA "✗ Nie" ma mierzalny wpływ SEO (niepewne, ale warto mieć na radarze przy okazji naprawy UX)
 
 **Nie-SEO, ale blokujące SEO pośrednio (już znane, patrz STATUS.md):**
-7. Brak backlinków poza jednym przypadkiem — to pytanie o dystrybucję (LinkedIn/outreach), nie o technikalia strony. Zgodnie z sesją strategiczną 13.09 to i tak już priorytet #1 projektu.
+7. Brak backlinków poza jednym przypadkiem — to pytanie o dystrybucję, nie o technikalia strony. Backlinki pozyskujemy przez prośby o link do wpisu w minimalnym outreachu do dostawców (ADR-011); LinkedIn nie jest kanałem.
 
 ---
 

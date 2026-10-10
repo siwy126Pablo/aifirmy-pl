@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-10-09
+> Ostatnia aktualizacja: 2026-10-10
 
 ---
 
@@ -141,6 +141,8 @@ udokumentowanego feedbacku od klientów.
 krytycznymi bugami) na 2–4 tygodnie; cały budżet 1h/dzień → Faza 1 (LinkedIn +
 cold outreach) + zbieranie realnego feedbacku.
 
+Zakończona 10.10.2026 — zastąpiona przez ADR-011.
+
 ### 📈 Trend aktywności growth (nowy — uzupełniać przy cotygodniowej kontroli ruchu)
 
 | Data | Posty LinkedIn | Maile cold outreach | Odpowiedzi/feedback |
@@ -150,6 +152,9 @@ cold outreach) + zbieranie realnego feedbacku.
 | 2026-09-30 | 1 | min. 3 (Fabraix, OneCli, erinys) + 6 przygotowanych | — |
 | 2026-10-08 | 2 (Post 1: 19.09, Post 2: 08.10) | 3 (runda 2: Vespper, hiloop, Traceforce) + 9 z rundy 1 | 1 (Vespper, tego samego dnia: hosting UE + RODO, bez dokumentu) |
 | 2026-10-09 | 2 | 12 (runda 1: 9, runda 2: 3) + 4 follow-upy (Fabraix, OneCLI, Erinys, Billow AI Labs — ostatnie) | 1 (Vespper, czekamy na dokument) |
+| 2026-10-10 | 2 (Post 2: 45 wyświetleń, 0 reakcji) | 12 firm (11 mailowo, 1 zaproszenie LinkedIn) + 4 follow-upy | 1 (Vespper) |
+
+Od 10.10 tabela zamknięta — zob. ADR-011; ruch śledzony w "Trend ruchu (Search Console)".
 
 ### Zadania z tej sesji
 - [x] Post 1 LinkedIn opublikowany (19.09)
@@ -278,6 +283,8 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 ## 📣 Growth — status na 09.10
 
+> Od 10.10.2026 obowiązuje `DECISIONS.md` ADR-011: LinkedIn nie jest kanałem growth, outreach minimalny (weryfikacja danych + prośba o link). Poniżej stan historyczny na 09.10.
+
 - ✅ **Post 1 LinkedIn (RODO/AI Act) OPUBLIKOWANY 19.09.2026**
 - ✅ **Post 2 LinkedIn (5 narzędzi: n8n, Make, Rossum, Surfer SEO, Woodpecker) OPUBLIKOWANY 08.10.2026**, z komentarzem z linkiem https://aifirmy.pl. Grafika v2 z poprawioną linią Make ("Region danych w UE · DPA w warunkach usługi"); v1 miała nieaktualne "DPA w planach płatnych"
 - 🟡 **Cold outreach — w toku**: runda 1 — 9 firm (do 03.10); runda 2 (08.10) — 3 maile (Vespper, hiloop, Traceforce). Follow-upy do Fabraix, OneCLI, Erinys i Billow AI Labs wysłane 09.10 — ostatnia wiadomość do tych firm, bez dalszych ponowień
@@ -375,13 +382,13 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 
 ## 📋 Backlog
 
-### 🗺️ Plan działań (ustalony 23.08, wciąż aktualny)
+### 🗺️ Plan działań (ustalony 23.08; Faza 1 zamknięta 10.10 — ADR-011)
 
 1. ✅ Nowe źródła danych (Priorytet #1) — zrobione (YC-OSS API, 30.08), **cały pipeline zmigrowany z NiFi na GitHub Actions 20.09**
-2. **Faza 1 — Wznowienie growth** — LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 284 zatwierdzonych narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
+2. ✅ **Faza 1 — Wznowienie growth — zamknięta 10.10.2026** (zob. `DECISIONS.md` ADR-011: główny czas → katalog + tanie SEO; LinkedIn nie jest kanałem growth, outreach minimalny). Pierwotny zakres: LinkedIn (2 posty, drafty odświeżone i zapisane w Notion jako osobna podstrona) + cold outreach do firm z listy 100 narzędzi. Katalog urósł z 3 do 284 zatwierdzonych narzędzi, fundament techniczny ustabilizowany — naturalny moment na wznowienie.
    - ✅ Post 1 LinkedIn (RODO/AI Act) — opublikowany 19.09.2026
    - ✅ Post 2 LinkedIn (5 narzędzi) — opublikowany 08.10.2026
-   - [ ] Cold outreach — w toku: runda 1 — 9 firm (do 03.10), runda 2 — 3 maile (08.10: Vespper, hiloop, Traceforce); 1 odpowiedź (Vespper, czekamy na dokument). Follow-upy do Fabraix, OneCLI, Erinys, Billow AI Labs wysłane 09.10 (ostatnie, bez dalszych ponowień)
+   - [x] Cold outreach — zamknięty jako działanie Fazy 1 (stan na 09.10): runda 1 — 9 firm (do 03.10), runda 2 — 3 maile (08.10: Vespper, hiloop, Traceforce); 1 odpowiedź (Vespper, czekamy na dokument). Follow-upy do Fabraix, OneCLI, Erinys, Billow AI Labs wysłane 09.10 (ostatnie, bez dalszych ponowień)
 3. **Faza 2 — Monetyzacja etap 2** — AdSense po przekroczeniu 1000 UV/mc (obecnie realny ruch zewnętrzny wciąż daleko od progu); rozważyć 2-3 kolejne programy afiliacyjne
 4. **Faza 3** — Newsletter, raport branżowy PDF (po ustabilizowaniu ruchu/bazy odbiorców)
 5. **Faza 4 — Artykuły o AI** — świadomie odłożone (ryzyko szkodliwości błędów, praw autorskich, art. 50 ust. 4 AI Act, koszt czasowy); wrócić gdy ruch i jakość pipeline'u dojrzeją
