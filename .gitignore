@@ -15,3 +15,5 @@ dist/
 # Ad-hoc script output (audit CSVs etc.)
 scraper/reports/
 
+
+frontend/.tmp-shots/
