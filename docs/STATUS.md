@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-10-10
+> Ostatnia aktualizacja: 2026-10-11
 
 ---
 
@@ -7,7 +7,7 @@
 
 | Element | Status |
 |---|---|
-| **Faza** | Projekt live, infrastruktura monetyzacji działa (Stripe + affiliate), przychód = 0 (stan na 20.09.2026). Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09). Ruch organiczny: wyświetlenia rosną, kliknięcia płaskie (patrz "Trend ruchu" niżej). 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. **Pipeline ETL w pełni zmigrowany z NiFi na GitHub Actions (PHP), NiFi zatrzymany (20.09).** |
+| **Faza** | Projekt live, infrastruktura monetyzacji działa (Stripe + affiliate), przychód = 0 (stan na 20.09.2026). Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09); **309 zatwierdzonych na 11.10**. Ruch organiczny: wyświetlenia spadły od połowy września, kliknięcia płaskie (patrz "Trend ruchu" niżej). 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. **Pipeline ETL w pełni zmigrowany z NiFi na GitHub Actions (PHP), NiFi zatrzymany (20.09).** |
 | **Domena** | ✅ aifirmy.pl (Cyberfolks) + www→apex redirect (Cloudflare) |
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
 | **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii |
@@ -326,10 +326,13 @@ Search Console pokazywał konsekwentny wzrost ruchu, ale GA4 uparcie pokazywał 
 | ~30.08 | ⚠️ 15 (niewiarygodne — patrz uwaga niżej) | — | 198 |
 | poprzednie 28 dni (do ~22.08) | 8 | 940 | — |
 | 19.09 (okno 28 dni) | 11 | 1 751 | — |
+| 11.10 (okno 28 dni: 11.09–08.10) | 8 | 477 | — |
 
 > ⚠️ **Okno czasowe kolumny "Kliknięcia" dla wierszy do ~30.08 jest niepewne** — nie wiadomo, czy to były 7 czy 28 dni. Wiersz "~30.08" (15 kliknięć) nie pasuje ani do okna 7 dni, ani do okna 28 dni względem sąsiednich potwierdzonych punktów — oznaczony jako niewiarygodny, nie usuwać z historii, ale nie traktować jako porównywalny punkt trendu. Od 19.09 zapisywać okno razem z liczbą (7 czy 28 dni).
 
 **Wyświetlenia rosną (940 → 1 751 w oknie 28 dni, +86%), kliknięcia płaskie (8 → 11)** — nie należy mówić o "konsekwentnym wzroście ruchu" bez rozróżnienia tych dwóch metryk; CTR realnie spada. Ciekawy wzorzec: strony narzędzi z tytułem zawierającym starą + nową nazwę po rebrandingu (np. "Brevo (dawniej Sendinblue)") notują nieproporcjonalnie duży wzrost wyświetleń — możliwy sygnał do świadomego stosowania przy innych narzędziach po zmianie nazwy.
+
+**Spadek wyświetleń (pomiar 11.10, katalog: 309 zatwierdzonych narzędzi):** spadek zaczął się 15–16.09 i postępował stopniowo do 22.09. Liczba stron z wyświetleniami spadła ze 125 do 36 (8–21.09 vs 25.09–8.10); utracone strony były na pozycjach 13–57. Inspekcja URL, sitemapa i przekierowania 301 są OK — brak przyczyny technicznej. Zmiana HTTPS (21.09) i spam update Google (24.09) nastąpiły po początku spadku, więc nie są jego przyczyną.
 
 **Pierwszy zaobserwowany zewnętrzny backlink** (23.08): `piperic.com` linkuje do wpisu o Descript.
 

@@ -426,7 +426,7 @@ Live; monetization infrastructure is live (Stripe + affiliate), revenue = 0 as o
 
 **Immediate next priorities (per ADR-011, 2026-10-10 — supersedes the Phase 1 growth priority from the 2026-08-23 roadmap and the 2026-09-13 strategic session; the development pause agreed 2026-09-13 has ended):**
 1. Catalog first — new entries and quality of existing pages (RODO/DPA/EU-hosting data, descriptions) plus cheap SEO fixes (title, meta). No new feature development; data-quality fixes are the explicit exception (see `docs/DECISIONS.md` ADR-011).
-2. Fix the pipeline prompt in `scraper/lib/openai.php` (it is written without Polish diacritics) before adding further entries — a data-quality fix, allowed under ADR-011.
+2. ~~Fix the pipeline prompt in `scraper/lib/openai.php` (it is written without Polish diacritics) before adding further entries~~ — **closed 2026-10-10:** the missing-diacritics problem concerned the old NiFi prompt; the PHP pipeline is OK, nothing to fix.
 3. Monitor traffic: Search Console clicks (28-day window) toward the ADR-011 checkpoint (~2027-01-25: below 100 clicks → Featured does not launch and the project goes into maintenance mode; 100 or more → prepare the Featured launch, earliest sales start 2027-02-01 per ADR-010), and longer-term toward the 1000 UV/month AdSense threshold
 4. Continue spot-checking "Zweryfikuj przez AI" results as more sourced tools accumulate, especially watching for category taxonomy gaps (the way Cyberbezpieczeństwo AI was discovered) and pricing_model disagreements (expected, not a bug — resolve per-case via manual research)
 5. Keep confirming the `scraper/` pipeline runs cleanly on its own schedule (check `admin/logs.php` and `scrape_queue` growth, not just individual workflow pass/fail badges)

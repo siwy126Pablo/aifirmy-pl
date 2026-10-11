@@ -518,6 +518,37 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.25] — 2026-10-11 (sesja SEO: title stron narzędzi, pomiar GSC, IndexNow, diagnoza spadku wyświetleń)
+
+### Zrobione
+- ✅ **Nowy `<title>` stron narzędzi** (`ea3f331`): wzorzec
+  `"{Nazwa} — RODO, DPA, AI Act | aifirmy.pl"`; jeśli wynik przekracza 60 znaków,
+  sufiks `" | aifirmy.pl"` jest pomijany. Na 309 zatwierdzonych narzędzi pełny
+  wzorzec ma 307 stron, skrócony 2, żadna nie przekracza 60 znaków. "RODO, DPA,
+  AI Act" to etykieta tematu, nie ocena zgodności. `og:title` i `twitter:title`
+  dostają ten sam tekst. W `Layout.astro` nowy opcjonalny prop `titleOverride`;
+  pozostałe strony (główna, `/narzedzia/`, kategorie) i meta description bez zmian
+- ✅ **Pomiar GSC** (okno 28 dni: 11.09–08.10): 8 kliknięć, 477 wyświetleń
+  (poprzedni pomiar, okno do 19.09: 11 kliknięć, 1 751 wyświetleń)
+- ✅ **Przegląd IndexNow, etap 1** — plik klucza w `frontend/public/` dodany
+  05.10 (`5038e44`). Stan Bing: 63 strony zaindeksowane, 41 wykluczone,
+  10 cytowań w AI Performance
+
+### Odkrycia / problemy
+- **Spadek wyświetleń w Google** — początek 15–16.09, stopniowy do 22.09. Liczba
+  stron z wyświetleniami spadła z 125 do 36 (8–21.09 vs 25.09–8.10); utracone
+  strony były na pozycjach 13–57
+- **Brak przyczyny technicznej**: inspekcja URL, sitemapa i przekierowania 301 OK
+- Zmiana HTTPS (21.09) i spam update Google (24.09) nastąpiły po początku spadku,
+  więc nie są jego przyczyną
+- GSC → Indeksowanie: "Strona zawiera przekierowanie" 106, 404: 40
+
+### Następny krok
+- Obserwować w GSC efekt nowego title (kliknięcia/wyświetlenia w oknie 28 dni)
+- Punkt kontrolny ADR-011 bez zmian (~25.01.2027, 100 kliknięć / 28 dni)
+
+---
+
 ```
 ## [v0.X] — [data]
 

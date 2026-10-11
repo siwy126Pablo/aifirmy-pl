@@ -143,6 +143,9 @@ natychmiastowego powiadamiania wyszukiwarki o nowych/zmienionych stronach zamias
 Przy regularnym dodawaniu nowych narzędzi do katalogu, tani sposób na przyspieszenie indeksacji w Bing.
 **Rekomendacja (niski/średni priorytet):** rozważyć wdrożenie IndexNow.
 
+**Aktualizacja 11.10.2026:** etap 1 IndexNow zrobiony 05.10 (`5038e44`) — plik klucza w
+`frontend/public/`. Aktualny stan Bing: patrz "Sesja 2026-10-11" na dole.
+
 **Do obserwacji w kolejnych sesjach:** czy liczba zaindeksowanych stron w Bing rośnie z tygodnia na
 tydzień (sitemapa jest poprawna, więc brak wzrostu po kilku tygodniach byłby sygnałem wartym zbadania).
 
@@ -167,7 +170,7 @@ Z `CONTENT-GUIDE.md`, sekcja 5 (checklist do audytu contentowego — częściowo
 3. Przejrzeć próbkę meta descriptions pod kątem superlatywów/halucynacji (nie tylko treść na stronie, ale konkretnie pole trafiające do `<meta description>`/OG/Twitter) — rozszerzyć checklistę `CONTENT-GUIDE.md` sekcja 5 o tę optykę
 
 **Średni priorytet:**
-4. Rozważyć wzbogacenie `<title>` o kategorię/wyróżnik zamiast generycznego `"{Nazwa} — aifirmy.pl"` — wymaga decyzji o dokładnym wzorcu i testu na próbce przed globalną zmianą
+4. ~~Rozważyć wzbogacenie `<title>` o kategorię/wyróżnik zamiast generycznego `"{Nazwa} — aifirmy.pl"`~~ ✅ **Zrobione 11.10.2026** (`ea3f331`) — wzorzec `"{Nazwa} — RODO, DPA, AI Act | aifirmy.pl"`, patrz "Sesja 2026-10-11"
 5. Dodać `BreadcrumbList` JSON-LD (tani do wdrożenia, poprawia rich snippets)
 
 **Niski priorytet / do obserwacji:**
@@ -268,6 +271,30 @@ przeglądarka Pabla z pełną historią domeny.
 
 **Otwarte na następną sesję:** sprawdzić w GSC, czy liczba "Strona zawiera przekierowanie" (91 na 13.09) i
 wpisy `http://` zaczęły spadać po naprawie z 21.09.
+
+### Sesja 2026-10-11 (title stron narzędzi, pomiar GSC, IndexNow, diagnoza spadku wyświetleń)
+
+**Zrobione:**
+- **Nowy `<title>` stron narzędzi** (`ea3f331`): `"{Nazwa} — RODO, DPA, AI Act | aifirmy.pl"`; gdy wynik
+  przekracza 60 znaków, sufiks `" | aifirmy.pl"` jest pomijany. Na 309 zatwierdzonych narzędzi pełny wzorzec
+  ma 307 stron, skrócony 2, żadna nie przekracza 60 znaków. "RODO, DPA, AI Act" to etykieta tematu, nie ocena
+  zgodności (nie zależy od `rodo_compliant`). `og:title` i `twitter:title` mają ten sam tekst; w `Layout.astro`
+  nowy opcjonalny prop `titleOverride`. Strona główna, `/narzedzia/`, kategorie i meta description bez zmian.
+  Zamyka punkt 4 rekomendacji.
+- **Pomiar GSC** (okno 28 dni: 11.09–08.10): 8 kliknięć, 477 wyświetleń (poprzednio, okno do 19.09:
+  11 kliknięć, 1 751 wyświetleń).
+- **Przegląd IndexNow, etap 1** — plik klucza dodany 05.10 (`5038e44`).
+
+**Znalezione:**
+- **Spadek wyświetleń w Google:** początek 15–16.09, stopniowy do 22.09. Liczba stron z wyświetleniami spadła
+  ze 125 do 36 (8–21.09 vs 25.09–8.10); utracone strony były na pozycjach 13–57.
+- **Brak przyczyny technicznej:** inspekcja URL, sitemapa i przekierowania 301 OK.
+- Zmiana HTTPS (21.09) i spam update Google (24.09) nastąpiły po początku spadku, więc nie są jego przyczyną.
+- **GSC → Indeksowanie:** "Strona zawiera przekierowanie" 106 (91 na 13.09), 404: 40 (1 na 13.09).
+- **Bing:** 63 strony zaindeksowane (1 na 20.09), 41 wykluczone, 10 cytowań w AI Performance.
+
+**Otwarte na następną sesję:** efekt nowego title w GSC (kliknięcia/wyświetlenia, okno 28 dni); czy liczba
+stron z wyświetleniami wraca; "Strona zawiera przekierowanie" i 404 w GSC; dalszy wzrost indeksacji w Bing.
 
 ---
 
