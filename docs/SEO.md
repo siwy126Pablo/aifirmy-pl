@@ -300,6 +300,9 @@ wpisy `http://` zaczęły spadać po naprawie z 21.09.
 - **Brak przyczyny technicznej:** inspekcja URL, sitemapa i przekierowania 301 OK.
 - Zmiana HTTPS (21.09) i spam update Google (24.09) nastąpiły po początku spadku, więc nie są jego przyczyną.
 - **GSC → Indeksowanie:** "Strona zawiera przekierowanie" 106 (91 na 13.09), 404: 40 (1 na 13.09).
+  Co najmniej jeden z tych 404 to odrzucony wpis sprzed v0.4: `uild-a-asic-gent-from-cratch-ools`
+  („Build a Basic AI Agent from Scratch: Tools", status `rejected`, slug sprzed naprawy `slugify()` z
+  09.06.2026) — 404 jest tu poprawne. Podejrzenie buga `slugify()` zamknięte 11.10 jako fałszywy alarm.
 - **Bing:** 63 strony zaindeksowane (1 na 20.09), 41 wykluczone, 10 cytowań w AI Performance.
 
 **Otwarte na następną sesję:** efekt nowego title w GSC (kliknięcia/wyświetlenia, okno 28 dni); czy liczba

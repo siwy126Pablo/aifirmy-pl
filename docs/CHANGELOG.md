@@ -550,6 +550,7 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 - Zmiana HTTPS (21.09) i spam update Google (24.09) nastąpiły po początku spadku,
   więc nie są jego przyczyną
 - GSC → Indeksowanie: "Strona zawiera przekierowanie" 106, 404: 40
+- Podejrzenie buga `slugify()` — fałszywy alarm (diagnoza 11.10 w Supabase SQL Editor): funkcja poprawnie obsługuje wielkie litery i polskie znaki, jedyna niezgodność nazwa↔slug wśród `approved` to świadomy legacy slug `brainware-kofax` („Brainware (Hyland)"), a `uild-a-asic-gent-from-cratch-ools` to odrzucony wpis sprzed naprawy z v0.4 (09.06.2026), więc jego 404 w GSC jest poprawne
 
 ### Następny krok
 - Obserwować w GSC efekt nowego title (kliknięcia/wyświetlenia w oknie 28 dni)
