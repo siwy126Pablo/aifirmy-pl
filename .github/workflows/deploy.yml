@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      submit_all:
+        description: 'IndexNow: zgłoś wszystkie URL-e z sitemapy (zamiast samej różnicy)'
+        type: boolean
+        default: false
 
 jobs:
   deploy:
@@ -27,6 +32,30 @@ jobs:
         env:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+
+      # IndexNow: deploy rusza przy każdym pushu (także docs-only), więc do Binga
+      # zgłaszamy tylko różnicę między sitemapą z produkcji (sprzed deployu)
+      # a sitemapą z nowego builda. Oba kroki IndexNow nigdy nie wywracają deployu.
+      - name: IndexNow — snapshot sitemapy z produkcji
+        id: indexnow_old
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          : > old-urls.txt
+          : > old-urls.tmp
+          fetch() { curl -fsS --max-time 30 --retry 2 -A "aifirmy-deploy (GitHub Actions)" "$1"; }
+          locs() { grep -o '<loc>[^<]*</loc>' | sed -e 's/<loc>//' -e 's/<\/loc>//'; }
+          skip() { echo "::warning::IndexNow: $1 — diff zostanie pominięty"; exit 0; }
+
+          index=$(fetch https://aifirmy.pl/sitemap-index.xml) || skip "nie udało się pobrać sitemap-index.xml z produkcji"
+          for sm in $(printf '%s' "$index" | locs | grep -E '^https://aifirmy\.pl/sitemap-[0-9]+\.xml$'); do
+            fetch "$sm" | locs >> old-urls.tmp || skip "nie udało się pobrać lub odczytać $sm"
+          done
+          [ -s old-urls.tmp ] || skip "sitemapa z produkcji nie zawiera żadnych URL-i"
+
+          LC_ALL=C sort -u old-urls.tmp > old-urls.txt
+          echo "fetched=true" >> "$GITHUB_OUTPUT"
+          echo "IndexNow: $(wc -l < old-urls.txt) URL-i w sitemapie produkcyjnej sprzed deployu"
 
       - name: Deploy via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -104,3 +133,63 @@ jobs:
           source: admin/
           target: /home/siwy126/domains/aifirmy.pl/public_html/
           strip_components: 0
+
+      - name: IndexNow — zgłoszenie zmienionych URL-i
+        continue-on-error: true
+        env:
+          SUBMIT_ALL: ${{ inputs.submit_all == true }}
+          OLD_FETCHED: ${{ steps.indexnow_old.outputs.fetched }}
+          # Klucz IndexNow jest publiczny z definicji (leży w frontend/public/), to nie sekret
+          INDEXNOW_KEY: 0f56fbd2a21b7e471ec892fee4c82d6c
+        run: |
+          set -uo pipefail
+          locs() { grep -o '<loc>[^<]*</loc>' | sed -e 's/<loc>//' -e 's/<\/loc>//'; }
+
+          : > new-urls.tmp
+          for f in frontend/dist/sitemap-*.xml; do
+            # sitemap-index.xml też pasuje do globa, a jego <loc> to pliki sitemapy, nie strony
+            if [ "$(basename "$f")" = "sitemap-index.xml" ]; then continue; fi
+            locs < "$f" >> new-urls.tmp || true
+          done
+          LC_ALL=C sort -u new-urls.tmp > new-urls.txt
+          if [ ! -s new-urls.txt ]; then
+            echo "::warning::IndexNow: brak URL-i w zbudowanej sitemapie (frontend/dist/sitemap-*.xml) — nic nie zgłaszam"
+            exit 0
+          fi
+
+          if [ "$SUBMIT_ALL" = "true" ]; then
+            echo "IndexNow: submit_all=true — zgłaszam wszystkie URL-e z nowej sitemapy"
+            cp new-urls.txt submit-urls.txt
+          elif [ "$OLD_FETCHED" != "true" ]; then
+            echo "::warning::IndexNow: brak sitemapy produkcyjnej sprzed deployu — diff pominięty, nic nie zgłaszam"
+            exit 0
+          else
+            LC_ALL=C comm -13 old-urls.txt new-urls.txt > added-urls.txt
+            LC_ALL=C comm -23 old-urls.txt new-urls.txt > removed-urls.txt
+            echo "IndexNow: dodane $(wc -l < added-urls.txt), usunięte $(wc -l < removed-urls.txt)"
+            cat added-urls.txt removed-urls.txt > submit-urls.txt
+          fi
+
+          if [ ! -s submit-urls.txt ]; then
+            echo "::notice::IndexNow: brak zmian, pomijam"
+            exit 0
+          fi
+
+          echo "IndexNow: zgłaszam $(wc -l < submit-urls.txt) URL-i, pierwsze 10:"
+          head -n 10 submit-urls.txt
+
+          # Limit protokołu: 10 000 URL-i na żądanie
+          split -l 10000 submit-urls.txt indexnow-batch-
+          for batch in indexnow-batch-*; do
+            jq -Rn --arg key "$INDEXNOW_KEY" \
+              '{host: "aifirmy.pl", key: $key, keyLocation: ("https://aifirmy.pl/" + $key + ".txt"), urlList: [inputs]}' \
+              < "$batch" > indexnow-payload.json
+            code=$(curl -s -o indexnow-response.txt -w '%{http_code}' --max-time 30 \
+              -X POST -H 'Content-Type: application/json; charset=utf-8' \
+              --data-binary @indexnow-payload.json https://www.bing.com/indexnow) || true
+            if [ "$code" = "200" ] || [ "$code" = "202" ]; then
+              echo "::notice::IndexNow: zgłoszono $(wc -l < "$batch") URL-i, HTTP $code"
+            else
+              echo "::warning::IndexNow: zgłoszenie $(wc -l < "$batch") URL-i nieudane, HTTP $code: $(head -c 300 indexnow-response.txt 2>/dev/null)"
+            fi
+          done
