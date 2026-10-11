@@ -533,6 +533,14 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 - ✅ **Przegląd IndexNow, etap 1** — plik klucza w `frontend/public/` dodany
   05.10 (`5038e44`). Stan Bing: 63 strony zaindeksowane, 41 wykluczone,
   10 cytowań w AI Performance
+- ✅ **IndexNow, etap 2a** (`cf343af`, `deploy.yml`): przy każdym deployu
+  porównanie sitemapy z produkcji (sprzed deployu) z sitemapą z nowego builda;
+  dodane i usunięte URL-e idą POST-em do `www.bing.com/indexnow`. Nowy input
+  `submit_all` w `workflow_dispatch` (zgłasza wszystkie URL-e z sitemapy). Oba
+  kroki mają `continue-on-error`, więc IndexNow nie wywraca deployu; gdy sitemapy
+  z produkcji nie da się pobrać, diff jest pomijany i nic nie jest zgłaszane.
+  Weryfikacja: push + Run workflow (`submit_all=false`) → oba "brak zmian,
+  pomijam". Prawdziwy POST jeszcze nie wykonany
 
 ### Odkrycia / problemy
 - **Spadek wyświetleń w Google** — początek 15–16.09, stopniowy do 22.09. Liczba
@@ -546,6 +554,9 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 ### Następny krok
 - Obserwować w GSC efekt nowego title (kliknięcia/wyświetlenia w oknie 28 dni)
 - Punkt kontrolny ADR-011 bez zmian (~25.01.2027, 100 kliknięć / 28 dni)
+- IndexNow: sprawdzić pierwsze realne zgłoszenie (log/adnotacja kroku w Actions
+  po dodaniu lub usunięciu narzędzia); etap 2b (zmiany treści bez zmiany URL)
+  do decyzji po kilku dniach
 
 ---
 

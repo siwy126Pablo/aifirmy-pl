@@ -146,6 +146,11 @@ Przy regularnym dodawaniu nowych narzędzi do katalogu, tani sposób na przyspie
 **Aktualizacja 11.10.2026:** etap 1 IndexNow zrobiony 05.10 (`5038e44`) — plik klucza w
 `frontend/public/`. Aktualny stan Bing: patrz "Sesja 2026-10-11" na dole.
 
+**Etap 2a zrobiony 11.10.2026** (`cf343af`): `deploy.yml` przy każdym deployu porównuje sitemapę z
+produkcji z sitemapą z nowego builda i zgłasza do `www.bing.com/indexnow` tylko dodane i usunięte URL-e.
+Input `submit_all` w `workflow_dispatch` zgłasza wszystkie. Zmiany treści bez zmiany URL nie są
+zgłaszane (etap 2b, do decyzji).
+
 **Do obserwacji w kolejnych sesjach:** czy liczba zaindeksowanych stron w Bing rośnie z tygodnia na
 tydzień (sitemapa jest poprawna, więc brak wzrostu po kilku tygodniach byłby sygnałem wartym zbadania).
 
@@ -284,6 +289,10 @@ wpisy `http://` zaczęły spadać po naprawie z 21.09.
 - **Pomiar GSC** (okno 28 dni: 11.09–08.10): 8 kliknięć, 477 wyświetleń (poprzednio, okno do 19.09:
   11 kliknięć, 1 751 wyświetleń).
 - **Przegląd IndexNow, etap 1** — plik klucza dodany 05.10 (`5038e44`).
+- **IndexNow, etap 2a** (`cf343af`, `deploy.yml`): diff sitemapy produkcja vs build → dodane i usunięte URL-e
+  POST-em do `www.bing.com/indexnow`; input `submit_all` w `workflow_dispatch`; `continue-on-error`, więc
+  IndexNow nie wywraca deployu. Weryfikacja: push + Run workflow → "brak zmian, pomijam". Prawdziwy POST
+  jeszcze nie wykonany.
 
 **Znalezione:**
 - **Spadek wyświetleń w Google:** początek 15–16.09, stopniowy do 22.09. Liczba stron z wyświetleniami spadła
@@ -294,7 +303,9 @@ wpisy `http://` zaczęły spadać po naprawie z 21.09.
 - **Bing:** 63 strony zaindeksowane (1 na 20.09), 41 wykluczone, 10 cytowań w AI Performance.
 
 **Otwarte na następną sesję:** efekt nowego title w GSC (kliknięcia/wyświetlenia, okno 28 dni); czy liczba
-stron z wyświetleniami wraca; "Strona zawiera przekierowanie" i 404 w GSC; dalszy wzrost indeksacji w Bing.
+stron z wyświetleniami wraca; "Strona zawiera przekierowanie" i 404 w GSC; dalszy wzrost indeksacji w Bing;
+pierwsze realne zgłoszenie IndexNow (log kroku w Actions); decyzja o etapie 2b (zmiany treści bez zmiany
+URL) po kilku dniach.
 
 ---
 
