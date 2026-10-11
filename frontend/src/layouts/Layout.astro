@@ -4,6 +4,8 @@ import CookieConsent from '../components/CookieConsent.astro';
 
 interface Props {
   title: string;
+  // Gotowy tytuł strony — pomija domyślny sufiks " — aifirmy.pl".
+  titleOverride?: string;
   description: string;
   ogImage?: string;
   ogType?: 'website' | 'article';
@@ -11,13 +13,14 @@ interface Props {
 
 const {
   title,
+  titleOverride,
   description,
   ogImage = '/og-default.png',
   ogType = 'website',
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const fullTitle = `${title} — aifirmy.pl`;
+const fullTitle = titleOverride ?? `${title} — aifirmy.pl`;
 const path = Astro.url.pathname;
 
 const navLinks = [

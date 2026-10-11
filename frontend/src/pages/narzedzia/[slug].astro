@@ -168,6 +168,11 @@ const faqs = [
   },
 ];
 
+// "RODO, DPA, AI Act" to etykieta tematu strony, nie ocena zgodności —
+// nie uzależniać od rodo_compliant/dpa_available/ai_act_risk.
+const topicTitle = `${tool.name} — RODO, DPA, AI Act`;
+const pageTitle = `${topicTitle} | aifirmy.pl`.length > 60 ? topicTitle : `${topicTitle} | aifirmy.pl`;
+
 const schema = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -193,6 +198,7 @@ const faqSchema = JSON.stringify({
 
 <Layout
   title={tool.name}
+  titleOverride={pageTitle}
   description={tool.tagline_pl ?? tool.description_pl ?? ''}
 >
   <Fragment slot="head">
