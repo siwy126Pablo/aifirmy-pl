@@ -134,7 +134,7 @@ Ocena strony jako systemu graficznego: czy typografia, kolory i ikony tworzą sp
 
 **Doprecyzowanie:** zasada dotyczy wyłącznie kolorów UI z tokenów (`--color-accent`, `indigo-600`). Ilustracja riso to raster z własnymi kolorami (pomarańcz H≈38°, drukarski granat o jasności ≈0.45), świadomie niedopasowanymi do hexów marki (decyzja 26.09). Nie podlega tej zasadzie i nie należy z niej pobierać wartości kolorów do tokenów. Uwaga do sformułowania z 22.09: accent to dziś nie tylko CTA, ale też highlight-bar w hero, czyli element typograficzny, nie akcja. Mieści się w "wyłącznie hero i dark band".
 
-**Otwarte (bez zmian):** 🟡 skala typograficzna, 🟡 pole `icon` w DB, 🟢 znak marki; `frontend/.tmp-shots/` z sesji 22.09 nadal istnieje na dysku (dodany do `.gitignore` lokalnie, niescommitowane), więc nieusunięty.
+**Otwarte (bez zmian):** 🟡 skala typograficzna, 🟡 pole `icon` w DB, 🟢 znak marki; `frontend/.tmp-shots/` z sesji 22.09 nadal istnieje na dysku (dodany do `.gitignore` lokalnie, niescommitowane), więc nieusunięty. **Aktualizacja 11.10:** `.gitignore` commitowany (`7a64404`); 11.10 katalogu brak na jednym z komputerów — do sprawdzenia i ewentualnego usunięcia na drugim.
 
 ---
 

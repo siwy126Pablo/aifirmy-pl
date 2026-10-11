@@ -195,7 +195,7 @@ Realizacja punktów z audytu UX (pełna lista i historia rund: `UX-AUDIT.md`, No
 - RODO/DPA/hosting UE zebrane web searchem dla ~35 narzędzi (m.in. n8n, UiPath, Mixpanel, Contentsquare/Hotjar — hosting UE potwierdzony; Fathom, Linear — potwierdzone "Nie")
 - **Nowe funkcje panelu:** ręczna edycja `description_pl`/`best_for_pl` (wolny tekst, `fb571b0`), `pricing_model` (select, `398c151`) i `name` (input, `793ef84`) w modalu "Edytuj" — niezależnie od "Zweryfikuj przez AI" (przydatne, gdy regeneracja daje gorszy wynik niż to, co już jest w bazie). `name` ma `maxlength="30"` — limit czysto UI-owy (potwierdzone: brak CHECK constraint na kolumnie w bazie); po zapisie nazwa w wierszu tabeli jest synchronizowana bez przeładowania
 
-**Potwierdzony wzorzec:** regeneracja AI systematycznie gubi polski kontekst rynkowy wpisany ręcznie w sierpniu (Rossum straciło wzmiankę o KSeF, Surfer SEO i Woodpecker.co straciły fakt bycia polskimi firmami z Wrocławia). Potwierdzone też na Exact Online, Typeform i UiPath. Surfer SEO to polska firma z Wrocławia (potwierdzone w KRS), Woodpecker.co jest notowany na GPW (WPR) — żaden opis w bazie tego dziś nie wspomina, ręczne dopisanie do rozważenia (patrz Backlog).
+**Potwierdzony wzorzec:** regeneracja AI systematycznie gubi polski kontekst rynkowy wpisany ręcznie w sierpniu (Rossum straciło wzmiankę o KSeF, Surfer SEO i Woodpecker.co straciły fakt bycia polskimi firmami z Wrocławia). Potwierdzone też na Exact Online, Typeform i UiPath. Surfer SEO to polska firma z Wrocławia (potwierdzone w KRS); Woodpecker.co: notowanie na GPW niepotwierdzone co do rynku (główny vs NewConnect), nie używać w treściach bez sprawdzenia — żaden opis w bazie tego dziś nie wspomina, ręczne dopisanie do rozważenia (patrz Backlog) (zrobione 04.10).
 ---
 
 ## ✅ Audyt `website_url` całego katalogu (16–19.09) — zamknięty
@@ -406,7 +406,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] **Weryfikacja pierwszego przebiegu `url-audit.yml` (1.10.2026 lub najbliższa okazja ręcznego odpalenia).** **Właściciel: sesja techniczna z Claude Code (lub Pablo ręcznie) — NIE sesja strategiczna/analityczna.** Po pierwszym rzeczywistym uruchomieniu (zaplanowanym lub przez `workflow_dispatch`) sprawdzić w `admin/logs.php` (source=`url_audit`) albo w artefakcie CSV, czy mechanizm faktycznie zadziałał end-to-end na żywym przebiegu, nie tylko przy wcześniejszych testach ręcznych. Ten sam wzorzec weryfikacji co przy pierwszym rzeczywistym teście kroku czyszczącego w `deploy.yml` (09.09.2026)
 - [ ] Amorphic Labs — możliwa nazwa firmy zamiast nazwy produktu; sprawdzić, czy nazwa w bazie powinna brzmieć "AgentMuxer"
 - [ ] Brainware — decyzja ws. opisu (URL/nazwa/kategoria/cennik/logo już poprawione; nowy opis poprawny co do firmy, ale bez polskiego kontekstu z oryginału)
-- [ ] Surfer SEO i Woodpecker.co — obie polskie firmy z Wrocławia (Woodpecker notowany na GPW: WPR), żaden opis w bazie tego nie wspomina — rozważyć ręczne dopisanie przez modal "Edytuj"
+- [x] Surfer SEO i Woodpecker.co — obie polskie firmy z Wrocławia. Zrobione 04.10: polskie pochodzenie widoczne w opisach, zweryfikowane na żywo. Woodpecker: notowanie na GPW niepotwierdzone co do rynku (główny vs NewConnect) — nie używać w treściach bez sprawdzenia
 - [x] Badge "Najpopularniejszy" na `/premium` — usunięty 2026-09-20 (`1a4b3b9`)
 - [ ] ⛔ Podpięcie wypłat Stripe/PayPal w PartnerStack (ręcznie, Pablo) — **wstrzymane do decyzji prawnej** (patrz `DECISIONS.md` ADR-010: warunek 60 miesięcy dla działalności nierejestrowanej prawdopodobnie niespełniony do 1.02.2027, wypłaty affiliate na osobę fizyczną wstrzymane do potwierdzenia z księgowym)
 - [ ] Newsletter, raport branżowy PDF, konta premium@/newsletter@
@@ -441,6 +441,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
   scraper/lib/openai.php, verify_tool.php (kategorie pobierane z bazy),
   category-colors.ts, CategoryIcon.astro.
 - [ ] Vespper — po odpowiedzi z linkiem/dokumentem ustawić RODO/hosting UE/DPA w panelu i zweryfikować źródło obecnego `dpa_available=true` (brak publicznego źródła na 08.10)
+- [ ] `ARCHITECTURE.md` nieaktualny: sekcje „AI Prompt", „CMS / Admin: Supabase Studio" (+ linia 110 o moderacji w Studio) i ADR-005 jako otwarta decyzja (linie 12, 151) — stan faktyczny w `CLAUDE.md`. Niska pilność.
 
 ---
 

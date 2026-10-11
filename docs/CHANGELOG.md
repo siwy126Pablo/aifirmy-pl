@@ -452,6 +452,35 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.21a] — 2026-10-04 (przegląd pól RODO/DPA/hosting UE ze stanem „Nie")
+
+> Wpis uzupełniony 11.10 na podstawie Notion.
+
+### Zrobione
+- ✅ **Przegląd 16 narzędzi z `rodo_compliant=false`:** 9 → RODO tak / DPA dostępna
+  (Apollo.io, Clearbit, Zapier AI, Looker Studio, Perplexity, Grammarly, Otter.ai,
+  Paradox AI, LegalSifter); 4 → wszystko niezweryfikowane (Grain, LegalZoom AI,
+  Speechify, Runway ML); Elfsight (DPA niedostępna wg producenta) i Elite (dane
+  tylko w USA wg producenta), reszta niezweryfikowana; Alkera zostaje RODO nie
+  (sama deklaruje GDPR „pending")
+- ✅ **Przegląd `dpa_available=false` / `eu_data_hosting=false` (7 wpisów):**
+  5 potwierdzonych bez zmian; Linear hosting → Tak (region UE przy tworzeniu
+  workspace), Typeform hosting → niezweryfikowane, DPA → dostępna
+- ✅ Clearbit: opis, cena (paid) i „Dla" poprawione (dziś Breeze Intelligence
+  w HubSpot)
+- ✅ FAQ dla stanu `false`: „dostawca deklaruje" zamiast „zweryfikowano
+  niezgodność" + reguła w `CONTENT-GUIDE.md` (`227a176`)
+
+### Decyzje
+- Elite zostaje w katalogu — informacja „dane tylko w USA" to dokładnie to, co
+  katalog ma pokazywać
+
+### Lekcja
+- Hosting „Nie" sprawdzać na stronie bezpieczeństwa producenta, nie w starej
+  polityce prywatności ani opracowaniach stron trzecich
+
+---
+
 ## [v0.22] — 2026-10-08 (growth: Post 2 + outreach runda 2)
 
 ### Zrobione

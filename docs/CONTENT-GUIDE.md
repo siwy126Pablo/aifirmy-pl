@@ -48,7 +48,7 @@ Reguły:
 - Wartość `false` w polach `rodo_compliant` / `dpa_available` / `eu_data_hosting` ustawiamy wyłącznie wtedy, gdy dostawca sam to deklaruje (oficjalna dokumentacja). W pozostałych przypadkach pole zostaje `NULL` (Nie zweryfikowano)
 - Każde wyjaśnienie kończy się praktyczną wskazówką ("warto zweryfikować przed wdrożeniem"), nie zostawia czytelnika z samym faktem
 - Zawsze neutralny ton prawny — nie strasz, nie uspokajaj, informuj
-- **Spójność z UI:** treść FAQ i etykiety badge'y muszą komunikować to samo. Jeśli FAQ mówi "nie potwierdzono", badge nie może mówić "Nie" (patrz otwarty punkt w sekcji 5 — już zgłoszony w sesji UX 13.09)
+- **Spójność z UI:** treść FAQ i etykiety badge'y muszą komunikować to samo. Jeśli FAQ mówi "nie potwierdzono", badge nie może mówić "Nie" (rozstrzygnięte: pola 3-stanowe od 14.09, badge „Nie zweryfikowano"; FAQ dla `false` = „dostawca deklaruje" od 04.10, `227a176`)
 
 ## 4. Spójność microcopy
 
@@ -58,7 +58,7 @@ Reguły:
 | Etykiety cennika | `pricingLabels` w `category-colors.ts` | Darmowe / Freemium / Płatne / Open source — jedno źródło, nie duplikować lokalnie |
 | Etykiety AI Act | `aiActRiskColors` | Minimalny / Ograniczony / Wysoki / Niedopuszczalny — pełne + `shortLabel` |
 | Disclosure afiliacyjny | karta (tooltip), detal (tekst) | Świadomie różne wzorce — nie ujednolicać (patrz CLAUDE.md) |
-| Badge zgodności (RODO/DPA/PL UI) | sekcja "Zgodność i dane" | ✗/✓ Nie/Tak — **do przeglądu, patrz sekcja 5** |
+| Badge zgodności (RODO/DPA/PL UI) | sekcja "Zgodność i dane" | ✓ Tak / ✗ Nie / Nie zweryfikowano — 3 stany od 14.09, Interfejs PL od 23.09 (rozstrzygnięte, patrz sekcja 5) |
 
 ## 5. Znane code smells contentowe — checklist do audytu
 
@@ -72,7 +72,7 @@ Punkty kontrolne przy każdym cyklicznym audycie (próbka losowa 15-20 wpisów):
 - [ ] **Generyczność bez konkretu** — opis, który pasowałby do dowolnego narzędzia w kategorii (brak nazw funkcji, integracji, konkretnego przypadku użycia)
 - [ ] **Ton marketingowy** — wykrzykniki, superlatywy, przenikające z one_linera YC lub landing page mimo instrukcji w prompcie
 
-**Otwarte pytanie projektowe (nie językowe, dotyczy szablonu):** binarne badge "✗ Nie" dla `rodo_compliant`/`dpa_available` przy niezweryfikowanych polach — zgłoszone równolegle w sesji UX 13.09, jedna decyzja do podjęcia dla obu wątków.
+**Pytanie projektowe (nie językowe, dotyczy szablonu) — rozstrzygnięte:** binarne badge "✗ Nie" dla `rodo_compliant`/`dpa_available` przy niezweryfikowanych polach — zgłoszone równolegle w sesji UX 13.09. Od 14.09 pola są 3-stanowe (badge „Nie zweryfikowano"), a od 04.10 FAQ dla `false` mówi „dostawca deklaruje" (`227a176`).
 
 ---
 
