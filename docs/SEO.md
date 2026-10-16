@@ -149,7 +149,7 @@ Przy regularnym dodawaniu nowych narzędzi do katalogu, tani sposób na przyspie
 **Etap 2a zrobiony 11.10.2026** (`cf343af`): `deploy.yml` przy każdym deployu porównuje sitemapę z
 produkcji z sitemapą z nowego builda i zgłasza do `www.bing.com/indexnow` tylko dodane i usunięte URL-e.
 Input `submit_all` w `workflow_dispatch` zgłasza wszystkie. Zmiany treści bez zmiany URL nie są
-zgłaszane (etap 2b, do decyzji).
+zgłaszane — etap 2b zamknięty 16.10 decyzją "nie robimy" (patrz niżej).
 
 **Etap 2a zweryfikowany 16.10.2026:** pierwsze realne zgłoszenie 13.10; adnotacje kroku w Actions zgadzają
 się 1:1 z listą zgłoszonych URL-i w Bing WMT. Szczegóły: "Sesja 2026-10-16" na dole.
@@ -338,7 +338,13 @@ IndexNow w Bing Webmaster Tools (przez connector Chrome).
 - **Ostrzeżenia w adnotacjach `deploy.yml`:** `ubuntu-latest` przechodzi na Ubuntu 26 od 19.10.2026 (dotyczy
   też workflowów scrapera i url-audit); `actions/checkout@v4` i `actions/setup-node@v4` targetują Node 20 i są wymuszane na Node 24.
 
-**Otwarte na następną sesję:** decyzja o etapie 2b (zmiany treści bez zmiany URL); pierwsze przebiegi
+**Decyzja — etap 2b (zmiany treści bez zmiany URL): nie robimy.** Po większej partii poprawek w panelu
+deploy z `submit_all`; pojedyncze edycje Bing złapie przy własnym recrawlu. Powód: Bing ma zaindeksowanych
+89 z ok. 330 stron, edycji jest mało, a ADR-011 preferuje tanie ruchy bez nowej logiki w CI. Do rozważenia
+wariant z `<lastmod>` w sitemapie (diff po dacie zmiany), jeśli kiedyś `lastmod` będzie potrzebny dla
+Google — najpierw sprawdzić, czy `tools.updated_at` jest wiarygodne.
+
+**Otwarte na następną sesję:** pierwsze przebiegi
 workflowów po migracji na Ubuntu 26 (od 19.10); dalszy wzrost indeksacji w Bing; efekt nowego title w GSC
 (ok. 8.11).
 

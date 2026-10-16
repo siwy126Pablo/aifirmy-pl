@@ -601,13 +601,17 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 - ✅ **Stan Bing:** 89 stron zaindeksowanych (11.10: 63), 31 wykluczonych (41),
   3 ostrzeżenia
 
+- ✅ **IndexNow etap 2b — decyzja: nie robimy.** Zmiany treści bez zmiany URL
+  nie są zgłaszane automatycznie; po większej partii poprawek deploy z
+  `submit_all`. Wariant z `<lastmod>` w sitemapie do rozważenia, gdy będzie
+  potrzebny dla Google
+
 ### Odkrycia / problemy
 - Adnotacje Actions: `ubuntu-latest` → Ubuntu 26 od 19.10.2026; `checkout@v4`
   i `setup-node@v4` (Node 20) wymuszane na Node 24 — na razie tylko ostrzeżenia
 
 ### Następny krok
 - Sprawdzić pierwsze przebiegi deploy + 4 scraperów + url-audit po 19.10
-- IndexNow etap 2b (zmiany treści bez zmiany URL) — do decyzji
 
 ---
 
