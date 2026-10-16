@@ -590,6 +590,27 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.26] — 2026-10-16 (weryfikacja IndexNow etap 2a)
+
+### Zrobione
+- ✅ **IndexNow 2a zweryfikowane:** adnotacje kroku w Actions zgodne 1:1 z listą
+  zgłoszonych URL-i w Bing WMT — #269 (13.10) 1 URL, #270 (14.10) 3, #272 (15.10)
+  2 (`papaya`, `agent-relay`), #275 (16.10) 1 (`plyxl`), wszystkie HTTP 200;
+  deploye bez nowych narzędzi → "brak zmian, pomijam". Pierwsze realne
+  zgłoszenie: 13.10
+- ✅ **Stan Bing:** 89 stron zaindeksowanych (11.10: 63), 31 wykluczonych (41),
+  3 ostrzeżenia
+
+### Odkrycia / problemy
+- Adnotacje Actions: `ubuntu-latest` → Ubuntu 26 od 19.10.2026; `checkout@v4`
+  i `setup-node@v4` (Node 20) wymuszane na Node 24 — na razie tylko ostrzeżenia
+
+### Następny krok
+- Sprawdzić pierwsze przebiegi deploy + 4 scraperów + url-audit po 19.10
+- IndexNow etap 2b (zmiany treści bez zmiany URL) — do decyzji
+
+---
+
 ```
 ## [v0.X] — [data]
 

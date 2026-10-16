@@ -151,6 +151,9 @@ produkcji z sitemapą z nowego builda i zgłasza do `www.bing.com/indexnow` tylk
 Input `submit_all` w `workflow_dispatch` zgłasza wszystkie. Zmiany treści bez zmiany URL nie są
 zgłaszane (etap 2b, do decyzji).
 
+**Etap 2a zweryfikowany 16.10.2026:** pierwsze realne zgłoszenie 13.10; adnotacje kroku w Actions zgadzają
+się 1:1 z listą zgłoszonych URL-i w Bing WMT. Szczegóły: "Sesja 2026-10-16" na dole.
+
 **Do obserwacji w kolejnych sesjach:** czy liczba zaindeksowanych stron w Bing rośnie z tygodnia na
 tydzień (sitemapa jest poprawna, więc brak wzrostu po kilku tygodniach byłby sygnałem wartym zbadania).
 
@@ -309,6 +312,35 @@ wpisy `http://` zaczęły spadać po naprawie z 21.09.
 stron z wyświetleniami wraca; "Strona zawiera przekierowanie" i 404 w GSC; dalszy wzrost indeksacji w Bing;
 pierwsze realne zgłoszenie IndexNow (log kroku w Actions); decyzja o etapie 2b (zmiany treści bez zmiany
 URL) po kilku dniach.
+
+### Sesja 2026-10-16 (weryfikacja IndexNow etap 2a, stan Bing)
+
+**Zrobione:** przegląd adnotacji kroku IndexNow we wszystkich deployach od 11.10 i porównanie z zakładką
+IndexNow w Bing Webmaster Tools (przez connector Chrome).
+
+| Run | Data | Adnotacja w Actions | Bing WMT (Submitted URLs) |
+|---|---|---|---|
+| #269 | 13.10 | zgłoszono 1 URL-i, HTTP 200 | `pomerado` |
+| #270 | 14.10 | zgłoszono 3 URL-i, HTTP 200 | `boxesdev`, `byteask`, `caveman` |
+| #271 | 14.10 | brak zmian, pomijam | — |
+| #272 | 15.10 | zgłoszono 2 URL-i, HTTP 200 | `papaya`, `agent-relay` |
+| #273, #274 | 15.10 | brak zmian, pomijam | — |
+| #275 | 16.10 | zgłoszono 1 URL-i, HTTP 200 | `plyxl` |
+
+**Znalezione:**
+- **IndexNow 2a działa end-to-end:** pierwsze realne zgłoszenie 13.10 (#269); deploye bez nowych narzędzi
+  poprawnie nic nie wysyłają. Pełnych logów kroków nie sprawdzono (Chrome niezalogowany do GitHuba) —
+  weryfikacja na podstawie adnotacji i listy w Bing.
+- **Bing:** 89 stron zaindeksowanych (11.10: 63), 31 wykluczonych (41), 3 ostrzeżenia. Search Performance od
+  13.09: 1 kliknięcie, 15 wyświetleń. Wykres IndexNow pokazuje 328 zgłoszeń (324 + 1 + 3) — 15–16.10 jeszcze
+  nie wliczone, choć są już na liście URL-i. Z 05.10 lista pokazuje tylko stronę główną zamiast 324 URL-i;
+  licznik się zgadza, więc traktowane jako sposób prezentacji w Bing.
+- **Ostrzeżenia w adnotacjach `deploy.yml`:** `ubuntu-latest` przechodzi na Ubuntu 26 od 19.10.2026 (dotyczy
+  też workflowów scrapera i url-audit); `actions/checkout@v4` i `actions/setup-node@v4` targetują Node 20 i są wymuszane na Node 24.
+
+**Otwarte na następną sesję:** decyzja o etapie 2b (zmiany treści bez zmiany URL); pierwsze przebiegi
+workflowów po migracji na Ubuntu 26 (od 19.10); dalszy wzrost indeksacji w Bing; efekt nowego title w GSC
+(ok. 8.11).
 
 ---
 
