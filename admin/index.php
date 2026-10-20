@@ -277,6 +277,8 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         .badge-gray { background: #f3f4f6; color: #6b7280; }
         .badge-red { background: #fee2e2; color: #dc2626; }
         .desc { max-width: 400px; white-space: normal; line-height: 1.5; }
+        /* Pełny URL zamiast "Link →" — przy kopiowaniu wierszy do moderacji adres trafia do schowka razem z opisem. */
+        .src-url { max-width: 240px; white-space: normal; word-break: break-all; font-size: 12px; }
         .actions { display: flex; gap: 8px; }
         .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
         .stat { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
@@ -393,7 +395,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             <td><strong><?= htmlspecialchars($item['raw_name'] ?? '') ?></strong></td>
             <td class="desc"><?= htmlspecialchars($item['ai_description'] ?? '') ?></td>
             <td><span class="badge badge-blue"><?= htmlspecialchars($item['ai_category'] ?? '') ?></span></td>
-            <td><a href="<?= htmlspecialchars($item['source_url'] ?? '') ?>" target="_blank" style="color:#4f46e5">Link →</a></td>
+            <td class="src-url"><a href="<?= htmlspecialchars($item['source_url'] ?? '') ?>" target="_blank" rel="noopener" style="color:#4f46e5"><?= htmlspecialchars($item['source_url'] ?? '') ?></a></td>
             <td><?= $item['scraped_at'] ? date('d.m H:i', strtotime($item['scraped_at'])) : '' ?></td>
             <td>
                 <div class="actions">
@@ -439,7 +441,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         <tr>
             <td><strong><?= htmlspecialchars($item['raw_name'] ?? '') ?></strong></td>
             <td class="desc"><?= htmlspecialchars($item['ai_description'] ?? '') ?></td>
-            <td><a href="<?= htmlspecialchars($item['source_url'] ?? '') ?>" target="_blank" style="color:#4f46e5">Link →</a></td>
+            <td class="src-url"><a href="<?= htmlspecialchars($item['source_url'] ?? '') ?>" target="_blank" rel="noopener" style="color:#4f46e5"><?= htmlspecialchars($item['source_url'] ?? '') ?></a></td>
             <td><?= $item['scraped_at'] ? date('d.m H:i', strtotime($item['scraped_at'])) : '' ?></td>
             <td>
                 <div class="actions">
