@@ -6,7 +6,10 @@ require_once __DIR__ . '/openai.php';
 require_once __DIR__ . '/logging.php';
 
 // Wspólny końcowy odcinek dla HN/BetaList/Product Hunt: dedup po source_url →
-// OpenAI (bez source_context — te źródła go nie mają) → insert do scrape_queue.
+// OpenAI → insert do scrape_queue. $rawDesc (BetaList/PH: summary z feedu Atom,
+// do 1000 znaków) idzie do OpenAI jako Kontekst — bez niego model zmyślał opisy
+// ogólnikowych nazw (19.10: 4/9 „Platforma AI do X”). HN przekazuje null →
+// Kontekst „brak”, jak wcześniej.
 // Ta sama sekwencja co w yc_oss.php; $stats aktualizowane przez referencję
 // (klucze: duplicates, inserted, rejected, errors).
 function enqueue_candidate(
@@ -33,7 +36,7 @@ function enqueue_candidate(
     }
 
     try {
-        $ai = call_openai_description($name, $url, '');
+        $ai = call_openai_description($name, $url, $rawDesc ?? '');
     } catch (\Throwable $e) {
         $stats['errors']++;
         scraper_log('error', 'Błąd wywołania OpenAI: ' . $e->getMessage(), [
