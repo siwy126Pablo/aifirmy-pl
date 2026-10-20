@@ -615,6 +615,43 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.27] — 2026-10-20 (jakość potoku scrapera — wyjątek ADR-011: data quality)
+
+### Zrobione
+- ✅ **Summary z feedu jako kontekst OpenAI dla BetaList/PH** (`7786443`):
+  `enqueue_candidate()` przekazuje `raw_desc` zamiast `''`; HN bez zmian
+  ("brak"). Powód: 19.10 4/9 opisów „Platforma AI do X” zmyślonych z samej nazwy
+- ✅ **BetaList — `source_url` = domena produktu** (`8d0f460`): rozwiązanie
+  `…/startups/slug/visit` (302) bez pobierania strony produktu, obcięte query i
+  `#`. Dedup po obu adresach (adres katalogu zostaje w `raw_json.listing_url`,
+  historyczne wiersze go mają). Błąd → stary adres + warning, licznik
+  `url_unresolved`. Trigger `promote_scrape_to_tools()` bez zmian
+- ✅ **Reguły odrzucania** (`9744d62`): hardware/IoT, robotyka, uzbrojenie →
+  `is_real_product=false`; prefiks `Show/Launch/Ask HN:` obcinany w PHP;
+  kategoria spoza listy 10 (po normalizacji wielkości liter i ogonków) →
+  `ai_rejected` + `error_msg` (bez zgadywania synonimów — trigger wstawiłby
+  narzędzie bez kategorii)
+- ✅ **Test na żywo (workflow_dispatch 20.10, 20:44):** BetaList — fetched 25,
+  filtered 22, duplicates 2, inserted 1, errors 0, url_unresolved 0; Product
+  Hunt — fetched 50, filtered 50, errors 0. Nowy wpis ChatGPT Bulk Delete:
+  link `chatgptbulkdelete.net` (zgodny z przekierowaniem), opis zgodny z feedem
+
+### Odkrycia / problemy
+- 2 duplikaty BetaList to wpisy z porannego przebiegu zapisane z adresem
+  betalist.com — dedup po obu adresach działa na realnych danych
+- Product Hunt: summary w feedzie to tylko tagline (+ „Discussion | Link”), więc
+  kontekst jest krótki; ścieżka PH nie miała dziś kandydatów
+- Product Hunt ma tę samą lukę `website_url` (realny adres za `/r/p/ID`) — nie
+  ruszane
+- `yc_oss.php` nie ma nowych sprawdzeń (osobna kopia logiki)
+- Zakładka „Odrzucone przez AI” nie pokazuje `error_msg`
+
+### Następny krok
+- Sprawdzić 2–3 kolejne wpisy BetaList/PH po nocnych przebiegach (opis vs feed,
+  domena)
+
+---
+
 ```
 ## [v0.X] — [data]
 

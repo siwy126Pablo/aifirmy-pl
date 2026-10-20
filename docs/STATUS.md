@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-10-11
+> Ostatnia aktualizacja: 2026-10-20
 
 ---
 
@@ -237,7 +237,7 @@ Claude Code zweryfikował logikę **przeciw rzeczywistemu eksportowi NiFi** (`ai
 
 **Architektura:** wspólne komponenty (`filters.php` — filtr słów kluczowych z poprawką word-boundary dla "ai", `pipeline.php` — dedup→OpenAI→insert, `atom.php` — parser feedów Atom dla BetaList/PH, `http.php` — helper GET z User-Agent wymaganym przez Product Hunt za Cloudflare), plus per-źródło pliki (`hacker_news.php`, `betalist.php`, `product_hunt.php`) i 3 nowe workflow GitHub Actions (`scrape-hn.yml`, `scrape-betalist.yml`, `scrape-producthunt.yml`), każdy z `workflow_dispatch` do ręcznego testowania.
 
-**Zachowane, znane ograniczenia (parytet z NiFi, nie regresje):** `website_url` dla BetaList/PH nadal wskazuje na stronę listingu, nie domenę produktu (znana luka opisana już wcześniej dla YC); filtr domen to dopasowanie substringu nie hosta (np. `dev.to` łapie też `dev.tools`).
+**Zachowane, znane ograniczenia (parytet z NiFi, nie regresje):** *(20.10: BetaList naprawione — `8d0f460`, PH nadal otwarte)* `website_url` dla BetaList/PH nadal wskazuje na stronę listingu, nie domenę produktu (znana luka opisana już wcześniej dla YC); filtr domen to dopasowanie substringu nie hosta (np. `dev.to` łapie też `dev.tools`).
 
 ### Wynik testów na żywo (workflow_dispatch, 20.09.2026)
 
@@ -278,6 +278,15 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 **Drobne poprawki przy okazji:**
 - `colspan` w ukrytym wierszu "Znalezione sygnały" (evidence) 9→11. Bez tego panel po dodaniu 2 kolumn byłby węższy od tabeli
 - Komentarze w JS mówiące o "trzech" polach/selectach 3-stanowych poprawione na "pięć"
+
+---
+
+## ✅ Jakość potoku scrapera (20.10.2026, wyjątek ADR-011)
+
+- **Kontekst OpenAI** (`7786443`): BetaList/PH przekazują summary z feedu (`raw_desc`) jako Kontekst; HN dalej „brak”
+- **BetaList → domena produktu** (`8d0f460`): `source_url` z przekierowania `/visit`, bez query; dedup po adresie produktu i adresie katalogu (`raw_json.listing_url`); błąd → stary adres + warning (`url_unresolved`)
+- **Reguły odrzucania** (`9744d62`): hardware/IoT/robotyka/uzbrojenie → `is_real_product=false`; prefiks `Show HN:` obcinany w PHP; kategoria spoza listy → `ai_rejected` + `error_msg`
+- **Test 20.10:** BetaList 1 wstawiony, 2 duplikaty, 0 errors, 0 url_unresolved; ChatGPT Bulk Delete z poprawną domeną i opisem zgodnym z feedem. PH — 0 kandydatów (do sprawdzenia przy kolejnych przebiegach)
 
 ---
 
@@ -416,6 +425,10 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] Regularnie przeglądać "Odrzucone przez AI" pod kątem fałszywych negatywów
 - [ ] **Okno kandydatów 24h → 36h** w `scraper/lib/filters.php` (`CANDIDATE_WINDOW_SECONDS`) — realne ryzyko utraty wpisów w szczelinie między opóźnionymi uruchomieniami GitHub Actions (patrz sekcja migracji wyżej)
 - [ ] Filtr słów kluczowych HN/BetaList/PH na pełnym tytule zamiast samej nazwy (rozważyć po ocenie jakości bieżącego parytetu z NiFi)
+- [ ] 🆕 (20.10) Sprawdzić 2–3 kolejne wpisy BetaList/PH po nocnych przebiegach — opis zgodny z feedem, poprawna domena (test 20.10 dał tylko 1 wpis, PH 0)
+- [ ] 🆕 (20.10) Product Hunt: `source_url` = domena produktu (przekierowanie `/r/p/ID` z linku „Link” w summary) — analogicznie do BetaList `8d0f460`
+- [ ] 🆕 (20.10) `yc_oss.php`: przenieść reguły z `9744d62` (kategoria spoza listy, obcinanie prefiksu) — najprościej razem z konsolidacją do `pipeline.php`
+- [ ] 🆕 (20.10) „Odrzucone przez AI” — pokazywać `error_msg` (np. „Kategoria spoza listy: …”); po „przenieś do kolejki” poprawić kategorię przed zatwierdzeniem
 - [ ] Sprawdzić w "Odrzucone przez AI" wpis "AI Dubbing" (pierwszy realny przebieg BetaList, 20.09) — słuszne odrzucenie czy fałszywy negatyw
 - [ ] Wyłączyć autostart NiFi w Windows Task Scheduler (pipeline zmigrowany, NiFi już niepotrzebny)
 - [ ] Skonsolidować `yc_oss.php` do współdzielonego `scraper/lib/pipeline.php` (obecnie ma własną, wcześniejszą kopię logiki dedup/insert)
