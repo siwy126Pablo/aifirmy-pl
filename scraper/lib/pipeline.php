@@ -19,10 +19,20 @@ function enqueue_candidate(
     array $rawJson,
     ?string $rawDesc,
     string $runId,
-    array &$stats
+    array &$stats,
+    array $extraDedupUrls = []
 ): void {
+    // Dedup: exact match source_url na $url oraz ewentualnych dodatkowych adresach
+    // (BetaList: adres katalogu, pod którym są zapisane wiersze sprzed 20.10).
+    $dedupUrls = array_values(array_unique(array_merge([$url], $extraDedupUrls)));
+    if (count($dedupUrls) === 1) {
+        $filter = 'source_url=eq.' . rawurlencode($url);
+    } else {
+        $parts = array_map(fn($u) => 'source_url.eq."' . rawurlencode($u) . '"', $dedupUrls);
+        $filter = 'or=(' . implode(',', $parts) . ')';
+    }
     try {
-        $existing = sb_get('scrape_queue?source_url=eq.' . rawurlencode($url) . '&select=id&limit=1');
+        $existing = sb_get('scrape_queue?' . $filter . '&select=id&limit=1');
     } catch (\Throwable $e) {
         $stats['errors']++;
         scraper_log('error', 'Błąd sprawdzania duplikatu: ' . $e->getMessage(), [

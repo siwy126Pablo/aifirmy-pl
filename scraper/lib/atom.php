@@ -61,7 +61,13 @@ function parse_atom_entries(string $xml): ?array {
 // przez obie gałęzie: nazwa = tytuł przed pierwszym ' – ' (en dash U+2013),
 // URL = część przed '?' (usuwa utm_*). Filtr słów kluczowych działa na tak
 // obciętej NAZWIE, nie na pełnym tytule — tak jest w NiFi (hn_title).
-function run_atom_feed_source(string $runId, string $feedUrl, string $sourceName): array {
+//
+// $resolveUrl (opcjonalny): fn(string $listingUrl): string — zamienia adres strony
+// katalogu (np. betalist.com/startups/slug) na adres produktu. Wywoływany dopiero
+// po filtrze słów kluczowych (koszt: 1 żądanie HTTP na kandydata). Rzucony wyjątek
+// = zostaje adres katalogu (stare zachowanie) + warning w logu, bez errors.
+// Dedup sprawdza wtedy oba adresy, bo historyczne wiersze mają adres katalogu.
+function run_atom_feed_source(string $runId, string $feedUrl, string $sourceName, ?callable $resolveUrl = null): array {
     $stats = [
         'fetched'    => 0,
         'filtered'   => 0,
@@ -70,6 +76,9 @@ function run_atom_feed_source(string $runId, string $feedUrl, string $sourceName
         'rejected'   => 0,
         'errors'     => 0,
     ];
+    if ($resolveUrl !== null) {
+        $stats['url_unresolved'] = 0;
+    }
 
     try {
         $xml = http_get($feedUrl, 15);
@@ -103,7 +112,22 @@ function run_atom_feed_source(string $runId, string $feedUrl, string $sourceName
             continue;
         }
 
-        enqueue_candidate($name, $url, $sourceName, $entry, $entry['summary'], $runId, $stats);
+        $dedupUrls = [];
+        if ($resolveUrl !== null) {
+            $listingUrl = $url;
+            try {
+                $url = strip_url_query($resolveUrl($listingUrl));
+                $dedupUrls[] = $listingUrl;
+                $entry['listing_url'] = $listingUrl;
+            } catch (\Throwable $e) {
+                $stats['url_unresolved']++;
+                scraper_log('warning', 'Nie udało się ustalić adresu produktu, zostaje adres katalogu: ' . $e->getMessage(), [
+                    'source_url' => $listingUrl,
+                ], $runId);
+            }
+        }
+
+        enqueue_candidate($name, $url, $sourceName, $entry, $entry['summary'], $runId, $stats, $dedupUrls);
     }
 
     return $stats;
