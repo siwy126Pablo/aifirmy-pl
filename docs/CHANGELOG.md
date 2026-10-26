@@ -652,6 +652,57 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.28] — 2026-10-26 (RLS, etap 1 z 4: categories, tags, tool_tags)
+
+### Zrobione
+- ✅ **Migracja `004_rls_stage1_dictionaries.sql`** (`adf9e25`): `ENABLE ROW LEVEL
+  SECURITY` na `categories`, `tags`, `tool_tags`; publiczny SELECT dla `anon` i
+  `authenticated`, brak jakichkolwiek polityk zapisu. `REVOKE ALL` + `GRANT SELECT`
+  zamyka też `TRUNCATE`, którego RLS nie obejmuje (przed zmianą `anon` miał pełne
+  uprawnienia, łącznie z `DELETE` i `TRUNCATE`)
+- ✅ **Dostęp w kodzie (grep na `f4a3d7e`):** tylko odczyt kluczem anon — build Astro
+  (4 strony, embedy `categories(...)`, `tool_tags(tags(...))`), panel
+  (`index.php`, `verify_tool.php`) i trigger `promote_scrape_to_tools()`, który czyta
+  `categories` z uprawnieniami wywołującego (panel → anon). Zapisów do tych trzech
+  tabel nie ma nigdzie (strona, panel, scraper, webhook), więc polityk zapisu nie ma
+- ✅ **Próba przed zastosowaniem** (transakcja wycofana, rola `anon`): odczyty
+  10 / 10 / 0 wierszy, join `tools`→`categories` 332 (zgodnie z `approved`),
+  12 prób zapisu (INSERT/UPDATE/DELETE/TRUNCATE × 3 tabele) odrzuconych `42501`,
+  ścieżka „Zatwierdź” (trigger) daje to samo `category_id` przed i po migracji
+- ✅ **Advisors:** `rls_disabled_in_public` 7 → 4 ERROR (zostały `tools`,
+  `premium_listings`, `affiliate_links`, `scrape_queue`); 3× WARN
+  `function_search_path_mutable` bez zmian (etap 4)
+- ✅ **Deploy** (push `adf9e25`, build na bazie z RLS): sukces; krok IndexNow „brak
+  zmian, pomijam” = sitemapa z nowego builda identyczna z produkcyjną sprzed
+  deployu (żaden URL nie zniknął)
+- ✅ **Smoke test:** strona główna (10 kafli kategorii, suma 332 = `approved` w
+  bazie), `/kategoria/automatyzacja/`, `/narzedzia/deepl/` (kategoria, „Podobne
+  narzędzia”); scraper `workflow_dispatch` — BetaList: fetched 25, filtered 22,
+  inserted 2, duplicates 1, errors 0; YC-OSS: fetched 1054, in_window 78,
+  duplicates 77, errors 0
+
+### Odkrycia / problemy
+- Panel nie ma żadnej obsługi tagów, a `tool_tags` ma 0 wierszy — „edycja tagów”
+  nie istnieje, a na stronie narzędzia chipy tagów się nie renderują (brak danych);
+  ścieżka `tool_tags(tags(...))` sprawdzona tylko jako embed w buildzie
+- Test panelu w przeglądarce wymaga logowania hasłem — nie wykonany przez Claude;
+  odczyty panelu do `categories` sprawdzone jako rola `anon` w bazie
+- Odstępstwo od konwencji z `CLAUDE.md` („SQL ręcznie przez Pablo”): migracja
+  zastosowana z sesji Claude Code na wyraźne polecenie zadania, plik w repo jest
+  identyczny z tym, co poszło do bazy
+- Sandbox Claude Code nie ma dostępu do `supabase.co` ani `aifirmy.pl` z powłoki;
+  test przez PostgREST zastąpiły: próba jako rola `anon` w SQL oraz build w Actions
+- Test scrapera dodał do kolejki 2 wpisy (BetaList: Alenta AI, The AI Agent Company)
+  — do zwykłej moderacji
+
+### Następny krok
+- Ręczny test panelu przez Pabla (zakładka Narzędzia: lista, filtr kategorii, modal
+  edycji → lista kategorii; Dodaj wpis → lista kategorii) — bez zapisywania zmian
+- Etap 2: przygotowanie zapisujących (klucz `service_role`, zapisy panelu z JS na
+  serwer, usunięcie klucza z HTML panelu) — bez zmian w bazie; dopiero potem etapy 3–4
+
+---
+
 ```
 ## [v0.X] — [data]
 

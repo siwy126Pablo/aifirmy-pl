@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-10-20
+> Ostatnia aktualizacja: 2026-10-26
 
 ---
 
@@ -10,7 +10,7 @@
 | **Faza** | Projekt live, infrastruktura monetyzacji działa (Stripe + affiliate), przychód = 0 (stan na 20.09.2026). Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09); **309 zatwierdzonych na 11.10**. Ruch organiczny: wyświetlenia spadły od połowy września, kliknięcia płaskie (patrz "Trend ruchu" niżej). 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. **Pipeline ETL w pełni zmigrowany z NiFi na GitHub Actions (PHP), NiFi zatrzymany (20.09).** |
 | **Domena** | ✅ aifirmy.pl (Cyberfolks) + www→apex redirect (Cloudflare) |
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
-| **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii |
+| **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii. ⚠️ RLS włączone na `activity_log`, `categories`, `tags`, `tool_tags`; **wyłączone na `tools`, `premium_listings`, `scrape_queue`, `affiliate_links`** (etapy 2–4, patrz „RLS w Supabase”) |
 | **Pipeline (scraping)** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API — **PHP + GitHub Actions** (`scraper/`), dwuwarstwowy filtr jakości. NiFi (lokalnie, Windows) zdecommissionowany 20.09, flow zachowany w repo jako historyczny fallback |
 | **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09), hero z wyróżnikiem RODO/AI Act/UE (13.09), tri-state RODO/DPA/EU hosting (14.09) i "Interfejs PL" (23.09), wyszukiwanie tekstowe na `/narzedzia/` (15.09), font Inter (19.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |
@@ -290,6 +290,23 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 ---
 
+## 🔒 RLS w Supabase (audyt 25.10.2026, wdrażane etapami)
+
+**Powód:** doradcy Supabase zgłaszali `rls_disabled_in_public` (ERROR) na 7 tabelach, a rola `anon` miała pełne uprawnienia (łącznie z `DELETE`/`TRUNCATE`). Cały system (build Astro, panel PHP, scraper, webhook Stripe) czyta i zapisuje kluczem anon; w repo nie ma `service_role`, a panel wstrzykuje klucz do JS także przed zalogowaniem (`index.php:851-852`, `affiliate.php:303-304`) — dlatego samo włączenie RLS zepsułoby stronę, panel, scraper i webhook.
+
+| Etap | Tabele | Stan |
+|---|---|---|
+| 1 | `categories`, `tags`, `tool_tags` | ✅ 26.10 (`adf9e25`, migracja `004`): publiczny SELECT, zapisów nikt nie robi, więc bez polityk zapisu; bez zmian w kodzie |
+| 2 | — (przygotowanie, bez zmian w bazie) | ⏳ klucz `service_role` dla zapisujących (panel, scraper, webhook), zapisy panelu z JS na endpoint PHP z sesją, usunięcie klucza z HTML panelu |
+| 3 | `scrape_queue`, `premium_listings`, `affiliate_links` | ⏳ po jednej, ze sprawdzeniem builda, panelu, scrapera i webhooka |
+| 4 | `tools` + `search_path` w 3 funkcjach | ⏳ na końcu (najbardziej sprzężona; trigger `promote_scrape_to_tools()` działa jako wywołujący) |
+
+**Wynik etapu 1:** advisors `rls_disabled_in_public` 7 → 4; deploy OK (IndexNow „brak zmian”, strona główna 10 kafli = 332 narzędzia); scraper BetaList i YC-OSS bez błędów zapisu. Próba jako rola `anon` w transakcji wycofanej: odczyty OK, wszystkie zapisy odrzucone, trigger „Zatwierdź” bez zmian.
+
+**Zasady dla kolejnych etapów:** nie dodawać polityk zapisu dla `anon` (zapisy przez `service_role`); każdy etap najpierw jako próba w transakcji wycofanej z rolą `anon`; po włączeniu RLS bez polityki odczyt zwraca `[]` ze statusem 200 (build wypuści pusty katalog, panel puste listy bez błędu), więc po każdym etapie sprawdzać liczbę URL-i w IndexNow i listy w panelu. Pozostałe uwagi z audytu: `activity_log` ma polityki `anon` INSERT/SELECT `true` (logi publicznie czytelne), `webhook.php` nie ponawia zdarzeń przy błędzie zapisu.
+
+---
+
 ## 📣 Growth — status na 09.10
 
 > Od 10.10.2026 obowiązuje `DECISIONS.md` ADR-011: LinkedIn nie jest kanałem growth, outreach minimalny (weryfikacja danych + prośba o link). Poniżej stan historyczny na 09.10.
@@ -410,6 +427,8 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] ~55 wpisów w stylu 1-zdaniowym bez nazwy narzędzia (konwencja ręcznych wpisów z sierpnia) — zdecydować: zostawić jako świadomy styl czy ujednolicić wg `CONTENT-GUIDE.md`. Niska pilność, decyzja stylistyczna, nie bug
 
 ### 🟡 Inne otwarte punkty
+- [ ] 🆕 (26.10) RLS etap 1 — ręczny test panelu przez Pabla (nie wykonany przez Claude: wymaga logowania): zakładka Narzędzia (lista, filtr kategorii, modal edycji → lista kategorii), Dodaj wpis → lista kategorii; bez zapisywania zmian
+- [ ] 🆕 (26.10) RLS etapy 2–4 (tools, premium_listings, scrape_queue, affiliate_links) — patrz „RLS w Supabase”; `rls_disabled_in_public` nadal 4× ERROR
 - [ ] Pozostałe ~37 oflagowanych URL-i z audytu `website_url` (głównie HTTP 403 / konsolidacje domen, niska pilność)
 - [ ] Kwartalny audyt URL (`url-audit.yml`): skrypt nie powiadamia o flagowanych wpisach (job kończy się zielono) — po każdym przebiegu przejrzeć wyniki w `admin/logs.php` (source=`url_audit`) lub w artefakcie CSV. Skrypt nie odróżnia nowych flag od znanych, więc ~37 obecnych będzie wracać co kwartał; rozważyć dedup/`last_checked` dopiero gdy to zacznie przeszkadzać
 - [ ] **Weryfikacja pierwszego przebiegu `url-audit.yml` (1.10.2026 lub najbliższa okazja ręcznego odpalenia).** **Właściciel: sesja techniczna z Claude Code (lub Pablo ręcznie) — NIE sesja strategiczna/analityczna.** Po pierwszym rzeczywistym uruchomieniu (zaplanowanym lub przez `workflow_dispatch`) sprawdzić w `admin/logs.php` (source=`url_audit`) albo w artefakcie CSV, czy mechanizm faktycznie zadziałał end-to-end na żywym przebiegu, nie tylko przy wcześniejszych testach ręcznych. Ten sam wzorzec weryfikacji co przy pierwszym rzeczywistym teście kroku czyszczącego w `deploy.yml` (09.09.2026)
