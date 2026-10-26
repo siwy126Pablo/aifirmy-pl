@@ -301,7 +301,7 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 | 3 | `scrape_queue`, `premium_listings`, `affiliate_links` | ⏳ po jednej, ze sprawdzeniem builda, panelu, scrapera i webhooka |
 | 4 | `tools` + `search_path` w 3 funkcjach | ⏳ na końcu (najbardziej sprzężona; trigger `promote_scrape_to_tools()` działa jako wywołujący) |
 
-**Wynik etapu 1:** advisors `rls_disabled_in_public` 7 → 4; deploy OK (IndexNow „brak zmian”, strona główna 10 kafli = 332 narzędzia); scraper BetaList i YC-OSS bez błędów zapisu. Próba jako rola `anon` w transakcji wycofanej: odczyty OK, wszystkie zapisy odrzucone, trigger „Zatwierdź” bez zmian.
+**Wynik etapu 1:** ręczny test panelu przez Pabla (26.10, wieczór) — OK; advisors `rls_disabled_in_public` 7 → 4; deploy OK (IndexNow „brak zmian”, strona główna 10 kafli = 332 narzędzia); scraper BetaList i YC-OSS bez błędów zapisu. Próba jako rola `anon` w transakcji wycofanej: odczyty OK, wszystkie zapisy odrzucone, trigger „Zatwierdź” bez zmian.
 
 **Zasady dla kolejnych etapów:** nie dodawać polityk zapisu dla `anon` (zapisy przez `service_role`); każdy etap najpierw jako próba w transakcji wycofanej z rolą `anon`; po włączeniu RLS bez polityki odczyt zwraca `[]` ze statusem 200 (build wypuści pusty katalog, panel puste listy bez błędu), więc po każdym etapie sprawdzać liczbę URL-i w IndexNow i listy w panelu. Pozostałe uwagi z audytu: `activity_log` ma polityki `anon` INSERT/SELECT `true` (logi publicznie czytelne), `webhook.php` nie ponawia zdarzeń przy błędzie zapisu.
 
@@ -427,7 +427,6 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] ~55 wpisów w stylu 1-zdaniowym bez nazwy narzędzia (konwencja ręcznych wpisów z sierpnia) — zdecydować: zostawić jako świadomy styl czy ujednolicić wg `CONTENT-GUIDE.md`. Niska pilność, decyzja stylistyczna, nie bug
 
 ### 🟡 Inne otwarte punkty
-- [ ] 🆕 (26.10) RLS etap 1 — ręczny test panelu przez Pabla (nie wykonany przez Claude: wymaga logowania): zakładka Narzędzia (lista, filtr kategorii, modal edycji → lista kategorii), Dodaj wpis → lista kategorii; bez zapisywania zmian
 - [ ] 🆕 (26.10) RLS etapy 2–4 (tools, premium_listings, scrape_queue, affiliate_links) — patrz „RLS w Supabase”; `rls_disabled_in_public` nadal 4× ERROR
 - [ ] Pozostałe ~37 oflagowanych URL-i z audytu `website_url` (głównie HTTP 403 / konsolidacje domen, niska pilność)
 - [ ] Kwartalny audyt URL (`url-audit.yml`): skrypt nie powiadamia o flagowanych wpisach (job kończy się zielono) — po każdym przebiegu przejrzeć wyniki w `admin/logs.php` (source=`url_audit`) lub w artefakcie CSV. Skrypt nie odróżnia nowych flag od znanych, więc ~37 obecnych będzie wracać co kwartał; rozważyć dedup/`last_checked` dopiero gdy to zacznie przeszkadzać
