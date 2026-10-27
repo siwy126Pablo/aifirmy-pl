@@ -3,95 +3,7 @@ session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/openai.php';
 
-define('SUPABASE_URL', 'https://szassqzvivdgvpkciyif.supabase.co');
-define('SUPABASE_KEY', SUPABASE_ANON_KEY ); // ← wklej swój anon key
-
-// ---------- helpers Supabase REST ----------
-
-function sb_get(string $path): array {
-    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-        ],
-    ]);
-    $res = curl_exec($ch);
-    curl_close($ch);
-    return json_decode($res, true) ?? [];
-}
-
-function sb_patch(string $table, string $id, array $data): void {
-    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table . '?id=eq.' . rawurlencode($id));
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER  => true,
-        CURLOPT_CUSTOMREQUEST   => 'PATCH',
-        CURLOPT_POSTFIELDS      => json_encode($data),
-        CURLOPT_HTTPHEADER      => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-            'Content-Type: application/json',
-        ],
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
-}
-
-function sb_post(string $table, array $data): void {
-    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode($data),
-        CURLOPT_HTTPHEADER     => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-            'Content-Type: application/json',
-            'Prefer: return=minimal',
-        ],
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
-}
-
-function sb_delete(string $table, string $id): void {
-    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table . '?id=eq.' . rawurlencode($id));
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST  => 'DELETE',
-        CURLOPT_HTTPHEADER     => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-        ],
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
-}
-
-function sb_count(string $table, string $filter = ''): int {
-    $url = SUPABASE_URL . '/rest/v1/' . $table . '?select=id&limit=1' . ($filter ? '&' . $filter : '');
-    $ch = curl_init($url);
-    $headers = [];
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER  => true,
-        CURLOPT_HEADERFUNCTION  => function ($ch, $h) use (&$headers) {
-            $headers[] = $h;
-            return strlen($h);
-        },
-        CURLOPT_HTTPHEADER => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-            'Prefer: count=exact',
-        ],
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
-    foreach ($headers as $h) {
-        if (preg_match('/^Content-Range:\s*[^\/]*\/(\d+)/i', $h, $m)) return (int) $m[1];
-    }
-    return 0;
-}
+require_once __DIR__ . '/supabase.php'; // SUPABASE_KEY (service_role z db.php, fallback anon) + helpery sb_*
 
 function favicon_from_url(string $url): ?string {
     $domain = parse_url($url, PHP_URL_HOST);
@@ -188,23 +100,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
 
 $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
 
+// Token CSRF dla zapisów z JS przez admin/api.php (wstrzykiwany do strony
+// wyłącznie po zalogowaniu — patrz ADMIN_CSRF w skrypcie na dole).
+if ($logged_in && empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(32));
+}
+
 // ---------- akcje POST (tylko gdy zalogowany) ----------
+// Zapisy rzucają RuntimeException (błąd HTTP albo 0 zmienionych wierszy —
+// patrz admin/supabase.php); zamiast cichej porażki wracamy do panelu
+// z komunikatem w ?err=.
 
 if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $tab = $_GET['tab'] ?? 'queue';
 
     if (isset($_POST['action'], $_POST['id'])) {
         $id = $_POST['id'];
-        if ($_POST['action'] === 'publish') {
-            sb_patch('scrape_queue', $id, ['stage' => 'published']);
-        } elseif ($_POST['action'] === 'reject') {
-            sb_patch('scrape_queue', $id, ['stage' => 'rejected']);
-        } elseif ($_POST['action'] === 'hard_delete') {
-            sb_delete('scrape_queue', $id);
-        } elseif ($_POST['action'] === 'restore_to_queue') {
-            sb_patch('scrape_queue', $id, ['stage' => 'ai_done']);
+        $err = '';
+        try {
+            if ($_POST['action'] === 'publish') {
+                sb_patch('scrape_queue', $id, ['stage' => 'published']);
+            } elseif ($_POST['action'] === 'reject') {
+                sb_patch('scrape_queue', $id, ['stage' => 'rejected']);
+            } elseif ($_POST['action'] === 'hard_delete') {
+                sb_delete('scrape_queue', $id);
+            } elseif ($_POST['action'] === 'restore_to_queue') {
+                sb_patch('scrape_queue', $id, ['stage' => 'ai_done']);
+            }
+        } catch (RuntimeException $e) {
+            error_log('admin/index.php action ' . $_POST['action'] . ': ' . $e->getMessage());
+            $err = '&err=' . rawurlencode($e->getMessage());
         }
-        header('Location: /admin/index.php?tab=' . $tab);
+        header('Location: /admin/index.php?tab=' . rawurlencode($tab) . $err);
         exit;
     }
 
@@ -219,6 +146,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         // string nigdy nie ciął się cicho do 0.
         $priceFromPln = trim($_POST['price_from_pln'] ?? '');
         $priceFromPln = ($priceFromPln !== '' && is_numeric($priceFromPln)) ? (float) $priceFromPln : null;
+        try {
         sb_post('tools', [
             'slug'          => slugify($_POST['name']),
             'name'          => $_POST['name'],
@@ -237,6 +165,11 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'ai_act_risk'   => $_POST['ai_act_risk'],
             'status'        => 'approved',
         ]);
+        } catch (RuntimeException $e) {
+            error_log('admin/index.php add_tool: ' . $e->getMessage());
+            header('Location: /admin/index.php?tab=add&err=' . rawurlencode($e->getMessage()));
+            exit;
+        }
         header('Location: /admin/index.php?tab=tools');
         exit;
     }
@@ -343,6 +276,16 @@ $opublikowane = sb_count('scrape_queue', 'stage=eq.published');
 $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
 ?>
 
+    <?php if (!empty($_GET['err'])): ?>
+    <div class="notice" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b">⚠️ Zapis się nie powiódł: <?= htmlspecialchars((string) $_GET['err']) ?></div>
+    <?php endif; ?>
+    <?php if ($GLOBALS['sb_last_error'] !== null): ?>
+    <div class="notice" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b">⚠️ Odczyt z Supabase nie powiódł się (<?= htmlspecialchars($GLOBALS['sb_last_error']) ?>) — sprawdź klucz w db.php; listy poniżej mogą być puste.</div>
+    <?php endif; ?>
+    <?php if (!(defined('SUPABASE_USING_SERVICE_ROLE') && SUPABASE_USING_SERVICE_ROLE)): ?>
+    <div class="notice">ℹ️ Panel działa na kluczu anon — brak <code>SUPABASE_SERVICE_ROLE_KEY</code> w <code>private_html/config/db.php</code>. Do włączenia RLS na tools / scrape_queue / affiliate_links / premium_listings klucz serwerowy jest wymagany.</div>
+    <?php endif; ?>
+
     <div class="stats">
         <div class="stat">
             <div class="stat-val"><?= $czeka ?></div>
@@ -409,7 +352,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                         <input type="hidden" name="action" value="reject">
                         <button class="btn btn-danger">✗</button>
                     </form>
-                    <button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($item['id']) ?>', 'scrape_queue', 'stage', this.closest('tr'))">Usuń</button>
+                    <button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($item['id']) ?>', 'scrape_queue', this.closest('tr'))">Usuń</button>
                 </div>
             </td>
         </tr>
@@ -610,7 +553,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                         ]), ENT_QUOTES) ?>'
                         onclick="openEditModalFromButton(this)"
                     >✏️ Edytuj</button>
-                    <button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($tool['id']) ?>', 'tools', 'status', this.closest('tr'))">Usuń</button>
+                    <button class="btn btn-delete" onclick="softDelete('<?= htmlspecialchars($tool['id']) ?>', 'tools', this.closest('tr'))">Usuń</button>
                 </div>
             </td>
         </tr>
@@ -850,18 +793,34 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
 
 <?php endif; ?>
 <script>
-function softDelete(id, table, field, row) {
-    if (!window.confirm('Usunąć ten wpis?')) return;
-    fetch('<?= SUPABASE_URL ?>/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id), {
-        method: 'PATCH',
-        headers: {
-            'apikey': '<?= SUPABASE_KEY ?>',
-            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({[field]: 'rejected'})
+// Zapisy z przeglądarki idą WYŁĄCZNIE przez admin/api.php (sesja + token CSRF).
+// Klucz Supabase nie trafia do HTML/JS — RLS, etap 2 (ADR-012). Token jest
+// pusty na ekranie logowania (nie ma wtedy czego chronić ani kogo autoryzować).
+var ADMIN_CSRF = <?= json_encode($logged_in ? (string) ($_SESSION['csrf'] ?? '') : '') ?>;
+
+// Zwraca Promise<{ok, data}>; błąd sieci/parsowania też kończy się { ok:false }
+// z czytelnym data.error, żeby wywołujący mieli jedną ścieżkę błędu.
+function adminApi(op, payload) {
+    return fetch('api.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ADMIN_CSRF },
+        body: JSON.stringify(Object.assign({ op: op }, payload))
     }).then(function(r) {
-        if (r.ok) row.remove();
+        return r.json().then(
+            function(data) { return { ok: r.ok && !data.error, data: data }; },
+            function() { return { ok: false, data: { error: 'Nieprawidłowa odpowiedź serwera (HTTP ' + r.status + ').' } }; }
+        );
+    }, function() {
+        return { ok: false, data: { error: 'Błąd sieci — zapis nie został wykonany.' } };
+    });
+}
+
+function softDelete(id, table, row) {
+    if (!window.confirm('Usunąć ten wpis?')) return;
+    adminApi('soft_delete', { table: table, id: id }).then(function(res) {
+        if (res.ok) row.remove();
+        else alert(res.data.error || 'Nie udało się usunąć wpisu.');
     });
 }
 
@@ -871,19 +830,11 @@ function softDelete(id, table, field, row) {
 // zarówno przez istniejące pojedyncze inline-save, jak i nowy modal
 // edycji (jeden PATCH na wszystkie 6 pól naraz zamiast sześciu osobnych).
 function patchTool(id, fields, onSuccess) {
-    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(id), {
-        method: 'PATCH',
-        headers: {
-            'apikey': '<?= SUPABASE_KEY ?>',
-            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(fields)
-    }).then(function(r) {
-        if (r.ok) {
+    adminApi('tool_update', { id: id, fields: fields }).then(function(res) {
+        if (res.ok) {
             if (onSuccess) onSuccess();
         } else {
-            alert('Nie udało się zapisać zmian.');
+            alert(res.data.error || 'Nie udało się zapisać zmian.');
         }
     });
 }
@@ -1267,24 +1218,15 @@ function applyVerifiedChanges() {
     }
 
     var targetId = verifyTargetId;
-    var verifiedAt = new Date().toISOString();
-    payload.ai_verified_at = verifiedAt;
 
-    fetch('<?= SUPABASE_URL ?>/rest/v1/tools?id=eq.' + encodeURIComponent(targetId), {
-        method: 'PATCH',
-        headers: {
-            'apikey': '<?= SUPABASE_KEY ?>',
-            'Authorization': 'Bearer <?= SUPABASE_KEY ?>',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    }).then(function(r) {
-        if (r.ok) {
+    // ai_verified_at ustawia serwer (mark_verified) i odsyła w odpowiedzi.
+    adminApi('tool_update', { id: targetId, fields: payload, mark_verified: true }).then(function(res) {
+        if (res.ok) {
             var verifiedEl = document.getElementById('verified-' + targetId);
-            if (verifiedEl) verifiedEl.textContent = 'Sprawdzono: ' + formatPlDate(verifiedAt);
+            if (verifiedEl) verifiedEl.textContent = 'Sprawdzono: ' + formatPlDate(res.data.ai_verified_at);
             closeVerifyModal();
         } else {
-            alert('Nie udało się zapisać zmian.');
+            alert(res.data.error || 'Nie udało się zapisać zmian.');
         }
     });
 }

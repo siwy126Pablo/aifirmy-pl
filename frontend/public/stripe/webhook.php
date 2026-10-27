@@ -27,12 +27,17 @@ foreach ($vendor_paths as $path) {
 
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 
-// ---- Stałe Supabase (SUPABASE_ANON_KEY pochodzi z db.php) ----
+// ---- Stałe Supabase (SUPABASE_ANON_KEY i opcjonalnie SUPABASE_SERVICE_ROLE_KEY pochodzą z db.php) ----
+// RLS, etap 2: zapisy do premium_listings mają iść kluczem service_role (omija RLS).
+// Dopóki stałej nie ma w db.php, zostaje klucz anon (fallback) — wdrożenie kodu
+// i dodanie klucza to osobne kroki.
 if (!defined('SUPABASE_URL')) {
     define('SUPABASE_URL', 'https://szassqzvivdgvpkciyif.supabase.co');
 }
 if (!defined('SUPABASE_KEY')) {
-    define('SUPABASE_KEY', SUPABASE_ANON_KEY);
+    define('SUPABASE_KEY', (defined('SUPABASE_SERVICE_ROLE_KEY') && SUPABASE_SERVICE_ROLE_KEY !== '')
+        ? SUPABASE_SERVICE_ROLE_KEY
+        : SUPABASE_ANON_KEY);
 }
 
 function send_smtp_email(string $to, string $subject, string $message): void {

@@ -17,6 +17,7 @@ jobs:
         env:
           SUPABASE_URL:      ${{ secrets.PUBLIC_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: php scraper/url_audit.php
       - name: Upload CSV report
         uses: actions/upload-artifact@v4

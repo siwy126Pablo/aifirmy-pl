@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 /**
  * Weryfikacja narzędzia przez AI — live fetch strony + OpenAI, zwraca porównanie
- * starych i zasugerowanych danych. Nie zapisuje niczego — PATCH robi frontend
- * (admin/index.php) bezpośrednio na Supabase REST API dla zaznaczonych pól.
+ * starych i zasugerowanych danych. Nie zapisuje niczego do tools — zaznaczone pola
+ * zapisuje panel (admin/index.php) przez admin/api.php (op tool_update).
  *
  * Dodaj w private_html/config/openai.php:
  *   define('OPENAI_API_KEY', 'sk-...');
@@ -78,8 +78,7 @@ session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/openai.php';
 
-define('SUPABASE_URL', 'https://szassqzvivdgvpkciyif.supabase.co');
-define('SUPABASE_KEY', SUPABASE_ANON_KEY);
+require_once __DIR__ . '/supabase.php'; // SUPABASE_KEY (service_role z db.php, fallback anon) + helpery sb_*
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -98,38 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['tool_id'])) {
 
 $toolId = $_POST['tool_id'];
 
-// ---------- helpers Supabase REST ----------
-
-function sb_get(string $path): array {
-    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-        ],
-    ]);
-    $res = curl_exec($ch);
-    curl_close($ch);
-    return json_decode($res, true) ?? [];
-}
-
-function sb_post(string $table, array $data): void {
-    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode($data),
-        CURLOPT_HTTPHEADER     => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-            'Content-Type: application/json',
-            'Prefer: return=minimal',
-        ],
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
-}
+// ---------- helpers Supabase REST: admin/supabase.php (sb_get, sb_post) ----------
 
 function verify_log_activity(string $level, string $message, array $context = []): void {
     // Nested try/catch — awaria samego logowania (np. Supabase niedostępne)
@@ -155,6 +123,12 @@ $tools = sb_get(
 );
 
 if (empty($tools)) {
+    // Pusta lista przy błędzie odczytu (zły klucz, Supabase niedostępne) to nie 404.
+    if ($GLOBALS['sb_last_error'] !== null) {
+        http_response_code(502);
+        echo json_encode(['error' => 'Odczyt z Supabase nie powiódł się: ' . $GLOBALS['sb_last_error']], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     http_response_code(404);
     echo json_encode(['error' => 'Nie znaleziono narzędzia.']);
     exit;

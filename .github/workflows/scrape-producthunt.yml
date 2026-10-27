@@ -17,5 +17,6 @@ jobs:
         env:
           SUPABASE_URL:      ${{ secrets.PUBLIC_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
         run: php scraper/run.php --source=product_hunt
