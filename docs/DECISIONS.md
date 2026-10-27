@@ -267,4 +267,24 @@ Kliknięcia z Google Search Console, okno 28 dni.
 
 ---
 
+## ADR-012 — RLS w Supabase wdrażane etapami; zapisy tylko przez serwer z service_role
+**Data:** 27.10.2026
+**Status:** ✅ Przyjęte (etapy 1–2 wdrożone, 3–4 w toku)
+
+**Kontekst:**
+Audyt 25.10: RLS wyłączone na 7 tabelach, rola `anon` z pełnymi uprawnieniami (łącznie z `DELETE`/`TRUNCATE`), klucz anon wstrzykiwany do JS panelu także przed zalogowaniem, a w repo brak klucza `service_role`. Włączenie RLS jednym ruchem zepsułoby stronę, panel, scraper i webhook Stripe.
+
+**Decyzja:**
+1. Przeglądarka nigdy nie pisze do Supabase. Zapisy panelu idą przez `admin/api.php` (sesja admina + token CSRF + whitelista operacji i pól).
+2. Klucz `service_role` istnieje tylko po stronie serwera: `private_html/config/db.php` (panel, webhook) i sekret GitHub (scraper). Nigdy w repo, HTML ani JS. Do czasu dodania klucza kod działa na fallbacku anon, żeby wdrożenie kodu i dodanie klucza były osobnymi krokami.
+3. `anon` dostaje wyłącznie odczyt publicznych danych (i INSERT do `activity_log`). Żadnych polityk zapisu dla `anon`.
+4. Kolejność: słowniki (✅) → przygotowanie zapisujących (✅ kod) → `scrape_queue` → `premium_listings` → `affiliate_links` → `tools` + `search_path` funkcji. Każdy etap: próba w transakcji wycofanej z rolą `anon`, deploy, smoke test, advisors przed/po. RLS na tabelach zapisywanych przez panel dopiero po zielonym teście panelu.
+5. Zapisy nie mogą ginąć po cichu: po włączeniu RLS bez polityki PostgREST zwraca 200 i zero wierszy, więc helpery traktują 0 zmienionych wierszy jako błąd.
+6. SQL migracji: Pablo decyduje per zadanie, czy wykonuje je ręcznie w SQL Editorze, czy Claude Code przez MCP (zmiana z 26.10 w `CLAUDE.md`).
+
+**Konsekwencje:**
+Po dodaniu klucza panel, webhook i scraper nie zależą od RLS i można je włączać tabela po tabeli. Koszt: zapisy z panelu przechodzą przez Cloudflare i PHP (nowy punkt awarii), a formularze POST panelu nadal czekają na tokeny CSRF.
+
+---
+
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

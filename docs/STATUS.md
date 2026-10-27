@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-10-26
+> Ostatnia aktualizacja: 2026-10-27
 
 ---
 
@@ -292,16 +292,18 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 ## 🔒 RLS w Supabase (audyt 25.10.2026, wdrażane etapami)
 
-**Powód:** doradcy Supabase zgłaszali `rls_disabled_in_public` (ERROR) na 7 tabelach, a rola `anon` miała pełne uprawnienia (łącznie z `DELETE`/`TRUNCATE`). Cały system (build Astro, panel PHP, scraper, webhook Stripe) czyta i zapisuje kluczem anon; w repo nie ma `service_role`, a panel wstrzykuje klucz do JS także przed zalogowaniem (`index.php:851-852`, `affiliate.php:303-304`) — dlatego samo włączenie RLS zepsułoby stronę, panel, scraper i webhook.
+**Powód:** doradcy Supabase zgłaszali `rls_disabled_in_public` (ERROR) na 7 tabelach, a rola `anon` miała pełne uprawnienia (łącznie z `DELETE`/`TRUNCATE`). Cały system (build Astro, panel PHP, scraper, webhook Stripe) czyta i zapisuje kluczem anon; w repo nie ma `service_role`, a panel wstrzykiwał klucz do JS także przed zalogowaniem (`index.php:851-852`, `affiliate.php:303-304` — usunięte w etapie 2) — dlatego samo włączenie RLS zepsułoby stronę, panel, scraper i webhook.
 
 | Etap | Tabele | Stan |
 |---|---|---|
 | 1 | `categories`, `tags`, `tool_tags` | ✅ 26.10 (`adf9e25`, migracja `004`): publiczny SELECT, zapisów nikt nie robi, więc bez polityk zapisu; bez zmian w kodzie |
-| 2 | — (przygotowanie, bez zmian w bazie) | ⏳ klucz `service_role` dla zapisujących (panel, scraper, webhook), zapisy panelu z JS na endpoint PHP z sesją, usunięcie klucza z HTML panelu |
+| 2 | — (przygotowanie, bez zmian w bazie) | ✅ kod 27.10 (`a20c900`): zapisy panelu z JS przez `admin/api.php` (sesja + CSRF), klucz usunięty z HTML, panel/webhook/scraper czytają `SUPABASE_SERVICE_ROLE_KEY` z fallbackiem na anon. ⏳ krok ręczny: klucz do `db.php` i sekret GitHub, potem test panelu |
 | 3 | `scrape_queue`, `premium_listings`, `affiliate_links` | ⏳ po jednej, ze sprawdzeniem builda, panelu, scrapera i webhooka |
 | 4 | `tools` + `search_path` w 3 funkcjach | ⏳ na końcu (najbardziej sprzężona; trigger `promote_scrape_to_tools()` działa jako wywołujący) |
 
 **Wynik etapu 1:** ręczny test panelu przez Pabla (26.10, wieczór) — OK; advisors `rls_disabled_in_public` 7 → 4; deploy OK (IndexNow „brak zmian”, strona główna 10 kafli = 332 narzędzia); scraper BetaList i YC-OSS bez błędów zapisu. Próba jako rola `anon` w transakcji wycofanej: odczyty OK, wszystkie zapisy odrzucone, trigger „Zatwierdź” bez zmian.
+
+**Wynik etapu 2 (27.10):** test lokalny na mocku Supabase 58/58, deploy OK, produkcyjna strona logowania bez klucza, `api.php` bez sesji 401, strony publiczne 200, scrapery BetaList i YC-OSS bez błędów zapisu; advisors bez zmian (4 ERROR / 3 WARN, bo RLS na 4 tabelach jeszcze wyłączone). Nie sprawdzone: panel po zalogowaniu i webhook Stripe na żywo. **Klucze:** `service_role` tylko w `private_html/config/db.php` (`SUPABASE_SERVICE_ROLE_KEY`) i w sekrecie GitHub o tej samej nazwie; w repo, HTML i JS go nie ma. Panel pokazuje baner, dopóki działa na anon.
 
 **Zasady dla kolejnych etapów:** nie dodawać polityk zapisu dla `anon` (zapisy przez `service_role`); każdy etap najpierw jako próba w transakcji wycofanej z rolą `anon`; po włączeniu RLS bez polityki odczyt zwraca `[]` ze statusem 200 (build wypuści pusty katalog, panel puste listy bez błędu), więc po każdym etapie sprawdzać liczbę URL-i w IndexNow i listy w panelu. Pozostałe uwagi z audytu: `activity_log` ma polityki `anon` INSERT/SELECT `true` (logi publicznie czytelne), `webhook.php` nie ponawia zdarzeń przy błędzie zapisu.
 
@@ -427,7 +429,9 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] ~55 wpisów w stylu 1-zdaniowym bez nazwy narzędzia (konwencja ręcznych wpisów z sierpnia) — zdecydować: zostawić jako świadomy styl czy ujednolicić wg `CONTENT-GUIDE.md`. Niska pilność, decyzja stylistyczna, nie bug
 
 ### 🟡 Inne otwarte punkty
-- [ ] 🆕 (26.10) RLS etapy 2–4 (tools, premium_listings, scrape_queue, affiliate_links) — patrz „RLS w Supabase”; `rls_disabled_in_public` nadal 4× ERROR
+- [ ] 🆕 (27.10) RLS etap 2 — kroki ręczne Pabla: (1) `define('SUPABASE_SERVICE_ROLE_KEY', '…')` w `private_html/config/db.php`, (2) sekret GitHub `SUPABASE_SERVICE_ROLE_KEY`, (3) test panelu po zalogowaniu: baner „kluczu anon” znika, Zatwierdź / Odrzuć / Dodaj wpis / edycja i Usuń w Narzędziach / Weryfikacja AI / linki afiliacyjne (w tym przełącznik Aktywny) — błąd zapisu pokaże się teraz czerwonym komunikatem
+- [ ] 🆕 (26.10) RLS etapy 3–4 (scrape_queue → premium_listings → affiliate_links, potem tools) — po zielonym teście panelu; `rls_disabled_in_public` nadal 4× ERROR. Przed `premium_listings`: sprawdzić webhook Stripe (żywe zdarzenie testowe)
+- [ ] (27.10) Tokeny CSRF dla formularzy POST panelu (Zatwierdź / Odrzuć / Dodaj wpis / afiliacja) — dziś tylko `api.php` je ma
 - [ ] Pozostałe ~37 oflagowanych URL-i z audytu `website_url` (głównie HTTP 403 / konsolidacje domen, niska pilność)
 - [ ] Kwartalny audyt URL (`url-audit.yml`): skrypt nie powiadamia o flagowanych wpisach (job kończy się zielono) — po każdym przebiegu przejrzeć wyniki w `admin/logs.php` (source=`url_audit`) lub w artefakcie CSV. Skrypt nie odróżnia nowych flag od znanych, więc ~37 obecnych będzie wracać co kwartał; rozważyć dedup/`last_checked` dopiero gdy to zacznie przeszkadzać
 - [ ] **Weryfikacja pierwszego przebiegu `url-audit.yml` (1.10.2026 lub najbliższa okazja ręcznego odpalenia).** **Właściciel: sesja techniczna z Claude Code (lub Pablo ręcznie) — NIE sesja strategiczna/analityczna.** Po pierwszym rzeczywistym uruchomieniu (zaplanowanym lub przez `workflow_dispatch`) sprawdzić w `admin/logs.php` (source=`url_audit`) albo w artefakcie CSV, czy mechanizm faktycznie zadziałał end-to-end na żywym przebiegu, nie tylko przy wcześniejszych testach ręcznych. Ten sam wzorzec weryfikacji co przy pierwszym rzeczywistym teście kroku czyszczącego w `deploy.yml` (09.09.2026)

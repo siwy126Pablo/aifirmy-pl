@@ -48,7 +48,7 @@ Kontynuujemy: [opisz co robisz].
 | ETL/Scraping | **PHP scraper + GitHub Actions** (`scraper/`) | **4 sources**: HN, BetaList, Product Hunt, YC-OSS API. Migrated from Apache NiFi (self-hosted, Windows) on **2026-09-20** — NiFi flow stopped/decommissioned, kept as reference only. See "ETL pipeline" section below. |
 | AI descriptions (pipeline) | OpenAI `gpt-4o-mini` | Prompt returns `best_for_pl` and `is_real_product`; YC source additionally passes real `source_context` (YC one_liner/long_description) instead of guessing from title alone |
 | AI verification (admin) | OpenAI `gpt-4o-mini` | `verify_tool.php`, `response_format: json_object`, key in `private_html/config/openai.php` on server (not in repo) |
-| Admin panel | PHP + Supabase REST API | `admin/index.php`, `admin/affiliate.php`, `admin/verify_tool.php`, `admin/logs.php` |
+| Admin panel | PHP + Supabase REST API | `admin/index.php`, `admin/affiliate.php`, `admin/verify_tool.php`, `admin/logs.php`; zapisy z JS przez `admin/api.php`, wspólna warstwa REST w `admin/supabase.php` (ADR-012) |
 | Payments | Stripe (Live mode) | `checkout.php` + `webhook.php` at `/stripe/webhook.php` (Cloudflare WAF blocks POST to `/admin/`) |
 | Email | PHPMailer via Cyberfolks SMTP | `s103.cyber-folks.pl:587` |
 | Analytics | Google Analytics 4 (`G-3SP1TRXF7M`) + Search Console + AWStats | **GA4 is unreliable** — see "Analytics reliability" section below. Search Console + AWStats are the trusted sources. |
@@ -70,6 +70,8 @@ aifirmy-pl/
 │   ├── index.php            ← main panel: Kolejka / Odrzucone przez AI / Narzędzia / Dodaj wpis
 │   ├── affiliate.php        ← affiliate links CRUD
 │   ├── verify_tool.php      ← "Zweryfikuj przez AI" endpoint
+│   ├── api.php              ← JSON endpoint zapisów z JS (sesja + CSRF + whitelista); jedyna droga zapisu z przeglądarki
+│   ├── supabase.php         ← include: SUPABASE_KEY (service_role z db.php, fallback anon) + helpery sb_*; zapis z 0 wierszy = błąd
 │   └── logs.php             ← activity_log viewer (filterable/paginated)
 ├── scraper/                 ← PHP scraper — PRIMARY pipeline since 2026-09-20 (replaces NiFi)
 │   ├── run.php               ← dispatcher, `php run.php --source=X`
@@ -254,7 +256,7 @@ The YC-OSS source was first added as a NiFi branch (2026-08-30), then re-impleme
 When both NiFi and the new GitHub Actions pilot ran in parallel on the same schedule, NiFi consistently "won the race" for the same candidate companies — GitHub Actions' `schedule` trigger was observed running **~5-6 hours later** than its configured cron time (a known, documented GitHub Actions behavior for low-traffic repos, not a bug in this project's workflow files). Result: 96 of 97 YC-OSS candidates were already inserted by NiFi by the time the pilot ran, showing up as `duplicates` in the pilot's stats — this looked like "the new pipeline isn't finding anything" but was actually dedup working correctly against a competing pipeline. Confirmed by running with NiFi's trigger skipped for a day: `inserted > 0` immediately. **If a source's stats show fetched/filtered numbers but `inserted: 0` and `duplicates` roughly matching, check whether something else (an old NiFi flow, a stray second workflow run) is inserting the same rows first — before assuming the source itself is broken.**
 
 ### Shared components (`scraper/lib/`)
-- **`supabase.php`** — `sb_get(path)` / `sb_post(table, data)`, thin curl wrappers reading `SUPABASE_URL`/`SUPABASE_ANON_KEY` from env
+- **`supabase.php`** — `sb_get(path)` / `sb_post(table, data)`, thin curl wrappers reading `SUPABASE_URL` and the key from env via `sb_key()` (`SUPABASE_SERVICE_ROLE_KEY` if set, else `SUPABASE_ANON_KEY`; ADR-012)
 - **`openai.php`** — `call_openai_description($title, $url, $context)`. System prompt is a **verbatim copy of the NiFi system prompt** (10 categories, `best_for_pl`/`is_real_product` rules) — kept as a PHP heredoc, confirmed against the live NiFi export at time of writing. Uses `response_format: json_object` (same as `verify_tool.php`) plus a defensive markdown-fence strip as a backup, since `response_format` alone isn't a 100% guarantee. `$context` defaults to `'brak'` when empty. Since 2026-10-20 BetaList/Product Hunt pass the Atom feed summary (`raw_desc`, up to 1000 chars; BetaList: full paragraph, PH: tagline only) via `enqueue_candidate()`; HN passes `''` (no source text); YC passes the real `one_liner`+`long_description`. Before that BetaList/PH also passed `''`, and the model invented descriptions for generic names (2026-10-19: 4 of 9 "Platforma AI do X" entries made up).
   - **Rejection rules (2026-10-20):** the prompt sets `is_real_product=false` also for physical hardware/IoT devices, robotics and weapons/military systems. `pipeline.php` (HN/BetaList/PH only — `yc_oss.php` keeps its own copy and does not have these checks yet) additionally strips `Show HN:`/`Launch HN:`/`Ask HN:` from the stored `name`, and validates `category` against the 10-category list (case- and diacritics-insensitive, no synonym guessing). A category outside the list sends the row to `ai_rejected` with `error_msg = 'Kategoria spoza listy: …'` plus a `warning` log, because the trigger would otherwise insert the tool with `category_id = NULL`. Note: the "Odrzucone przez AI" tab does not show `error_msg`; after "przenieś do kolejki" fix the category before approving.
 - **`logging.php`** — `scraper_log(level, message, context, runId)`, writes to the same `activity_log` table used by `verify_tool.php` (see "Admin panel" section) with `source` set per-scraper-source (not hardcoded to the YC pilot anymore, as it originally was before this migration)
@@ -416,10 +418,10 @@ PORT=3000
 ```
 **Note:** local `npm run build` fails without a real `frontend/.env` containing `PUBLIC_SUPABASE_URL`/`PUBLIC_SUPABASE_ANON_KEY` (pages are SSG and query Supabase at build time). When this file isn't available in a session, verify changes with `npx astro check` (type-check, no DB needed) instead, and note in the diff summary that a full build wasn't possible.
 
-**GitHub Actions repo secrets** (Settings → Secrets and variables → Actions), used by both `deploy.yml` and all `scraper/`-related workflows: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `OPENAI_API_KEY`. These must exist as actual repo secrets — adding `env: SOMEVAR: ${{ secrets.X }}` to a workflow file does nothing if the secret `X` was never created in repo settings; a missing secret shows up as scraper errors (curl to an empty/malformed URL), not a clean failure.
+**GitHub Actions repo secrets** (Settings → Secrets and variables → Actions), used by both `deploy.yml` and all `scraper/`-related workflows: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `OPENAI_API_KEY`, plus `SUPABASE_SERVICE_ROLE_KEY` (scrapers and url-audit only; empty/missing → falls back to the anon key; required before RLS is enabled on `scrape_queue`). These must exist as actual repo secrets — adding `env: SOMEVAR: ${{ secrets.X }}` to a workflow file does nothing if the secret `X` was never created in repo settings; a missing secret shows up as scraper errors (curl to an empty/malformed URL), not a clean failure.
 
 **Server-only, never in repo** (all under `private_html/`, same pattern as `db.php`):
-- `config/db.php` — admin session password
+- `config/db.php` — admin session password, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (service_role omija RLS: tylko tu i w sekrecie GitHub, nigdy w repo/HTML/JS; bez niego panel i webhook jadą na fallbacku anon)
 - `config/openai.php` — `define('OPENAI_API_KEY', 'sk-...')` for `verify_tool.php`. **Required for admin panel to load at all.**
 
 ## Current status (as of 2026-09-20)

@@ -703,6 +703,61 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.29] — 2026-10-27 (RLS, etap 2 z 4: zapisy panelu przez serwer, grunt pod etap 3)
+
+### Zrobione
+- ✅ **`admin/supabase.php`** (`a20c900`): wspólna warstwa REST dla panelu. Klucz
+  serwerowy `SUPABASE_SERVICE_ROLE_KEY` czytany z `private_html/config/db.php`,
+  **fallback na anon**, dopóki stałej nie ma (kod i klucz wdrażane osobno). Zapisy
+  (`sb_patch/sb_post/sb_delete`) rzucają błąd przy HTTP ≥ 400 **i przy 0 zmienionych
+  wierszy** — tak zachowuje się PostgREST po włączeniu RLS bez polityki (200 + `[]`),
+  wcześniej helpery panelu ignorowały odpowiedź
+- ✅ **`admin/api.php`**: jedyna droga zapisu z przeglądarki — sesja admina + token
+  CSRF (`X-CSRF-Token`) + whitelista operacji (`tool_update`, `soft_delete`,
+  `affiliate_active`) i pól z walidacją typów. Zastąpił 4 bezpośrednie `fetch` do
+  Supabase (Usuń w Kolejce i w Narzędziach, edycja narzędzia, zapis „Weryfikacji AI”,
+  przełącznik linku afiliacyjnego). `ai_verified_at` ustawia serwer
+- ✅ **Klucz zniknął z HTML-a:** blok `<script>` stał poza sprawdzeniem sesji, więc
+  klucz anon był na stronie logowania (`index.php`, `affiliate.php`). Teraz w HTML
+  nie ma klucza ani adresu REST, także dla niezalogowanego
+- ✅ `index.php`, `affiliate.php`, `verify_tool.php` na wspólnych helperach; błąd zapisu
+  wraca do panelu jako czerwony komunikat (`?err=`), błąd odczytu jako baner; baner
+  informacyjny, gdy panel działa jeszcze na anon
+- ✅ **Grunt pod etap 3:** `webhook.php` (Stripe) i scraper (`scraper/lib/supabase.php`
+  → `sb_key()` + `SUPABASE_SERVICE_ROLE_KEY` w `env:` 5 workflowów) biorą klucz
+  serwerowy, gdy jest ustawiony, inaczej anon. Logika i prompty scrapera bez zmian
+- ✅ **Testy:** lokalnie na mocku Supabase 58/58 (autoryzacja, CSRF, whitelista,
+  0 wierszy → błąd, odmowa → błąd, klucz w ruchu do bazy, fallback) + test JS ze
+  stubem `fetch`. Produkcja po deployu (run 40573752754, sukces): strona logowania
+  bez `eyJ…`/`supabase.co`/`apikey`, `api.php` bez sesji 401, `supabase.php` 404,
+  strona główna, lista narzędzi, kategoria i strona narzędzia 200. Scrapery
+  (`workflow_dispatch`): BetaList fetched 25, filtered 24, inserted 1, errors 0;
+  YC-OSS in_window 71, duplicates 70, errors 0
+- ✅ Advisors przed i po bez zmian: `rls_disabled_in_public` 4× ERROR (RLS na
+  `tools`, `premium_listings`, `affiliate_links`, `scrape_queue` celowo jeszcze
+  wyłączone), `function_search_path_mutable` 3× WARN
+
+### Odkrycia / problemy
+- Nie zweryfikowane na produkcji: panel po zalogowaniu (Zatwierdź / Odrzuć /
+  Dodaj wpis / edycja / Usuń / Weryfikacja AI / linki afiliacyjne) — wymaga hasła;
+  webhook Stripe (tylko `php -l` i fallback, bez żywego zdarzenia)
+- Zapisy z JS idą teraz przez Cloudflare (`/admin/api.php`), a nie wprost do
+  `supabase.co` — reguły WAF mogą zablokować treść opisu; pierwszy zapis z panelu
+  to sprawdzi
+- Formularze POST panelu (Zatwierdź/Odrzuć/Dodaj wpis) nadal bez tokenu CSRF —
+  istniejący dług, poza zakresem tego etapu
+- Klucz `service_role` jeszcze nie dodany (krok ręczny): panel pokazuje baner
+  „działa na kluczu anon”, scraper i webhook też jadą na fallbacku
+- Test scrapera dodał do kolejki 1 wpis BetaList (The Launch Directory) — do moderacji
+
+### Następny krok
+- Pablo: klucz `service_role` do `db.php` i do sekretu GitHub
+  `SUPABASE_SERVICE_ROLE_KEY`, potem test panelu (baner anon znika); dopiero po
+  zielonym teście etap 3 — `scrape_queue` pierwsza, jako próba w transakcji
+  wycofanej z rolą `anon`
+
+---
+
 ```
 ## [v0.X] — [data]
 
