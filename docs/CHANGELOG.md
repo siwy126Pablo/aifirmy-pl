@@ -758,6 +758,83 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.30] — 2026-10-28 (RLS, etap 3 z 4: scrape_queue, affiliate_links, premium_listings)
+
+### Zrobione
+- ✅ **Klucze z etapu 2 działają** (stan z 27.10 wieczorem, sprawdzony w logach
+  Supabase `edge_logs`): zapytania z hostingu (panel) i z GitHub Actions (scrapery)
+  idą rolą `service_role`; edycje `tools` z panelu zwróciły 200. Stąd zielone światło
+  na etap 3
+- ✅ **Kto korzysta z tabel** (grep po kodzie + logi Supabase z doby: żadnych
+  zapytań `anon` na ścieżki tych tabel; embedy z buildu siedzą w zapytaniu o `tools`,
+  więc ustalone z kodu): `scrape_queue` — scraper (GET dedup + POST), panel
+  (GET/PATCH/DELETE), trigger `trg_promote_to_tools`; `affiliate_links` — panel
+  (`affiliate.php`, `api.php`) + odczyt `anon` w buildzie (embed w zapytaniu o
+  `tools`); `premium_listings` — `webhook.php` (INSERT/PATCH) + odczyt `anon` w buildzie
+  (embed w `tools`, `lib/premium.ts`)
+- ✅ **Migracja `005_rls_stage3a_scrape_queue.sql`**: RLS bez polityk + `REVOKE ALL`
+  dla `anon`/`authenticated`. Kolejkę czytają i zapisują wyłącznie `service_role`
+  i `postgres` (oba `BYPASSRLS`). Skutek dla `anon`: HTTP 401 „permission denied”,
+  nie pusty wynik
+- ✅ **Migracja `006_rls_stage3b_affiliate_links.sql`**: `anon` czyta tylko aktywne
+  linki (`USING (active)`) i tylko 4 kolumny (`tool_id`, `affiliate_url`,
+  `disclosure_text`, `active`) — `commission_note` i `program_name` nie są już
+  publiczne; brak polityk zapisu
+- ✅ **Migracja `007_rls_stage3c_premium_listings.sql`**: `anon` czyta tylko
+  niewygasłe wiersze (`USING (ends_at > now())`) i 4 kolumny (`id`, `tool_id`, `plan`,
+  `ends_at`) — `payment_id` (id subskrypcji Stripe), `price_pln`, `paid_at` nie są
+  już publiczne; brak polityk zapisu
+- ✅ **Próby przed zastosowaniem** (blok `DO` wycofywany wyjątkiem, role `anon` i
+  `service_role`, dla `scrape_queue` także `authenticated`): każda migracja osobno — wszystkie zapisy
+  (INSERT/UPDATE/DELETE/TRUNCATE) i odczyt zablokowanych kolumn odrzucone dla `anon`;
+  `service_role` czyta, wstawia, zmienia i usuwa. `scrape_queue`: wpis testowy
+  `ai_done` → `published` jako `service_role` daje +1 wiersz w `tools` i ustawia
+  `tool_id` (**trigger działa po RLS**). `affiliate_links`: `anon` widzi 1 z 2 wierszy
+  (nieaktywny ukryty). `premium_listings`: `anon` widzi aktywny pakiet, nie widzi
+  wygasłych; ścieżki webhooka (INSERT z `tool_id = NULL`, PATCH po `payment_id`) jako
+  `service_role` OK
+- ✅ **Advisors przed → po:** `rls_disabled_in_public` 4× ERROR → 1× ERROR (zostało
+  `tools`); nowy INFO `rls_enabled_no_policy` na `scrape_queue` — zamierzony (brak
+  dostępu dla `anon`); 3× WARN `function_search_path_mutable` bez zmian (etap 4)
+- ✅ **Smoke test:** (a) scrapery BetaList i YC-OSS po włączeniu RLS na `scrape_queue`
+  (`workflow_dispatch`): errors 0, odczyty kolejki 200 rolą `service_role`, BetaList
+  fetched 25 / inserted 0, YC in_window 68 / duplicates 67 / inserted 0 (wstawianie
+  pokryte próbą, nie żywym wpisem); (c) klucz anon: GET / POST / PATCH `scrape_queue`
+  → 401, `tools` → 200, `premium_listings` i `affiliate_links` — `select=*`,
+  `payment_id`, `commission_note` → 401, INSERT/PATCH → 401; (d) dokładne zapytania z
+  buildu (`select=*` + embedy) rolą `anon` → 337 narzędzi, 1 z linkiem afiliacyjnym
+  (`brain-by-clickup`), 0 z aktywnym premium (wszystkie 4 wiersze to wygasłe testy z
+  czerwca); po deployu (run 40757864487, sukces, IndexNow bez błędu): strona główna
+  (10 kafli kategorii), `/narzedzia/`, `/kategoria/automatyzacja/` 200, `/narzedzia/brain-by-clickup/` ma CTA
+  `try.web.clickup.com` i informację o afiliacji, `/narzedzia/deepl/` bez afiliacji, sitemapa 353 URL-e (337 narzędzi = `approved` w bazie)
+- ✅ Baner w panelu przy fallbacku na anon mówi teraz wprost, że na anonie Kolejka,
+  linki afiliacyjne i zapisy nie zadziałają (RLS włączone)
+
+### Odkrycia / problemy
+- **(b) zatwierdzenie wpisu w panelu NIE sprawdzone:** sesja panelu wygasła, a hasła
+  Claude nie wpisuje; kolejka jest pusta (po czyszczeniu 28.10: 0 `ai_done`, 0
+  `ai_rejected`). Ścieżka „Zatwierdź” sprawdzona w bazie jako `service_role`
+  (próba z triggerem), nie przez panel
+- **Webhook Stripe nadal bez żywego zdarzenia.** Czyta ten sam `db.php` co panel
+  (klucz serwisowy potwierdzony), SQL jego ścieżek przeszedł próbę, ale samego PHP na
+  produkcji nikt nie uruchomił. Wąskie miejsce: przy błędzie zapisu `webhook.php`
+  zwraca 200 i tylko loguje (`error_log`), więc Stripe nie ponowi zdarzenia. Zakupów
+  na razie 0 (w tabeli 4 wygasłe wiersze testowe z czerwca)
+- Rola `anon` ma nadal pełne GRANT-y na `activity_log` (DELETE/UPDATE chroni tylko
+  brak polityk, a `TRUNCATE` RLS w ogóle nie obejmuje) oraz na `tools` — poza zakresem
+  etapu 3, do etapu 4
+- Test scrapera nie dodał nowych wpisów do kolejki
+
+### Następny krok
+- Pablo: zalogować się do panelu — liczniki Kolejka / Odrzucone / Opublikowane łącznie
+  (233) i lista afiliacji; zatwierdzenie pierwszego nowego wpisu ze scrapera
+- Etap 4: `tools` + `search_path` w `set_updated_at`, `slugify`,
+  `promote_scrape_to_tools`; zawęzić uprawnienia `anon` na `activity_log`
+- Zdecydować o żywym teście webhooka (np. najtańszy plan i zwrot) przed pierwszą
+  sprzedażą (ADR-010: start sprzedaży najwcześniej 2027-02-01)
+
+---
+
 ```
 ## [v0.X] — [data]
 
