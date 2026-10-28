@@ -283,7 +283,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
     <div class="notice" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b">⚠️ Odczyt z Supabase nie powiódł się (<?= htmlspecialchars($GLOBALS['sb_last_error']) ?>) — sprawdź klucz w db.php; listy poniżej mogą być puste.</div>
     <?php endif; ?>
     <?php if (!(defined('SUPABASE_USING_SERVICE_ROLE') && SUPABASE_USING_SERVICE_ROLE)): ?>
-    <div class="notice">ℹ️ Panel działa na kluczu anon — brak <code>SUPABASE_SERVICE_ROLE_KEY</code> w <code>private_html/config/db.php</code>. Do włączenia RLS na tools / scrape_queue / affiliate_links / premium_listings klucz serwerowy jest wymagany.</div>
+    <div class="notice">ℹ️ Panel działa na kluczu anon — brak <code>SUPABASE_SERVICE_ROLE_KEY</code> w <code>private_html/config/db.php</code>. RLS jest już włączone na scrape_queue / affiliate_links / premium_listings, więc na kluczu anon Kolejka, linki afiliacyjne i zapisy nie zadziałają — klucz serwerowy jest wymagany.</div>
     <?php endif; ?>
 
     <div class="stats">
