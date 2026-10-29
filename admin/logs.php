@@ -2,48 +2,9 @@
 session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 
-define('SUPABASE_URL', 'https://szassqzvivdgvpkciyif.supabase.co');
-define('SUPABASE_KEY', SUPABASE_ANON_KEY);
-
-// ---------- helpers Supabase REST ----------
-
-function sb_get(string $path): array {
-    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-        ],
-    ]);
-    $res = curl_exec($ch);
-    curl_close($ch);
-    return json_decode($res, true) ?? [];
-}
-
-function sb_count(string $table, string $filter = ''): int {
-    $url = SUPABASE_URL . '/rest/v1/' . $table . '?select=id&limit=1' . ($filter ? '&' . $filter : '');
-    $ch = curl_init($url);
-    $headers = [];
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER  => true,
-        CURLOPT_HEADERFUNCTION  => function ($ch, $h) use (&$headers) {
-            $headers[] = $h;
-            return strlen($h);
-        },
-        CURLOPT_HTTPHEADER => [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-            'Prefer: count=exact',
-        ],
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
-    foreach ($headers as $h) {
-        if (preg_match('/^Content-Range:\s*[^\/]*\/(\d+)/i', $h, $m)) return (int) $m[1];
-    }
-    return 0;
-}
+// Wspólna warstwa REST (klucz service_role z db.php, ADR-012). Od etapu 4 RLS na
+// activity_log nie pozwala już rolom anon/authenticated na odczyt ani zapis.
+require_once __DIR__ . '/supabase.php';
 
 // ---------- auth ----------
 
@@ -196,6 +157,10 @@ if ($logged_in) {
 </div>
 
 <div class="container">
+
+    <?php if ($GLOBALS['sb_last_error'] !== null): ?>
+    <div class="error" style="background:#fef2f2;border:1px solid #fca5a5;padding:12px 16px;border-radius:8px">⚠️ Odczyt z Supabase nie powiódł się (<?= htmlspecialchars($GLOBALS['sb_last_error']) ?>) — sprawdź klucz w db.php; lista poniżej może być pusta.</div>
+    <?php endif; ?>
 
     <div class="filters-box">
         <form method="GET">
