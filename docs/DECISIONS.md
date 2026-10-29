@@ -269,7 +269,7 @@ Kliknięcia z Google Search Console, okno 28 dni.
 
 ## ADR-012 — RLS w Supabase wdrażane etapami; zapisy tylko przez serwer z service_role
 **Data:** 27.10.2026
-**Status:** ✅ Przyjęte (etapy 1–3 wdrożone, 4 — `tools` i `search_path` — w toku)
+**Status:** ✅ Przyjęte i wdrożone (etapy 1–4, ostatni 29.10.2026)
 
 **Kontekst:**
 Audyt 25.10: RLS wyłączone na 7 tabelach, rola `anon` z pełnymi uprawnieniami (łącznie z `DELETE`/`TRUNCATE`), klucz anon wstrzykiwany do JS panelu także przed zalogowaniem, a w repo brak klucza `service_role`. Włączenie RLS jednym ruchem zepsułoby stronę, panel, scraper i webhook Stripe.
@@ -286,6 +286,8 @@ Audyt 25.10: RLS wyłączone na 7 tabelach, rola `anon` z pełnymi uprawnieniami
 Po dodaniu klucza panel, webhook i scraper nie zależą od RLS i można je włączać tabela po tabeli. Koszt: zapisy z panelu przechodzą przez Cloudflare i PHP (nowy punkt awarii), a formularze POST panelu nadal czekają na tokeny CSRF.
 
 **Uzupełnienie 28.10 (etap 3):** tabele czytane przez build strony (`affiliate_links`, `premium_listings`) dostają politykę odczytu dla `anon` ograniczoną wierszami (`active`, `ends_at > now()`) **i** kolumnami (`GRANT SELECT (kolumny)` zamiast całej tabeli), żeby `commission_note`, `payment_id` i ceny nie były publiczne; build wskazuje kolumny jawnie, więc `select=*` rolą `anon` świadomie kończy się 401. Tabela bez konsumenta `anon` (`scrape_queue`) nie dostaje żadnej polityki, a `REVOKE ALL` zamyka też `TRUNCATE`. Fallback panelu na klucz anon przestaje być bezpieczną drogą: po etapie 3 klucz `service_role` w `db.php` jest wymagany.
+
+**Uzupełnienie 29.10 (etap 4):** `tools` czyta publicznie wyłącznie wiersze `status = 'approved'` (polityka `tools_public_read`), całą tabelę, bo build używa `select('*')`; zawężenie kolumn zostaje opcją na później (wymaga zmiany czterech stron `.astro`). Konsekwencja: wpisy `rejected` przestają być publicznie czytelne przez REST. `activity_log` nie ma już żadnej polityki ani GRANT-ów dla `anon`: zapis robią `scraper/lib/logging.php` i `verify_tool.php`, odczyt `admin/logs.php`, wszystko na `service_role`, a punkt 3 decyzji ("INSERT do `activity_log`") jest tym samym nieaktualny. Funkcje mają ustawiony `search_path` (`''` w `set_updated_at`, `slugify`; `public, pg_temp` w `promote_scrape_to_tools`). Na tabelach bez polityk (`scrape_queue`, `activity_log`) advisors pokazuje INFO `rls_enabled_no_policy` — zamierzone.
 
 ---
 

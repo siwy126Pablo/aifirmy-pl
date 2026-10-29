@@ -835,6 +835,56 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.31] — 2026-10-29 (RLS, etap 4 z 4: tools, search_path, activity_log — koniec zadania)
+
+### Zrobione
+- ✅ **`admin/logs.php` na wspólnej warstwie** (`4179b4a`): zamiast własnych helperów na
+  kluczu anon używa `admin/supabase.php` (klucz `service_role`); przy błędzie odczytu
+  pokazuje baner zamiast cichej pustej listy. Wdrożone i sprawdzone w zalogowanym
+  panelu na produkcji (464 wpisy, bez banera) PRZED zmianą w bazie
+- ✅ **Migracja `009`** (`d473e54`): `search_path` w `set_updated_at()`, `slugify(text)`
+  (`''`) i `promote_scrape_to_tools()` (`public, pg_temp`); ciała funkcji bez zmian.
+  Advisors `function_search_path_mutable` 3 → 0
+- ✅ **Migracja `010`** (`d473e54`): RLS na `tools`; `anon`/`authenticated` mają tylko
+  SELECT i tylko wiersze `status = 'approved'` (polityka `tools_public_read`), zapisy i
+  `TRUNCATE` odebrane. Kolumn nie zawężałem, bo build używa `select('*')` w 4 plikach
+  `.astro`. Skutek uboczny: wpisy `rejected` przestały być publicznie czytelne
+- ✅ **Migracja `008`**: z `activity_log` usunięte obie polityki `anon` (INSERT/SELECT
+  `true` — ostrzeżenie dashboardu „RLS Policy Always True”) i `REVOKE ALL` dla
+  `anon`/`authenticated`. Najpierw próba w transakcji wycofanej: `anon` odrzucony,
+  `service_role` zapisuje i czyta
+- ✅ **Weryfikacja po etapie:**
+  - REST kluczem anon: `activity_log` GET/POST 401, `tools` odczyt 338 wierszy (tylko
+    `approved`), PATCH `tools` 401
+  - zapis i odczyt w panelu: `api.php` `tool_update` (ta sama wartość) 200 i zmiana
+    `updated_at`; lista Narzędzia, licznik 338 zatwierdzonych, przyciski Usuń; `logs.php`
+    po migracji `008` czyta 466 wpisów
+  - logowanie po RLS: uruchomienie BetaList i YC-OSS zapisało wpisy „Start/Zakończono”
+    w `activity_log`
+  - ścieżka „Zatwierdź” (próba w transakcji wycofanej na roli `service_role`): UPDATE
+    `scrape_queue.stage = 'published'` → trigger dodaje wiersz do `tools` (status
+    `approved`, kategoria przypisana, `rodo_compliant` NULL), potem soft delete 1 wiersz;
+    po próbie brak śladów w tabelach
+  - deploy po `010`: strona główna 10 kategorii, `/narzedzia/` 200, strona kategorii 72
+    karty, sitemapa 354 URL-e (338 narzędzi + 10 kategorii), link afiliacyjny ClickUp
+    zostaje, DeepL bez afiliacji
+  - advisors bezpieczeństwa: 0 ERROR, 0 WARN, 2 INFO `rls_enabled_no_policy`
+    (`scrape_queue`, `activity_log`) — zamierzone, dostęp tylko `service_role`
+
+### Odkrycia / problemy
+- Przebieg scrapera YC-OSS z 29.10 (19:47 UTC) skończył się z `errors: 1`: timeout 20 s
+  w `sb_get` przy sprawdzaniu duplikatu (`agentrelay.com`). Ponowne uruchomienie bez
+  błędów (errors 0, duplicates 67) — chwilowy problem sieci, niezwiązany z RLS
+- Zwykły dry-run na roli `anon` nie wystarcza przy `REVOKE`: trzeba osobno sprawdzić
+  `SELECT` i `INSERT` (oba dają `insufficient_privilege`, a nie pustą listę)
+
+### Następny krok
+- RLS (ADR-012) zamknięty. Otwarte: żywy test webhooka Stripe przed pierwszą sprzedażą
+  (ADR-010), tokeny CSRF w formularzach POST panelu, ewentualne zawężenie kolumn `tools`
+  dla `anon` (wymaga zmiany `select('*')` w 4 plikach `.astro`)
+
+---
+
 ```
 ## [v0.X] — [data]
 
