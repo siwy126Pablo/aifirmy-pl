@@ -885,6 +885,54 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.32] — 2026-10-30 (wspólne reguły jakości języka w promptach scrapera i verify_tool)
+
+### Zrobione
+- ✅ **`scraper/lib/quality_rules.php`** (`b625c3b`): stała `AIFIRMY_COPY_QUALITY_RULES` z 7 regułami
+  (diakrytyki, gramatyka, kalki z angielskiego, ton bez marketingu, `best_for_pl` bez „Dla…/Idealne
+  dla…”, 3. osoba, bez etykiet pól), przeniesiona 1:1 z `verify_tool.php`
+- ✅ **`scraper/lib/openai.php`**: dołącza stałą do system promptu (zastępuje zdublowane zdanie o
+  diakrytykach). Dotyczy wszystkich 4 źródeł, bo `pipeline.php` i `yc_oss.php` wołają to samo
+  `call_openai_description()`. Prompt 2345 → 3948 B
+- ✅ **`admin/verify_tool.php`**: ta sama stała zamiast własnej kopii reguł. Prompt bajt w bajt jak
+  przed zmianą (3806 B, md5 `709c12f5…` przed i po), więc zachowanie weryfikacji bez zmian
+- ✅ **`deploy.yml`** (zmiana zakresu, za zgodą Pabla): krok „Deploy admin panel” wgrywa dodatkowo
+  `scraper/lib/quality_rules.php` do `public_html/scraper/lib/`. Bez tego `verify_tool.php` kończyłby
+  się błędem 500, bo `scraper/` nie jest wdrażany na Cyberfolks. Deploy #305 OK (1 min 51 s), plik na
+  produkcji odpowiada 200 z pustym ciałem
+- ✅ **Stan „przed” (ostatnie 100 wpisów z potoku, 24.09–30.10):** 4 wpisy w 1./2. osobie, 5 z tonem
+  marketingowym, 1 z „Dla…” na początku `best_for_pl`, 0 z etykietami pól
+- ✅ **Test „po” — panel, „Zweryfikuj przez AI” na 5 wpisach** (Otis, ngrok AI Gateway, TraceLLM,
+  FeyNoBg, Reclip; z sesji Pabla, bez zapisu): 5×HTTP 200; „Idealne dla…/Dla…” zniknęło z nowego
+  `best_for_pl` we wszystkich 5, bez 1./2. osoby i bez etykiet pól
+- ✅ **Smoke test po deployu:** strona główna 10 kafli, `/narzedzia/`, kategoria, DeepL (tytuł
+  „RODO, DPA, AI Act”), ClickUp z linkiem afiliacyjnym, sitemapa 357 URL-i; panel: logowanie, Kolejka 0,
+  Odrzucone przez AI 1, 341 zatwierdzonych, bez banera o fallbacku na anon
+- ✅ **Scraper:** ręcznie BetaList #49 i YC-OSS na `b625c3b`: bez błędów (w `activity_log` tylko
+  „Start/Zakończono”), 0 nowych wierszy w `scrape_queue`
+
+### Odkrycia / problemy
+- **Prompt scrapera nie został jeszcze użyty na żywym wpisie.** Oba przebiegi nic nie wstawiły
+  (dedup działa przed wywołaniem OpenAI), więc test „po” dla scrapera czeka na pierwsze nowe wpisy.
+  Potwierdzone tylko, że `quality_rules.php` ładuje się w Actions bez błędu
+- **Reguły nie czyszczą istniejących wpisów.** W katalogu zostają wpisy z „Idealne dla…” w
+  `best_for_pl` (zapytanie z `LIMIT 12` zwróciło 12 z samego `hacker_news`), które strona pokazuje jako
+  „Dla: Idealne dla…”. Zmiana dotyczy nowych wpisów i ręcznej regeneracji w panelu
+- **Model nie zawsze trzyma się reguł:** FeyNoBg po regeneracji ma nadal „najlepsze wyniki” mimo reguły
+  (4). To ten sam prompt co przed zmianą, więc nie regresja
+- **Otis: `website_url` prawdopodobnie wskazuje inny produkt.** Pierwsze wywołanie weryfikacji dało
+  puste pola „new” (przy 5 równoległych żądaniach), powtórka opisała „Triangl Labs” (WebGL, logo z
+  `triangllabs.ai`), a opis w bazie mówi o lokalnym agencie AI. Nic nie zmieniano
+- Reguła (5) mówi, że „interfejs administracyjny” dokłada „Dla:”, a robi to strona publiczna
+  (`[slug].astro:268`). Treść zostawiona bez zmian, żeby prompt weryfikacji pozostał identyczny
+
+### Następny krok
+- Po nocnych przebiegach sprawdzić nowe wpisy zapytaniem z `STATUS.md` (backlog, punkt z 30.10)
+- Decyzja Pabla: czy regenerować istniejące wpisy z „Idealne dla…” (osobne zadanie, nie ten zakres)
+- Sprawdzić `website_url` wpisu Otis
+
+---
+
 ```
 ## [v0.X] — [data]
 

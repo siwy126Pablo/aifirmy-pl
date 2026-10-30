@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-10-27
+> Ostatnia aktualizacja: 2026-10-30
 
 ---
 
@@ -290,6 +290,16 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 ---
 
+## ✅ Wspólne reguły jakości promptów (30.10.2026, wyjątek ADR-011 — jakość danych)
+
+- **Jedna stała** `AIFIRMY_COPY_QUALITY_RULES` w `scraper/lib/quality_rules.php` (`b625c3b`): 7 reguł jakości języka (diakrytyki, gramatyka, kalki, ton, bez „Dla: Dla…”/„Idealne dla…”, 3. osoba, bez etykiet pól). Używają jej `scraper/lib/openai.php` (wszystkie 4 źródła) i `admin/verify_tool.php`
+- **Deploy:** `scraper/` nie jest wdrażany na Cyberfolks, więc `deploy.yml` wgrywa ten jeden plik do `public_html/scraper/lib/` razem z `admin/` (deploy #305 OK). Zmieniając stałą, sprawdź oba miejsca
+- **verify_tool.php:** prompt identyczny bajt w bajt jak przed zmianą. **Scraper:** prompt 2345 → 3948 B
+- **Test (30.10):** panel, „Zweryfikuj przez AI” na 5 wpisach z „Idealne dla…” — prefiks zniknął we wszystkich 5; strona i panel po deployu OK. Scraper: BetaList #49 i YC-OSS bez błędów, 0 nowych wpisów, więc **prompt scrapera nie był jeszcze użyty na żywym wpisie** (otwarte w backlogu)
+- **Granice:** reguły nie poprawiają istniejących wpisów (zostają „Idealne dla…” w `best_for_pl`) i nie gwarantują zgodności modelu (FeyNoBg: nadal „najlepsze wyniki”). Pełny opis: `CHANGELOG.md` [v0.32]
+
+---
+
 ## 🔒 RLS w Supabase (audyt 25.10.2026, wdrażane etapami)
 
 **Powód:** doradcy Supabase zgłaszali `rls_disabled_in_public` (ERROR) na 7 tabelach, a rola `anon` miała pełne uprawnienia (łącznie z `DELETE`/`TRUNCATE`). Cały system (build Astro, panel PHP, scraper, webhook Stripe) czyta i zapisuje kluczem anon; w repo nie ma `service_role`, a panel wstrzykiwał klucz do JS także przed zalogowaniem (`index.php:851-852`, `affiliate.php:303-304` — usunięte w etapie 2) — dlatego samo włączenie RLS zepsułoby stronę, panel, scraper i webhook.
@@ -453,6 +463,9 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] **Okno kandydatów 24h → 36h** w `scraper/lib/filters.php` (`CANDIDATE_WINDOW_SECONDS`) — realne ryzyko utraty wpisów w szczelinie między opóźnionymi uruchomieniami GitHub Actions (patrz sekcja migracji wyżej)
 - [ ] Filtr słów kluczowych HN/BetaList/PH na pełnym tytule zamiast samej nazwy (rozważyć po ocenie jakości bieżącego parytetu z NiFi)
 - [ ] 🆕 (20.10) Sprawdzić 2–3 kolejne wpisy BetaList/PH po nocnych przebiegach — opis zgodny z feedem, poprawna domena (test 20.10 dał tylko 1 wpis, PH 0)
+- [ ] 🆕 (30.10) Test promptu scrapera po zmianie reguł jakości: po pierwszych nowych wpisach z potoku sprawdzić, czy łamią reguły. Zapytanie kontrolne: `SELECT COALESCE(name, raw_name), source_name, best_for_pl, left(ai_description, 200) FROM scrape_queue WHERE scraped_at > '2026-10-30 20:00+00' ORDER BY scraped_at;` — oczekiwane: `best_for_pl` bez „Dla/Idealne dla”, opis w 3. osobie, bez „Twój/Nasz”, bez „innowacyjny/najlepszy”. Przed zmianą (100 ostatnich wpisów): 4 w 1./2. osobie, 5 z marketingiem, 1 z „Dla”
+- [ ] 🆕 (30.10) Istniejące wpisy z „Idealne dla…/Dla…” w `best_for_pl` (strona pokazuje „Dla: Idealne dla…”; co najmniej 12 z `hacker_news`, m.in. Otis, ngrok AI Gateway, TraceLLM, FeyNoBg, Reclip) — decyzja, czy regenerować przez „Zweryfikuj przez AI” (po jednym wpisie, wynik trzeba zatwierdzać ręcznie), czy poprawić zbiorczo
+- [ ] 🆕 (30.10) Otis (`bc08e35c-2eeb-4ea8-b037-c22716fdb199`): `website_url` prawdopodobnie wskazuje inny produkt (weryfikacja opisała „Triangl Labs”, logo z `triangllabs.ai`, a opis w bazie mówi o lokalnym agencie AI) — sprawdzić adres i opis
 - [ ] 🆕 (20.10) Product Hunt: `source_url` = domena produktu (przekierowanie `/r/p/ID` z linku „Link” w summary) — analogicznie do BetaList `8d0f460`
 - [ ] 🆕 (20.10) `yc_oss.php`: przenieść reguły z `9744d62` (kategoria spoza listy, obcinanie prefiksu) — najprościej razem z konsolidacją do `pipeline.php`
 - [ ] 🆕 (20.10) „Odrzucone przez AI” — pokazywać `error_msg` (np. „Kategoria spoza listy: …”); po „przenieś do kolejki” poprawić kategorię przed zatwierdzeniem
