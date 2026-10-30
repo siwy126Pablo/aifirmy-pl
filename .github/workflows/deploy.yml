@@ -130,7 +130,8 @@ jobs:
           username: siwy126
           password: ${{ secrets.SSH_PASSWORD }}
           port: 222
-          source: admin/
+          # + wspólna stała z regułami jakości promptów (używa jej verify_tool.php; źródło w scraper/lib/)
+          source: admin/,scraper/lib/quality_rules.php
           target: /home/siwy126/domains/aifirmy.pl/public_html/
           strip_components: 0
 
