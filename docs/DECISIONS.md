@@ -289,6 +289,8 @@ Po dodaniu klucza panel, webhook i scraper nie zależą od RLS i można je włą
 
 **Uzupełnienie 29.10 (etap 4):** `tools` czyta publicznie wyłącznie wiersze `status = 'approved'` (polityka `tools_public_read`), całą tabelę, bo build używa `select('*')`; zawężenie kolumn zostaje opcją na później (wymaga zmiany czterech stron `.astro`). Konsekwencja: wpisy `rejected` przestają być publicznie czytelne przez REST. `activity_log` nie ma już żadnej polityki ani GRANT-ów dla `anon`: zapis robią `scraper/lib/logging.php` i `verify_tool.php`, odczyt `admin/logs.php`, wszystko na `service_role`, a punkt 3 decyzji ("INSERT do `activity_log`") jest tym samym nieaktualny. Funkcje mają ustawiony `search_path` (`''` w `set_updated_at`, `slugify`; `public, pg_temp` w `promote_scrape_to_tools`). Na tabelach bez polityk (`scrape_queue`, `activity_log`) advisors pokazuje INFO `rls_enabled_no_policy` — zamierzone.
 
+**Uzupełnienie 31.10 (sesja admina):** flagi ciasteczka sesji ustawia jawnie `admin/session_init.php` (`admin_session_start()` zamiast `session_start()` w 5 plikach panelu): `HttpOnly`, `Secure`, `SameSite=Lax`, `path=/`. Powód: produkcyjny `PHPSESSID` nie miał `HttpOnly`, a stoi na całym hoście `aifirmy.pl`, więc był czytelny dla każdego skryptu na publicznej stronie. `Lax`, nie `Strict` (wejście z zewnętrznego linku nie wylogowuje); `path` zostaje `/` (zawężenie do `/admin/` dałoby dwa ciasteczka `PHPSESSID` obok siebie). Przy logowaniu `session_regenerate_id(true)`. Tokeny CSRF w formularzach POST (krok 2) osobno, po obserwacji kroku 1; do tego czasu dług opisany w „Konsekwencjach” pozostaje.
+
 ---
 
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

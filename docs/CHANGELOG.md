@@ -933,6 +933,48 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.33] — 2026-10-31 (sesja admina: flagi ciasteczka, krok 1 z 2 przy CSRF)
+
+### Zrobione
+- ✅ **Przegląd formularzy POST panelu pod kątem CSRF.** Token ma tylko `admin/api.php` (zapisy z JS:
+  sesja + `X-CSRF-Token` + whitelista). Bez tokenu zostają: Zatwierdź / Odrzuć / Usuń trwale /
+  Przenieś do kolejki (`index.php`, handler ~114–136), Dodaj wpis (`index.php`, ~138–175), dodanie i
+  edycja linku (`affiliate.php`, ~37–73) oraz `verify_tool.php` (sama sesja; nic nie zapisuje do `tools`,
+  ale woła OpenAI). Najgroźniejszy jest Dodaj wpis: nie wymaga żadnego UUID i zapisuje od razu
+  `status = 'approved'`
+- ✅ **Stan ciasteczka na produkcji (odczyt w Chrome, bez wartości):** `PHPSESSID` miał `Secure` i
+  `SameSite=Lax` (Chrome mógł zgłosić `lax` jako domyślne), ale **nie miał `HttpOnly`** — był widoczny
+  w `document.cookie`, a stoi na całym hoście (`path=/`), więc czytał go każdy skrypt na publicznej
+  stronie. Repo w ogóle nie ustawiało flag (brak `session_set_cookie_params` / `ini_set` / `.htaccess`)
+- ✅ **`admin/session_init.php`** (`71c14d2`): `admin_session_start()` ustawia jawnie `HttpOnly`,
+  `Secure`, `SameSite=Lax`, `path=/` przed `session_start()`; użyte w `index`, `affiliate`, `logs`, `api`,
+  `verify_tool`. Składnia zgodna z PHP 7.4. `SameSite=Lax`, nie `Strict` (wejście z zewnętrznego linku
+  nie wylogowuje); `path` zostaje `/` (zawężenie dałoby dwa `PHPSESSID` obok siebie)
+- ✅ **`session_regenerate_id(true)` przy logowaniu** w `index.php`, `affiliate.php`, `logs.php`: nowy
+  identyfikator po zalogowaniu i świeże ciasteczko z flagami
+- ✅ **Test lokalny (`php -S`):** `Set-Cookie: …; secure; HttpOnly; SameSite=Lax` dla nowej sesji i po
+  regeneracji id (id faktycznie się zmienia); `php -l` na 6 plikach bez błędów
+- ✅ **Deploy** (run 41236416459, krok „Deploy admin panel” OK). **Smoke test w Chrome na sesji Pabla:**
+  `index.php`, `affiliate.php`, `logs.php` ładują się bez błędów PHP; `api.php` (GET) → „Dozwolone tylko
+  POST.”, `verify_tool.php` (GET) → „Brak tool_id.” (czyli kod po starcie sesji się wykonuje)
+
+### Odkrycia / problemy
+- **PHP nie odsyła `Set-Cookie` dla istniejącej sesji** (test lokalny: drugie żądanie z cookie bez
+  nagłówka). Sesja Pabla sprzed deployu zachowuje stare flagi (bez `HttpOnly`) do następnego logowania
+- **Nie zweryfikowane na produkcji:** flagi *nowego* ciasteczka i sam przebieg logowania z
+  `session_regenerate_id` — wymagają zalogowania, a hasła nie wpisuje Claude. Narzędzie przeglądarki
+  zablokowało też odczyt atrybutów ciasteczek i statusów `fetch` przy drugim podejściu
+- Całość CSRF była planowana w dwóch krokach, żeby zmiany wchodziły stopniowo: krok 1 (ten wpis) jest
+  małym, odwracalnym utwardzeniem; tokeny w formularzach (krok 2) dopiero po kilku dniach obserwacji
+
+### Następny krok
+- Pablo: wylogować się i zalogować ponownie, potem DevTools → Application → Cookies → `PHPSESSID`:
+  `HttpOnly` ✓, `Secure` ✓, `SameSite` Lax (w konsoli `document.cookie` nie może go pokazywać)
+- Po kilku dniach bez problemów z logowaniem: krok 2 — tokeny CSRF w 7 formularzach POST (4 w Kolejce i
+  Odrzuconych, Dodaj wpis, 2 w `affiliate.php`) i w `verify_tool.php`, wspólny helper w `admin/`
+
+---
+
 ```
 ## [v0.X] — [data]
 
