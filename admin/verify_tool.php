@@ -74,7 +74,8 @@ register_shutdown_function(function () {
 // wcześniej, żeby zdążyć zwrócić czytelny błąd JSON zamiast 502 od LiteSpeed.
 set_time_limit(25);
 
-session_start();
+require_once __DIR__ . '/session_init.php'; // flagi ciasteczka sesji (HttpOnly, Secure, SameSite=Lax)
+admin_session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/openai.php';
 

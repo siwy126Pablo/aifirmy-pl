@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/session_init.php'; // flagi ciasteczka sesji (HttpOnly, Secure, SameSite=Lax)
+admin_session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 
 // Wspólna warstwa REST (klucz service_role z db.php, ADR-012). Od etapu 4 RLS na
@@ -16,6 +17,7 @@ if (isset($_GET['logout'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     if ($_POST['password'] === ADMIN_PASSWORD) {
+        session_regenerate_id(true); // nowy identyfikator po logowaniu (fiksacja sesji) i świeże ciasteczko z flagami
         $_SESSION['admin'] = true;
         header('Location: /admin/logs.php');
         exit;

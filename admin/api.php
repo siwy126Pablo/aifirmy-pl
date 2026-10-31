@@ -20,7 +20,8 @@ declare(strict_types=1);
  * Składnia celowo zgodna z PHP 7.4 (wersja PHP na hostingu nie jest w repo).
  */
 
-session_start();
+require_once __DIR__ . '/session_init.php'; // flagi ciasteczka sesji (HttpOnly, Secure, SameSite=Lax)
+admin_session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 require_once __DIR__ . '/supabase.php';
 
