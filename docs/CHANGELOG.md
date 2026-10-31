@@ -996,6 +996,9 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
   strony w Chrome): AI Spend Console → `rippling.com/solutions/it/ai-governance`, Troopr AI Scrum Master →
   `troopr.ai`, Clara AI SDR → `clarasdr.ai` (strona podpisana „By TruGen AI”), ReWeaver AI DriftDetector →
   `drift.reweaver.ai`. Razem z nimi poprawione `logo_url` (był favicon `producthunt.com`)
+- ✅ **Logo dwóch kolejnych wpisów** (Albato AI, AI Media Buyer By Creatify; `website_url` był poprawny, `logo_url`
+  nadal z favicona `producthunt.com`) przeliczone z domeny `website_url`. Wśród 25 zatwierdzonych wpisów z
+  `source_url` na Product Hunt nie zostało już żadne logo z faviconem PH
 
 ### Odkrycia / problemy
 - `scrape_queue.ai_act_risk` było puste we wszystkich wierszach, więc stałe `'minimal'` nie nadpisywało
