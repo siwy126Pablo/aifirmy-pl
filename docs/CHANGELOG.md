@@ -975,6 +975,45 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.34] — 2026-10-31 (trigger `promote_scrape_to_tools()`: ochrona przed duplikatem, `ai_act_risk` = NULL, 4 linki Product Hunt)
+
+### Zrobione
+- ✅ **Sprawdzenie triggera na żywej definicji w Supabase** (nie na kopii z `CLAUDE.md`): `ai_act_risk`
+  zawsze `'minimal'`; `website_url = COALESCE(source_url, '')`; jedyna ochrona przed duplikatem to
+  `UNIQUE(slug)` z pętlą, która po cichu dokleja `-NNN`
+- ✅ **Migracja `011_promote_trigger_dedup_and_ai_act_null.sql`** (zastosowana w bazie przez Supabase MCP,
+  plik = to, co poszło do bazy; `search_path` z migracji 009 zachowany):
+  - (c) gdy `scrape_queue.tool_id` wskazuje istniejące narzędzie albo w `tools` jest już wiersz z tym samym
+    niepustym `source_url`, nowy wiersz **nie powstaje**; kolejka bez `tool_id` dostaje wskazanie na
+    istniejące narzędzie. `RAISE NOTICE`, nie wyjątek (wyjątek w AFTER UPDATE cofnąłby zmianę etapu i
+    panel pokazałby błąd). Status istniejącego narzędzia się nie zmienia
+  - (a) nowe wpisy z potoku mają `ai_act_risk = NULL` (nie zweryfikowano) zamiast `'minimal'`
+- ✅ **Test w transakcji cofniętej wyjątkiem** na prawdziwym wierszu kolejki: ponowna publikacja z `tool_id`
+  → 396→396 wierszy w `tools`; bez `tool_id`, ten sam `source_url` → 396, `tool_id` przywrócone; nowy
+  `source_url` → 397, `ai_act_risk` i `rodo_compliant` = NULL, `approved`. Po wdrożeniu: 396 wierszy,
+  267 `minimal` bez zmian, brak śladów testu
+- ✅ **4 zatwierdzone wpisy z `website_url` na Product Hunt poprawione** (ręcznie, po sprawdzeniu każdej
+  strony w Chrome): AI Spend Console → `rippling.com/solutions/it/ai-governance`, Troopr AI Scrum Master →
+  `troopr.ai`, Clara AI SDR → `clarasdr.ai` (strona podpisana „By TruGen AI”), ReWeaver AI DriftDetector →
+  `drift.reweaver.ai`. Razem z nimi poprawione `logo_url` (był favicon `producthunt.com`)
+
+### Odkrycia / problemy
+- `scrape_queue.ai_act_risk` było puste we wszystkich wierszach, więc stałe `'minimal'` nie nadpisywało
+  żadnych danych. Problem polegał na tym, że 185 z 191 zatwierdzonych wpisów z potoku dostało
+  niezweryfikowaną etykietę, która jest pokazywana publicznie (plakietka i zdanie w FAQ JSON-LD)
+- Zgadywany adres `rippling.com/ai-spend-console` dawał 404; właściwy (z komunikatu prasowego)
+  `…/platform/ai/ai-spend-console` przekierowuje na stronę AI Governance, która opisuje AI Spend Console
+- Dane przed zmianą były czyste: 0 duplikatów `source_url` w `tools`, 0 wierszy `published` bez `tool_id`
+- Logo z triggera jest liczone z `source_url`, więc każdy wpis z listingiem Product Hunt dostaje favicon PH
+
+### Następny krok
+- Przegląd 185 wpisów z `ai_act_risk = 'minimal'` (decyzja Pabla: ręcznie, nie hurtowy `NULL`)
+- Przy następnej publikacji z kolejki sprawdzić, że nowy wpis ma `ai_act_risk` pusty, a karta nie ma plakietki
+- Naprawa Product Hunt u źródła (osobny wiersz w backlogu); decyzja, czy ponowna publikacja ma
+  przywracać wcześniej odrzucone narzędzie (dziś nie przywraca)
+
+---
+
 ```
 ## [v0.X] — [data]
 

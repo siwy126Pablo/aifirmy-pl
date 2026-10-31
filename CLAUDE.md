@@ -177,20 +177,43 @@ CREATE TABLE categories (
 
 ## Database trigger — `promote_scrape_to_tools()`
 
-**Lives in Supabase (Postgres function/trigger), NOT in this repo.** The PHP "Zatwierdź" button in `admin/index.php` only sets `scrape_queue.stage = 'published'`; this trigger does the actual `INSERT INTO tools`. Current definition includes `best_for_pl`, favicon fallback, and (since the 2026-09-14 tri-state migration below) `rodo_compliant = NULL` instead of `false`:
+**Lives in Supabase (Postgres function/trigger), NOT in this repo.** The PHP "Zatwierdź" button in `admin/index.php` only sets `scrape_queue.stage = 'published'`; this trigger does the actual `INSERT INTO tools`. Current definition (migration `db/migrations/011_promote_trigger_dedup_and_ai_act_null.sql`, applied 2026-10-31) includes `best_for_pl`, favicon fallback, `rodo_compliant = NULL` (since the 2026-09-14 tri-state migration below), `ai_act_risk = NULL` (was a hardcoded `'minimal'`; unverified, existing rows were left as they were) and a duplicate guard (skips the INSERT when `scrape_queue.tool_id` already points at a tool or `tools` has the same non-empty `source_url`; links the queue row to the existing tool; `RAISE NOTICE`, no exception):
 
 ```sql
 CREATE OR REPLACE FUNCTION public.promote_scrape_to_tools()
  RETURNS trigger
  LANGUAGE plpgsql
+ SET search_path TO 'public', 'pg_temp'
 AS $function$
 DECLARE
   v_category_id UUID;
   v_slug TEXT;
   v_domain TEXT;
   v_logo_url TEXT;
+  v_existing_id UUID;
 BEGIN
   IF NEW.stage = 'published' AND OLD.stage != 'published' THEN
+
+    -- (c) Ochrona przed duplikatem: najpierw tool_id z kolejki, potem source_url.
+    IF NEW.tool_id IS NOT NULL THEN
+      SELECT id INTO v_existing_id FROM tools WHERE id = NEW.tool_id;
+    END IF;
+
+    IF v_existing_id IS NULL AND COALESCE(NEW.source_url, '') != '' THEN
+      SELECT id INTO v_existing_id
+      FROM tools
+      WHERE source_url = NEW.source_url
+      LIMIT 1;
+    END IF;
+
+    IF v_existing_id IS NOT NULL THEN
+      IF NEW.tool_id IS DISTINCT FROM v_existing_id THEN
+        UPDATE scrape_queue SET tool_id = v_existing_id WHERE id = NEW.id;
+      END IF;
+      RAISE NOTICE 'promote_scrape_to_tools: pominięto duplikat (queue %, tool %)', NEW.id, v_existing_id;
+      RETURN NEW;
+    END IF;
+
     SELECT id INTO v_category_id
     FROM categories
     WHERE name_pl ILIKE '%' || NEW.ai_category || '%'
@@ -221,8 +244,8 @@ BEGIN
       COALESCE(NEW.source_url, ''),
       v_category_id,
       COALESCE(NEW.ai_pricing_model, 'freemium'),
-      NULL,
-      'minimal',
+      NULL,               -- NULL = nie zweryfikowano (migracja 002)
+      NULL,               -- NULL = nie zweryfikowano (było 'minimal', migracja 011)
       'approved',
       NEW.source_name,
       NEW.source_url,
