@@ -67,7 +67,11 @@ function parse_atom_entries(string $xml): ?array {
 // po filtrze słów kluczowych (koszt: 1 żądanie HTTP na kandydata). Rzucony wyjątek
 // = zostaje adres katalogu (stare zachowanie) + warning w logu, bez errors.
 // Dedup sprawdza wtedy oba adresy, bo historyczne wiersze mają adres katalogu.
-function run_atom_feed_source(string $runId, string $feedUrl, string $sourceName, ?callable $resolveUrl = null): array {
+//
+// $matchSummary (domyślnie false = jak w NiFi, filtr tylko po nazwie): gdy true, wpis
+// przechodzi filtr także wtedy, gdy słowo kluczowe jest w opisie z feedu (tagline).
+// Używane przez Product Hunt, którego nazwy ("Floot", "Revix") rzadko zawierają "AI".
+function run_atom_feed_source(string $runId, string $feedUrl, string $sourceName, ?callable $resolveUrl = null, bool $matchSummary = false): array {
     $stats = [
         'fetched'    => 0,
         'filtered'   => 0,
@@ -107,7 +111,7 @@ function run_atom_feed_source(string $runId, string $feedUrl, string $sourceName
         $name = trim(strstr($entry['title'], ' – ', true) ?: $entry['title']);
         $url  = strstr($entry['url'], '?', true) ?: $entry['url'];
 
-        if (!matches_keyword_filter($name)) {
+        if (!matches_keyword_filter($name) && !($matchSummary && matches_keyword_filter($entry['summary']))) {
             $stats['filtered']++;
             continue;
         }

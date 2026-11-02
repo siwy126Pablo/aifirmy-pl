@@ -11,7 +11,8 @@ require_once __DIR__ . '/../lib/atom.php';
 // wpisywaną w UpdateAttribute "(BetaList normalize)", więc ten warunek nigdy
 // niczego nie odrzucał.
 function run_product_hunt(string $runId): array {
-    return run_atom_feed_source($runId, 'https://www.producthunt.com/feed', 'product_hunt');
+    // matchSummary: nazwy PH ("Floot", "Revix") rzadko mają słowo kluczowe, a tagline w opisie je ma.
+    return run_atom_feed_source($runId, 'https://www.producthunt.com/feed', 'product_hunt', null, true);
 }
 
 // Uwaga: link wpisu PH wskazuje na stronę produktu na producthunt.com/products/…,

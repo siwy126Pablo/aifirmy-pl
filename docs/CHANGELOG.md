@@ -1039,6 +1039,24 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.36] — 2026-11-02
+
+### Zrobione
+- ✅ **Product Hunt: filtr słów kluczowych sprawdza też tagline** (decyzja Pabla 02.11). `run_atom_feed_source()`
+  dostał parametr `$matchSummary` (domyślnie `false`, więc BetaList bez zmian); `product_hunt.php` przekazuje `true`.
+  Wpis przechodzi, gdy słowo kluczowe jest w nazwie LUB w opisie z feedu. Powód: nazwy PH („Floot", „Revix") rzadko
+  zawierają „AI", a od 30.10 filtr odrzucał 50/50. Lista słów kluczowych bez zmian.
+
+### Odkrycia / problemy
+- Opis z feedu PH ma postać „tagline Discussion | Link" (sprawdzone w `scrape_queue.raw_desc`)
+- Słowa kluczowe są substringami (poza „ai"), więc np. „Hallmonitor" przechodzi przez „llm" — istniejące zachowanie, bez zmian
+
+### Następny krok
+- Po 3–5 dniach sprawdzić w `admin/stats.php`, ile wpisów PH przechodzi dziennie i ilu AI nie odrzuca; jeśli kolejka
+  zarasta szumem — cofnąć flagę w `product_hunt.php`
+
+---
+
 ```
 ## [v0.X] — [data]
 
