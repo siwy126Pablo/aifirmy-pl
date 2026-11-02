@@ -48,7 +48,7 @@ Kontynuujemy: [opisz co robisz].
 | ETL/Scraping | **PHP scraper + GitHub Actions** (`scraper/`) | **4 sources**: HN, BetaList, Product Hunt, YC-OSS API. Migrated from Apache NiFi (self-hosted, Windows) on **2026-09-20** — NiFi flow stopped/decommissioned, kept as reference only. See "ETL pipeline" section below. |
 | AI descriptions (pipeline) | OpenAI `gpt-4o-mini` | Prompt returns `best_for_pl` and `is_real_product`; YC source additionally passes real `source_context` (YC one_liner/long_description) instead of guessing from title alone |
 | AI verification (admin) | OpenAI `gpt-4o-mini` | `verify_tool.php`, `response_format: json_object`, key in `private_html/config/openai.php` on server (not in repo) |
-| Admin panel | PHP + Supabase REST API | `admin/index.php`, `admin/affiliate.php`, `admin/verify_tool.php`, `admin/logs.php`; zapisy z JS przez `admin/api.php`, wspólna warstwa REST w `admin/supabase.php` (ADR-012) |
+| Admin panel | PHP + Supabase REST API | `admin/index.php`, `admin/affiliate.php`, `admin/verify_tool.php`, `admin/logs.php`, `admin/stats.php`; zapisy z JS przez `admin/api.php`, wspólna warstwa REST w `admin/supabase.php` (ADR-012) |
 | Payments | Stripe (Live mode) | `checkout.php` + `webhook.php` at `/stripe/webhook.php` (Cloudflare WAF blocks POST to `/admin/`) |
 | Email | PHPMailer via Cyberfolks SMTP | `s103.cyber-folks.pl:587` |
 | Analytics | Google Analytics 4 (`G-3SP1TRXF7M`) + Search Console + AWStats | **GA4 is unreliable** — see "Analytics reliability" section below. Search Console + AWStats are the trusted sources. |
@@ -72,7 +72,9 @@ aifirmy-pl/
 │   ├── verify_tool.php      ← "Zweryfikuj przez AI" endpoint
 │   ├── api.php              ← JSON endpoint zapisów z JS (sesja + CSRF + whitelista); jedyna droga zapisu z przeglądarki
 │   ├── supabase.php         ← include: SUPABASE_KEY (service_role z db.php, fallback anon) + helpery sb_*; zapis z 0 wierszy = błąd
-│   └── logs.php             ← activity_log viewer (filterable/paginated)
+│   ├── logs.php             ← activity_log viewer (filterable/paginated)
+│   ├── stats.php            ← statystyki źródeł scrapowania (tabela + wykresy JS, tylko odczyt)
+│   └── stats_lib.php        ← include: agregacja linii „Zakończono/Start uruchomienia" z activity_log
 ├── scraper/                 ← PHP scraper — PRIMARY pipeline since 2026-09-20 (replaces NiFi)
 │   ├── run.php               ← dispatcher, `php run.php --source=X`
 │   ├── sources/               ← yc_oss.php, hacker_news.php, betalist.php, product_hunt.php
@@ -333,6 +335,7 @@ The original NiFi flow (`nifi-flows/aifirmy-main-flow-v2.json`) had HN/BetaList/
 - **`admin/index.php`** — tabs: Kolejka (scrape_queue, stage=ai_done) / **Odrzucone przez AI** (stage=ai_rejected) / Narzędzia (tools — search by name, category filter, sortable columns, edit modal with single shared `patchTool()` PATCH for all fields including `description_pl`/`best_for_pl`/`pricing_model`/`name`, per-row **"Zweryfikuj przez AI"** button) / Dodaj wpis (manual add_tool form, includes tri-state RODO/DPA/EU-hosting/Interfejs PL/Wsparcie PL selects and `price_from_pln`). All 5 tri-state fields also appear as read-only badge columns in the Narzędzia table and as selects in the edit modal
 - **`admin/affiliate.php`** — affiliate_links CRUD, toggle active without reload
 - **`admin/logs.php`** — filterable/paginated `activity_log` viewer (added 2026-09-09), default filter `warning+error`, expandable JSON context, pill colors reuse `aiActRiskColors` from `category-colors.ts` (error≈unacceptable, warning≈limited). `activity_log` is append-only in practice (RLS on, no policies, no `anon` access since 2026-10-29; writes and reads only via the `service_role` key), shared by `verify_tool.php` and the `scraper/` pipeline. Has a reserved (currently unused by `verify_tool.php`) `run_id` UUID column intended for grouping one scraper run's log lines together.
+- **`admin/stats.php`** — read-only scraper-source statistics (added 2026-11-02): source table (fetched / filtered / duplicates / inserted / AI-rejected / errors, last-run status), window filter 7/14/30/60 days, daily bar charts + ranking (vanilla JS/SVG), catalog-by-source table. Reads the `Zakończono/Start uruchomienia` lines of `activity_log` via `service_role`; logic in `admin/stats_lib.php`. `filtered` merges the 24h date filter and the keyword filter (the scraper logs one counter); the `hacker_news` catalog count is inflated by historical mislabeled rows.
 - **`admin/verify_tool.php`** — POST endpoint, `tool_id` in, `{"old": {...}, "new": {...}}` out:
   1. Fetch current tool + categories from Supabase (categories interpolated live from DB, not hardcoded)
   2. Live curl-fetch `website_url` (6s timeout, browser UA, follows redirects, hard-fails on HTTP ≥400)

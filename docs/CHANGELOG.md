@@ -1017,6 +1017,28 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.35] — 2026-11-02
+
+### Zrobione
+- ✅ **Panel statystyk źródeł scrapowania** (`7bc766c`): `admin/stats.php` + `admin/stats_lib.php`, tylko odczyt.
+  Dane z linii „Zakończono/Start uruchomienia" w `activity_log` (service_role przez `supabase.php`).
+  Tabela źródeł (YC-OSS, Hacker News, BetaList, Product Hunt) z liczbami pobrane / odrzucone przez filtr /
+  duplikaty / nowe w kolejce / odrzucone przez AI / błędy i statusem ostatniego przebiegu, filtr okna
+  7/14/30/60 dni, wykresy dzienne i ranking (vanilla JS/SVG, bez bibliotek), tabela „W katalogu wg źródła".
+  Linki „Statystyki źródeł" w `index.php` i `logs.php`. Bez migracji.
+
+### Odkrycia / problemy
+- Product Hunt „50/50 odrzuconych" to norma: ok. 18 wpisów w 44 dni, filtr bez zmian od 20.09 — to nie regresja po commicie z 30.10
+- „Odrzucone przez filtr" łączy filtr daty (24 h) i słów kluczowych — scraper zapisuje jeden licznik `filtered`
+- W „W katalogu wg źródła" Hacker News jest zawyżony (historyczne wpisy BetaList/PH z etykietą `hacker_news` po błędzie NiFi)
+- Panel sprawdzony na danych testowych odtwarzających realne sumy PH; nie na żywym Supabase
+
+### Następny krok
+- Otworzyć `/admin/stats.php` na produkcji i porównać liczby z `admin/logs.php`
+- Decyzja, czy Product Hunt zostaje z filtrem po nazwie, czy szerzej (tagline)
+
+---
+
 ```
 ## [v0.X] — [data]
 
