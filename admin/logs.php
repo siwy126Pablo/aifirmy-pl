@@ -154,6 +154,7 @@ if ($logged_in) {
     <strong>aifirmy.pl — Logi</strong>
     <div class="links">
         <a href="/admin/index.php">← Panel główny</a>
+        <a href="/admin/stats.php">Statystyki źródeł</a>
         <a href="?logout=1">Wyloguj →</a>
     </div>
 </div>
