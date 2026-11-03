@@ -45,12 +45,20 @@ function parse_atom_entries(string $xml): ?array {
         $rawPublished = (string)$e->published !== '' ? (string)$e->published : (string)$e->updated;
         $ts = $rawPublished !== '' ? strtotime($rawPublished) : false;
 
+        // Product Hunt: w treści wpisu jest link „Link” (…/r/p/<ID>?app_id=…), który
+        // przekierowuje na domenę produktu. Inne feedy go nie mają (null).
+        $redirectUrl = null;
+        if (preg_match('~href=["\']([^"\']*/r/p/\d+[^"\']*)["\']~i', $html, $m)) {
+            $redirectUrl = trim(html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+
         $entries[] = [
             'title'         => $title,
             'url'           => $url,
             'summary'       => $summary,
             'published'     => $ts === false ? null : $ts,
             'raw_published' => $rawPublished,
+            'redirect_url'  => $redirectUrl,
         ];
     }
     return $entries;
@@ -62,8 +70,10 @@ function parse_atom_entries(string $xml): ?array {
 // URL = część przed '?' (usuwa utm_*). Filtr słów kluczowych działa na tak
 // obciętej NAZWIE, nie na pełnym tytule — tak jest w NiFi (hn_title).
 //
-// $resolveUrl (opcjonalny): fn(string $listingUrl): string — zamienia adres strony
-// katalogu (np. betalist.com/startups/slug) na adres produktu. Wywoływany dopiero
+// $resolveUrl (opcjonalny): fn(string $listingUrl, array $entry): string — zamienia adres
+// strony katalogu (np. betalist.com/startups/slug) na adres produktu; $entry to wpis
+// z parse_atom_entries() (PH bierze z niego redirect_url; BetaList drugi argument
+// ignoruje). Wywoływany dopiero
 // po filtrze słów kluczowych (koszt: 1 żądanie HTTP na kandydata). Rzucony wyjątek
 // = zostaje adres katalogu (stare zachowanie) + warning w logu, bez errors.
 // Dedup sprawdza wtedy oba adresy, bo historyczne wiersze mają adres katalogu.
@@ -120,7 +130,7 @@ function run_atom_feed_source(string $runId, string $feedUrl, string $sourceName
         if ($resolveUrl !== null) {
             $listingUrl = $url;
             try {
-                $url = strip_url_query($resolveUrl($listingUrl));
+                $url = strip_url_query($resolveUrl($listingUrl, $entry));
                 $dedupUrls[] = $listingUrl;
                 $entry['listing_url'] = $listingUrl;
             } catch (\Throwable $e) {
