@@ -3,6 +3,31 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/quality_rules.php';
 
+// scrape_queue.ai_tags to text[]: PostgREST przyjmie tablicę JSON, ale odrzuci zwykły
+// string z przecinkami (HTTP 400, 22P02 „malformed array literal”). Prompt nie określa
+// typu pola `tags`, więc model bywa niedeterministyczny (03.11: Product Hunt zwrócił
+// „AI, komunikacja, …” jako string). Normalizacja w jednym miejscu obejmuje wszystkie
+// źródła (pipeline.php i yc_oss.php wołają call_openai_description()).
+function normalize_ai_tags(mixed $tags): ?array {
+    if (is_string($tags)) {
+        $tags = preg_split('/\s*[,;]\s*/u', $tags) ?: [];
+    }
+    if (!is_array($tags)) {
+        return null;
+    }
+    $out = [];
+    foreach ($tags as $t) {
+        if (!is_string($t) && !is_int($t) && !is_float($t)) {
+            continue;
+        }
+        $t = trim((string) $t);
+        if ($t !== '' && !in_array($t, $out, true)) {
+            $out[] = $t;
+        }
+    }
+    return $out === [] ? null : $out;
+}
+
 function call_openai_description(string $title, string $url, string $context): array {
     // Dosłowna treść system promptu z NiFi ReplaceText (potwierdzona przez Pabla,
     // stan 2026-09-13) — 10 kategorii, te same zasady dla wszystkich pól.
@@ -74,6 +99,8 @@ PROMPT;
     if (!is_array($parsed)) {
         throw new RuntimeException('Odpowiedź OpenAI nie jest poprawnym JSON: ' . $content);
     }
+
+    $parsed['tags'] = normalize_ai_tags($parsed['tags'] ?? null);
 
     return $parsed;
 }
