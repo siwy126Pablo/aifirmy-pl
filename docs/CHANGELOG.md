@@ -1082,6 +1082,32 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 - Po 3–5 dniach `errors` dla Product Hunt = 0 w `admin/stats.php`
 - Osobna decyzja: dopisać do promptu typ pola `tags` (tablica JSON); normalizacja w PHP zostaje jako zabezpieczenie
 
+## [v0.38] — 2026-11-03
+
+### Zrobione
+- ✅ **Product Hunt: `source_url` = domena produktu** (`0d8bfd2`): `parse_atom_entries()` wyciąga z treści wpisu
+  link „Link” (`…/r/p/<ID>?app_id=…`) do nowego pola `redirect_url`; `resolve_product_hunt_url()` w
+  `product_hunt.php` podąża za 301 przez `http_resolve_redirect_off_host(…, 'producthunt.com')` i bierze
+  pierwszy `Location` poza producthunt.com (`strip_url_query` usuwa `?ref=producthunt`). Mechanizm jak w BetaList (`8d0f460`)
+- `run_atom_feed_source()` woła resolver z drugim argumentem (`$resolveUrl($listingUrl, $entry)`);
+  `resolve_betalist_url(string)` bez zmian. Błąd = zostaje adres katalogu + warning, licznik `url_unresolved`
+  (nie `errors`); dedup sprawdza oba adresy, więc wiersze PH sprzed zmiany nie zdublują się
+
+### Odkrycia / problemy
+- Zachowanie PH sprawdzone ręcznie 03.11 z komputera Pawła (nie z Actions): `curl -I` na
+  `https://www.producthunt.com/r/p/1300044?app_id=339` z UA scrapera → `301`, `location: https://wavefunction.si?ref=producthunt`,
+  bez blokady Cloudflare. Sandbox nie ma dostępu do producthunt.com, więc odpowiedź z adresów GitHub Actions jest niezweryfikowana
+- Wynik dla `wavefunction.si` ma ukośnik na końcu (normalizacja curl) — tak jak istniejące wiersze BetaList
+- W feedzie PH `<published>` to data premiery produktu (Wavefunction: 31.10, w feedzie nadal 03.11), a okno
+  kandydatów 24 h liczy od niej — spójne z hipotezą, że machinemail wypadł poza okno (niezweryfikowane)
+- Test lokalny: parser na próbce feedu (3 wpisy: z linkiem, bez linku, z linkiem spoza PH), walidacja resolvera,
+  łańcuch 301 na lokalnym serwerze, `php -l`. Nie przetestowano na żywo (brak sieci do PH)
+
+### Następny krok
+- Po najbliższym przebiegu `scrape-producthunt.yml` sprawdzić w `admin/logs.php`: brak ostrzeżeń „Nie udało się ustalić adresu produktu”
+  (`url_unresolved` = 0) i że nowe wiersze PH mają `source_url` z domeną produktu
+- Dopiero wtedy zamknąć zadanie w Notion; jeśli Actions dostaje 403 z `/r/p/`, wymyślić inną drogę (np. własny wpis ręczny)
+
 ---
 
 ```
