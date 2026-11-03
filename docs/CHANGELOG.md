@@ -1123,7 +1123,15 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
   „Technologia”, „Artykuły”, „Blog”, „Edukacja”) to w większości nie-produkty
 - Świadomie bez synonimów: „Bezpieczeństwo IT”, „Bezpieczeństwo”, „Analiza danych”, „Prawo i technologia”, „Technologia”, „Edukacja”
   nadal dają `null` i trafiają do „Odrzucone przez AI”
-- Momentic nadal siedzi w „Odrzucone przez AI” — reguła działa tylko na nowe wpisy; przywrócenie ręczne (kategoria „Cyberbezpieczeństwo AI”)
+- Momentic przywrócony ręcznie 03.11 (`stage` → `ai_done`, `error_msg` wyczyszczony), kategoria poprawiona na „Automatyzacja procesów”
+  (tymczasowo, jak inne narzędzia deweloperskie — luka w taksonomii). Sprawdzenie na stronie producenta: to realny produkt B2B (agent AI do
+  testów QA aplikacji web/iOS/Android), więc kategoria „Cyberbezpieczeństwo” z AI była błędna merytorycznie, a nie tylko zapisana „prawie zgodnie”;
+  mapowanie na „Cyberbezpieczeństwo AI” dałoby tu złą kategorię. Reguła „prawie zgodnych” ma więc na razie jeden przypadek w danych i ten był
+  pomyłką modelu — przydatna dla „Finanse”/„Prawo”, ale warto ją ocenić po kilku tygodniach wpisów „Kategoria prawie zgodna z listą”
+- Ustalenia z oficjalnych stron Momentic (momentic.ai/pricing, /docs/account/security, /docs/account/ai-data-use): plan Free bezterminowo
+  (2 000 kredytów/mies.), Pay-as-you-go 125 USD/mies., Enterprise indywidualnie → `freemium`; SOC 2 Type 2 tak; DPA, region danych
+  i podmiot prawny — brak informacji (hosting Google Cloud; subprocesorzy m.in. Anthropic, OpenAI, Azure, Vertex, Bedrock); dane kont
+  self-serve mogą służyć do ulepszania agentów (Enterprise może zrezygnować). Do `tools` nic nie zapisane — wpis czeka w kolejce na zatwierdzenie
 - `yc_oss.php` nadal nie normalizuje kategorii (zapisuje `$ai['category']` bez walidacji) — osobne zadanie, razem z konsolidacją do `pipeline.php`
 - Test lokalny: 23 przypadki funkcji (dokładne, ogonki, spacje, prawie zgodne, synonimy, granica słowa, puste/null) + `php -l`;
   bez przebiegu na żywo (sandbox bez sekretów)
