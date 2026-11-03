@@ -285,7 +285,7 @@ Wszystkie 4 triggery (`GenerateFlowFile`) zatrzymane ręcznie w NiFi UI po potwi
 
 - **Kontekst OpenAI** (`7786443`): BetaList/PH przekazują summary z feedu (`raw_desc`) jako Kontekst; HN dalej „brak”
 - **BetaList → domena produktu** (`8d0f460`): `source_url` z przekierowania `/visit`, bez query; dedup po adresie produktu i adresie katalogu (`raw_json.listing_url`); błąd → stary adres + warning (`url_unresolved`)
-- **Reguły odrzucania** (`9744d62`): hardware/IoT/robotyka/uzbrojenie → `is_real_product=false`; prefiks `Show HN:` obcinany w PHP; kategoria spoza listy → `ai_rejected` + `error_msg`
+- **Reguły odrzucania** (`9744d62`): hardware/IoT/robotyka/uzbrojenie → `is_real_product=false`; prefiks `Show HN:` obcinany w PHP; kategoria spoza listy → `ai_rejected` + `error_msg` (od 03.11 kategorie prawie zgodne, np. „Cyberbezpieczeństwo”, są mapowane na pozycję z listy — `d52133a`, CHANGELOG v0.39)
 - **Test 20.10:** BetaList 1 wstawiony, 2 duplikaty, 0 errors, 0 url_unresolved; ChatGPT Bulk Delete z poprawną domeną i opisem zgodnym z feedem. PH — 0 kandydatów (do sprawdzenia przy kolejnych przebiegach)
 
 ---

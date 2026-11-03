@@ -1108,6 +1108,29 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
   (`url_unresolved` = 0) i że nowe wiersze PH mają `source_url` z domeną produktu
 - Dopiero wtedy zamknąć zadanie w Notion; jeśli Actions dostaje 403 z `/r/p/`, wymyślić inną drogę (np. własny wpis ręczny)
 
+## [v0.39] — 2026-11-03
+
+### Zrobione
+- ✅ **Scraper: kategorie prawie zgodne z listą są mapowane zamiast odrzucane** (`d52133a`):
+  `normalize_pipeline_category()` w `pipeline.php` ma drugi etap po dopasowaniu dokładnym — jedna nazwa jest początkiem
+  drugiej na granicy słowa (w obie strony), tylko gdy kandydat jest dokładnie jeden. Przykłady: „Cyberbezpieczeństwo” →
+  „Cyberbezpieczeństwo AI”, „Finanse” → „Finanse i księgowość”, „Marketing i content AI” → „Marketing i content”.
+  Zmapowanie loguje `pipeline.php` jako `info` w `activity_log` („Kategoria prawie zgodna z listą, zmapowana: …”)
+
+### Odkrycia / problemy
+- Przypadek: Momentic (HN, 03.11) odrzucony jako „Kategoria spoza listy: Cyberbezpieczeństwo”. Od 20.10 (flaga w `error_msg`)
+  to jedyny taki wiersz w `scrape_queue`; ponad 200 wcześniejszych wartości spoza listy (głównie czerwiec–lipiec, era NiFi bez listy:
+  „Technologia”, „Artykuły”, „Blog”, „Edukacja”) to w większości nie-produkty
+- Świadomie bez synonimów: „Bezpieczeństwo IT”, „Bezpieczeństwo”, „Analiza danych”, „Prawo i technologia”, „Technologia”, „Edukacja”
+  nadal dają `null` i trafiają do „Odrzucone przez AI”
+- Momentic nadal siedzi w „Odrzucone przez AI” — reguła działa tylko na nowe wpisy; przywrócenie ręczne (kategoria „Cyberbezpieczeństwo AI”)
+- `yc_oss.php` nadal nie normalizuje kategorii (zapisuje `$ai['category']` bez walidacji) — osobne zadanie, razem z konsolidacją do `pipeline.php`
+- Test lokalny: 23 przypadki funkcji (dokładne, ogonki, spacje, prawie zgodne, synonimy, granica słowa, puste/null) + `php -l`;
+  bez przebiegu na żywo (sandbox bez sekretów)
+
+### Następny krok
+- Przy najbliższych przebiegach szukać w `admin/logs.php` wpisów „Kategoria prawie zgodna z listą” i ocenić, czy mapowania są trafne
+
 ---
 
 ```
