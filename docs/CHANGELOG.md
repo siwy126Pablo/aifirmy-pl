@@ -1057,6 +1057,33 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.37] — 2026-11-03
+
+### Zrobione
+- ✅ **Scraper: `ai_tags` zawsze jako tablica** (`7a3824a`): nowa `normalize_ai_tags()` w `scraper/lib/openai.php`,
+  wołana na końcu `call_openai_description()`. String z przecinkami lub średnikami jest rozbijany na tablicę,
+  puste hasła i duplikaty odpadają, wynik pusty lub nie-tablicowy → `null`. Obejmuje wszystkie 4 źródła
+  (`pipeline.php` i `yc_oss.php` wołają tę samą funkcję), prompt bez zmian
+
+### Odkrycia / problemy
+- Objaw: `activity_log` 03.11 08:55 UTC, `scraper:product_hunt`: `sb_post HTTP 400`, kod `22P02`,
+  „malformed array literal: AI, komunikacja, zarządzanie, zaufanie” (`source_url` `producthunt.com/products/machinemail`).
+  Wpis nie trafił do kolejki, więc dedup nie zablokuje ponowienia przy następnym przebiegu
+- Przyczyna: prompt wymienia `tags` w formacie odpowiedzi bez typu, a `pipeline.php:122` i `yc_oss.php:100`
+  przekazywały `$ai['tags']` do `scrape_queue.ai_tags` (`text[]`) bez walidacji — model raz zwrócił string
+- Hipoteza (niepotwierdzona): luka była wcześniej niewidoczna, bo do 02.11 prawie nic z PH nie docierało
+  do zapisu (filtr po nazwie); v0.36 poszerzył filtr o tagline
+- Test tylko lokalny: 9 przypadków wejściowych funkcji + `php -l` na `openai.php`, `pipeline.php`, `yc_oss.php`;
+  przebieg na żywo nie był możliwy (sandbox bez sekretów Supabase/OpenAI)
+
+### Następny krok
+- Ręcznie uruchomić `scrape-producthunt.yml` (`workflow_dispatch`): sprawdzić, że nie ma błędu 400 w `admin/logs.php`
+  i czy machinemail trafił do kolejki (okno kandydatów 24 h)
+- Po 3–5 dniach `errors` dla Product Hunt = 0 w `admin/stats.php`
+- Osobna decyzja: dopisać do promptu typ pola `tags` (tablica JSON); normalizacja w PHP zostaje jako zabezpieczenie
+
+---
+
 ```
 ## [v0.X] — [data]
 

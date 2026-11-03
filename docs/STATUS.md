@@ -443,6 +443,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] ~55 wpisów w stylu 1-zdaniowym bez nazwy narzędzia (konwencja ręcznych wpisów z sierpnia) — zdecydować: zostawić jako świadomy styl czy ujednolicić wg `CONTENT-GUIDE.md`. Niska pilność, decyzja stylistyczna, nie bug
 
 ### 🟡 Inne otwarte punkty
+- [ ] 🆕 (03.11) `ai_tags` jako tablica (`7a3824a`, CHANGELOG v0.37) — po poprawce błędu 400/`22P02` zapisu tagów (Product Hunt, machinemail): ręcznie uruchomić `scrape-producthunt.yml` i sprawdzić `admin/logs.php` (brak 400), po 3–5 dniach `errors` PH = 0 w `admin/stats.php`. Test był tylko lokalny. Osobna decyzja: typ pola `tags` w prompcie (`openai.php`)
 - [ ] 🆕 (28.10, uzupełnione 29.10) RLS — w panelu sprawdzone licznik (338 zatwierdzonych), lista Narzędzia i zapis `tool_update`; zostaje: lista i przełącznik linków afiliacyjnych oraz „Zatwierdź” na pierwszym realnym wpisie ze scrapera (kolejka pusta)
 - [ ] 🆕 (29.10) RLS — opcjonalnie zawęzić kolumny `tools` dla `anon` (dziś `GRANT SELECT` na całą tabelę, bo build robi `select('*')` w 4 plikach `.astro`; wpisy `rejected` są już ukryte polityką `status = 'approved'`)
 - [ ] 🆕 (28.10) Żywy test webhooka Stripe przed pierwszą sprzedażą (np. najtańszy plan + zwrot): `webhook.php` przy błędzie zapisu zwraca 200 i tylko loguje, więc zgubiony zakup nie wróci z ponowieniem Stripe
