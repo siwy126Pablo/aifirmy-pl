@@ -20,25 +20,46 @@ const PIPELINE_CATEGORIES = [
     'Cyberbezpieczeństwo AI',
 ];
 
-// Zwraca kanoniczną nazwę kategorii albo null. Dopasowanie bez wielkości liter
-// i polskich znaków („Automatyzacja procesow” → „Automatyzacja procesów”), bez
-// zgadywania synonimów: kategoria spoza listy dałaby w triggerze
+// Zwraca kanoniczną nazwę kategorii albo null. Etap 1: dopasowanie bez wielkości liter
+// i polskich znaków („Automatyzacja procesow” → „Automatyzacja procesów”).
+// Etap 2 (03.11, „prawie zgodne”): jedna nazwa jest początkiem drugiej na granicy
+// słowa, w obie strony — „Cyberbezpieczeństwo” → „Cyberbezpieczeństwo AI”, „Finanse” →
+// „Finanse i księgowość”, „Marketing i content AI” → „Marketing i content”. Tylko gdy
+// kandydat jest dokładnie jeden. Bez zgadywania synonimów („Bezpieczeństwo IT”,
+// „Technologia”, „Edukacja” dalej dają null): kategoria spoza listy dałaby w triggerze
 // promote_scrape_to_tools() narzędzie z category_id = NULL, więc wpis trafia do
 // „Odrzucone przez AI” z powodem w error_msg zamiast do kolejki.
-function normalize_pipeline_category(?string $category): ?string {
+// $fuzzy (opcjonalny, przez referencję): true, gdy użyto etapu 2 — do logu w pipeline.
+function normalize_pipeline_category(?string $category, ?bool &$fuzzy = null): ?string {
+    $fuzzy = false;
     if ($category === null) {
         return null;
     }
     $key = static function (string $s): string {
         $s = mb_strtolower(trim($s), 'UTF-8');
-        return strtr($s, ['ą' => 'a', 'ć' => 'c', 'ę' => 'e', 'ł' => 'l', 'ń' => 'n',
-                          'ó' => 'o', 'ś' => 's', 'ź' => 'z', 'ż' => 'z']);
+        $s = strtr($s, ['ą' => 'a', 'ć' => 'c', 'ę' => 'e', 'ł' => 'l', 'ń' => 'n',
+                        'ó' => 'o', 'ś' => 's', 'ź' => 'z', 'ż' => 'z']);
+        return trim(preg_replace('/\s+/u', ' ', $s) ?? $s);
     };
     $needle = $key($category);
+    if ($needle === '') {
+        return null;
+    }
     foreach (PIPELINE_CATEGORIES as $c) {
         if ($key($c) === $needle) {
             return $c;
         }
+    }
+    $candidates = [];
+    foreach (PIPELINE_CATEGORIES as $c) {
+        $ck = $key($c);
+        if (str_starts_with($ck . ' ', $needle . ' ') || str_starts_with($needle . ' ', $ck . ' ')) {
+            $candidates[] = $c;
+        }
+    }
+    if (count($candidates) === 1) {
+        $fuzzy = true;
+        return $candidates[0];
     }
     return null;
 }
@@ -95,7 +116,13 @@ function enqueue_candidate(
     $isRealProduct = ($ai['is_real_product'] ?? null) === true;
     $errorMsg = null;
     $rawCategory = isset($ai['category']) && is_string($ai['category']) ? $ai['category'] : null;
-    $category = normalize_pipeline_category($rawCategory);
+    $categoryFuzzy = false;
+    $category = normalize_pipeline_category($rawCategory, $categoryFuzzy);
+    if ($categoryFuzzy) {
+        scraper_log('info', 'Kategoria prawie zgodna z listą, zmapowana: „' . $rawCategory . '” → „' . $category . '”', [
+            'source_url' => $url,
+        ], $runId);
+    }
     if ($isRealProduct && $category === null) {
         $isRealProduct = false;
         $errorMsg = 'Kategoria spoza listy: ' . ($rawCategory ?? 'brak');
