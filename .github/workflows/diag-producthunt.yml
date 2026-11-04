@@ -1,0 +1,21 @@
+name: Diagnostyka — Product Hunt (tymczasowa)
+
+# TYMCZASOWE (04.11.2026): sprawdza, jak producthunt.com odpowiada na żądania z adresów GitHub Actions
+# (403 na /r/p/ID). Tylko ręczne uruchomienie; usunąć razem z scraper/diag_ph.php po zebraniu wyników.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diag-producthunt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Diagnostyka Product Hunt
+        env:
+          SUPABASE_URL:      ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: php scraper/diag_ph.php
