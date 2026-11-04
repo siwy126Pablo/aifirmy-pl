@@ -1139,6 +1139,30 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 ### Następny krok
 - Przy najbliższych przebiegach szukać w `admin/logs.php` wpisów „Kategoria prawie zgodna z listą” i ocenić, czy mapowania są trafne
 
+
+## [v0.40] — 2026-11-04
+
+### Zrobione
+- ✅ **Product Hunt: resolver domeny produktu wycofany** (revert `0d8bfd2`): z GitHub Actions nie działa. Przebieg 04.11: `url_unresolved` 8 z 8,
+  każde `/r/p/ID` → HTTP 403. Wpisy PH wracają do adresu katalogowego (`producthunt.com/products/…`), jak do 03.11
+- Usunięta tymczasowa diagnostyka (`scraper/diag_ph.php`, `diag-producthunt.yml`, dodane w `bdb14bc`); komentarz w `product_hunt.php`
+  zapisuje wynik, żeby nikt nie próbował tego ponownie. Poprawia v0.38 (tam resolver opisany jako zrobiony)
+
+### Odkrycia / problemy
+- Diagnostyka z Actions (run 04.11, 3 wpisy, wyniki w `activity_log`, source `scraper:diag_producthunt`): `/r/p/ID` → 403, strona produktu
+  `/products/slug` → 403, oba z `cf-mitigated: challenge` (wyzwanie Cloudflare dla automatów); feed `/feed` → 200. Wariant „Visit website z HTML
+  strony produktu” też odpada. Z domowego IP Pawła `/r/p/ID` dawało 301 (03.11), więc różnica to adresy centrum danych
+- `robots.txt` PH: `Disallow: /r/*`, ale `Allow: /r/p/*` — blokada to Cloudflare, nie robots.txt. Wyzwania nie obchodzimy (udawanie przeglądarki,
+  proxy); scraper nadal wysyła uczciwy User-Agent
+- Oficjalne API PH (GraphQL, developer token) — dokumentacja: „The Product Hunt API must not be used for commercial purposes”, w sprawach
+  biznesowych kontakt hello@producthunt.com. Katalog ma Stripe i afiliację, więc bez zgody PH tej drogi nie używamy
+- Dlaczego lepiej wyłączyć niż zostawić: 8 ostrzeżeń na przebieg zaśmieca `admin/logs.php` (domyślny filtr warning+error) i każde żądanie to
+  kolejne uderzenie w wyzwanie Cloudflare
+
+### Następny krok
+- Linki produktów z PH poprawia się przy moderacji (jak Floot, Revix); luka `website_url` dla PH zostaje znaną luką
+- Osobna decyzja Pawła: czy pytać PH o zgodę na API (hello@producthunt.com); kod dopiero po zgodzie
+
 ---
 
 ```
