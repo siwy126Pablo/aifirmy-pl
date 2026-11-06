@@ -1,63 +1,64 @@
-# COMPLIANCE-EVIDENCE.md — rejestr weryfikacji RODO / DPA / hostingu w UE
+# COMPLIANCE-EVIDENCE.md — jak działa weryfikacja RODO / DPA / hostingu UE
 
-**Po co ten plik.** Pola `rodo_compliant`, `dpa_available`, `eu_data_hosting` w tabeli `tools` nie mają miejsca na źródło ani datę sprawdzenia. Ten plik jest tym miejscem, dopóki nie powstaną kolumny w bazie. **Zasada dla każdej sesji: wpis wymieniony poniżej jest już sprawdzony na stronie producenta. Nie weryfikuj go od nowa**, chyba że minął rok od daty sprawdzenia albo producent ogłosił zmianę (np. DeepL, luty 2026). Nowe sprawdzenia dopisuj na dole tabeli, nie edytuj wstecz.
+**Dowody NIE są w tym pliku.** Źródłem prawdy jest baza: kolumny `tools.compliance_evidence` (jsonb) i `tools.compliance_checked_at` (migracja `db/migrations/012_compliance_evidence.sql`, 6.11.2026). Ten plik zawiera tylko reguły i zapytania kontrolne. Dzięki temu nie ma drugiej kopii dowodów, która mogłaby się rozjechać z bazą.
 
-Dziennik zmian i decyzji: `CHANGELOG.md`, `DECISIONS.md`. Ten plik to rejestr dowodów, nie dziennik.
+## Zasada dla każdej sesji
+
+Przed weryfikacją pól `rodo_compliant`, `dpa_available`, `eu_data_hosting` sprawdź `compliance_evidence` danego narzędzia:
+
+- **Jest wpis dla pola i `value` zgadza się z kolumną** → pole jest sprawdzone. Nie weryfikuj od nowa, chyba że od `checked` minął rok albo producent ogłosił zmianę.
+- **`value` w dowodzie ≠ wartość w kolumnie** → ktoś zmienił pole bez aktualizacji dowodu; dowód jest nieważny, pole do ponownego sprawdzenia.
+- **Wpis z `value: null`** → sprawdzono, strona nie mówi nic o tym polu (NULL jest tu wynikiem, nie brakiem sprawdzenia).
+- **Wartość ≠ NULL, brak wpisu** → brak dowodu (starszy wpis ręczny, zob. „Stan").
+- **Każda zmiana pola** (w panelu lub SQL) wymaga w tej samej operacji zapisu wpisu: `value`, `url`, `note`, `checked` (RRRR-MM-DD) oraz `compliance_checked_at`.
+
+Opis tej zasady jest też w `COMMENT ON COLUMN` na kolumnach, więc widzi go każdy, kto ogląda schemat.
+
+## Kształt wpisu
+
+```json
+{ "dpa_available":   { "value": true,  "url": "https://…", "note": "co jest na stronie", "checked": "2026-11-06" },
+  "eu_data_hosting": { "value": false, "url": "https://…", "note": "…", "checked": "2026-11-06" } }
+```
+
+Klucze to nazwy kolumn. `url` może być `null`, gdy adres nie został zapisany (zaznacz to w `note`).
 
 ## Reguły znaczenia pól (ustalone 6.11.2026)
 
-- **`dpa_available` ✓** — strona producenta (Legal / Trust / Security) zawiera własny dokument DPA/Data Processing Addendum. Sama deklaracja „zgodni z RODO" to za mało → NULL.
-- **`eu_data_hosting` (reguła A, decyzja Pabla)** — ✓, gdy region UE można wybrać przy zakładaniu konta lub jest domyślny. ✗, gdy UE to płatny dodatek / tylko enterprise albo domyślnie dane są poza UE. NULL, gdy strona nie mówi nic o hostingu.
-- **`rodo_compliant` ✓** — dla starszych wpisów ręcznych (ok. 80) nie ma udokumentowanego dowodu. Definicja tego pola czeka na decyzję (zadanie w Notion: „zdecydować definicję RODO ✓"). Do tego czasu ✓ przy RODO nie oznacza dowodu, a ✓ przy DPA/UE z tego rejestru tak.
-- Brak informacji = NULL, nigdy ✓.
+- **`dpa_available` ✓** — strona producenta (Legal / Trust / Security) zawiera własny dokument DPA. Samo „zgodni z RODO" to za mało → NULL.
+- **`eu_data_hosting` (reguła A, decyzja Pabla)** — ✓, gdy region UE można wybrać przy zakładaniu konta lub jest domyślny. ✗, gdy UE to płatny dodatek / tylko enterprise albo domyślnie dane są poza UE. NULL, gdy strona nic o hostingu nie mówi.
+- **`rodo_compliant` ✓** — definicja czeka na decyzję (zadanie w Notion: „zdecydować definicję RODO ✓"). Obecne ✓ w starszych wpisach ręcznych (ok. 175 w bazie) nie ma dowodu.
+- Brak informacji = NULL, nigdy ✓. Oficjalne strony producenta (privacy, security, trust center, DPA), nie blogi ani katalogi.
 
-## Rejestr — przegląd 6.11.2026 (strony producentów, Chrome)
+## Zapytania kontrolne
 
-Stan pól po przeglądzie: ✓ = true, ✗ = false, — = NULL.
+```sql
+-- dowód nie zgadza się z kolumną (ma być 0 wierszy)
+SELECT t.slug, e.key, e.value->'value' AS dowod
+FROM tools t, jsonb_each(t.compliance_evidence) e
+WHERE nullif(e.value->'value','null'::jsonb) IS DISTINCT FROM
+  CASE e.key WHEN 'dpa_available' THEN to_jsonb(t.dpa_available)
+             WHEN 'eu_data_hosting' THEN to_jsonb(t.eu_data_hosting)
+             WHEN 'rodo_compliant' THEN to_jsonb(t.rodo_compliant) END;
 
-| slug | DPA | UE | Dowód |
-|---|---|---|---|
-| apify | — | ✗ | trust.apify.com: podprocesorzy w USA (AWS, MongoDB, Snowflake, Mezmo) |
-| deepl | ✓ | ✗ | trust center deepl.safebase.us, komunikat z 6.02.2026: domyślnie globalnie (AWS UE/US/JP), Data Residency UE jako płatny dodatek; dokument DPA w trust center |
-| pigment | ✓ | ✓ | pigment.com/security: klient wybiera europe-west3 (Frankfurt) lub us-west1 (Oregon); samego DPA na stronie nie widziano |
-| relevance-ai | ✓ | ✓ | trust.relevanceai.com: „Data Processing Addendum", podprocesorzy AWS/MongoDB, regiony US/EU/AU |
-| otter-ai | ✓ | — | Otter, strona privacy-security: oświadczenie GDPR, AWS S3, bez informacji o regionie |
-| fathom | ✓ | — | fathom.ai/dpa (DPA), fathom.ai/privacy (bez regionu) |
-| descript | — | — | brak własnego DPA na stronie producenta |
-| legalsifter | — | — | tylko oświadczenie GDPR i EU-US DPF, bez DPA |
-| langfuse | ✓ | ✓ | langfuse.com/security: DPA, regiony US/EU/JP |
-| gladia | ✓ | ✓ | gladia.io/security: domyślnie europejski dostawca (Francja), DPA w stopce |
-| survicate | ✓ | ✓ | survicate.com/gdpr: AWS Irlandia, link do DPA |
-| leexi | ✓ | ✓ | FAQ compliance-sovereignty: AWS Paryż, sekcja DPA |
-| edrone | ✓ | ✓ | help.edrone.me, artykuł 832954: AWS Dublin + Frankfurt. DPA (PDF na wp.edrone.me) znaleziony wyszukiwarką, **nie otwarty** |
-| loom | ✓ | — | support.atlassian.com/loom/docs/understand-loom-data-residency/: rezydencja Niemcy ustawiana przy provisioningu od maja 2026 (UE zostawione NULL) |
-| typeform | ✓ | — | typeform.com/legal: „Data Processing Agreement" |
-| zapier | ✓ | — | zapier.com/legal/data-processing-addendum |
-| zendesk | ✓ | — | zendesk.com/company/data-processing-agreement/; regiony hostingu EEA (Irlandia/Frankfurt) i dodatek Data Center Location opisane w artykule pomocy (dokładny URL nie zapisany) |
-| exact | ✓ | — | exact.com/trust/privacy: „Data Processing Addendum", lista podprocesorów |
-| perplexity | ✓ | — | perplexity.ai/hub/legal/dpa |
-| glean | ✓ | — | glean.com/legal/dpa (PDF „DPA Mar 6 2026") |
-| retool | ✓ | — | docs.retool.com/legal/privacy-protection-security (sekcja DPA) |
-| apollo | ✓ | — | apollo.io/dpa |
-| looker-studio | ✓ | — | support.google.com/looker-studio/answer/7657915 (Data Processing Amendment) |
-| ironclad | ✓ | — | legal.ironcladapp.com („Data Processing Addendum") |
-| paradox | ✓ | — | paradox.ai/legal/us-dpa |
-| clearbit | ✓ | — | clearbit.com/Clearbit_DPA_20MAR2024.pdf (dokument z marca 2024) |
-| photoroom | ✓ | — | photoroom.com/legal/data-processing-agreement; /legal/security: GCP/AWS/Cloudflare |
-| zowie | ✓ | — | getzowie.com/data-processing-agreement |
+-- pola z wartością bez dowodu (do weryfikacji)
+SELECT slug FROM tools
+WHERE (dpa_available IS NOT NULL AND NOT compliance_evidence ? 'dpa_available')
+   OR (eu_data_hosting IS NOT NULL AND NOT compliance_evidence ? 'eu_data_hosting');
 
-Wpisy bez zmian, ale zgodne z regułą A: linear (UE ✓), qdrant (UE ✓), tldv (UE ✓).
+-- dowody starsze niż rok
+SELECT slug, compliance_checked_at FROM tools
+WHERE compliance_checked_at < now() - interval '1 year';
+```
 
-Pole „slug" w tabeli to nazwa narzędzia; część slugów (np. exact, zapier, zendesk, perplexity, apollo, looker-studio, paradox, clearbit) trzeba sprawdzić w bazie, bo nie wszystkie są w katalogu pod taką nazwą.
+Uwaga: `value: null` w jsonb to nie SQL NULL, stąd `nullif(…,'null'::jsonb)`; porównanie bez tego zgłasza fałszywe rozjazdy.
 
-## Zmiany z partii 1–2 (wcześniej tego samego wieczoru)
+## Stan po wdrożeniu (6.11.2026)
 
-Zmieniono tagi: make-integromat, onetrust, rossum, mixpanel, n8n, crisp, framer-ai (UE → NULL), fathom-analytics (UE → NULL), assembled (DPA i UE → NULL), fieldguide (poprawiony link i logo, UE ✗). Mixpanel: UE ✗ (domyślnie poza UE). **Adresy stron dla tych wpisów nie zostały wtedy zapisane** — jeśli ktoś ma wątpliwość co do któregoś z nich, to jedyny przypadek, gdzie warto sprawdzić ponownie.
+41 narzędzi, 57 pól z dowodem (przegląd z 6.11.2026 na stronach producentów). Bez dowodu zostają: ok. 175 × `rodo_compliant` ✓, 23 × `dpa_available` ✓ i 21 × `eu_data_hosting` ≠ NULL (m.in. Dust, ElevenLabs, tl;dv, Weaviate, UiPath, Grammarly Business, Brand24, Parloa, SentiOne, Senuto, Lex Expert AI, humai — część sprawdzana wcześniej, ale bez zapisanego adresu). Brak dowodu nie znaczy, że wartość jest błędna, tylko że nie ma jak tego odróżnić.
 
-## Nie potwierdzone (bez zmian, do dokończenia)
+Niedokończone sprawdzenia i decyzja o definicji RODO ✓ są w Notion (zadania P001).
 
-SentiOne, Senuto, Lex Expert AI, UiPath, Weaviate, Parloa, Brand24, Grammarly Business (Chrome blokuje odczyt strony), humai. Szukać od stopki Legal / Trust / Privacy; zgadywane adresy URL zwykle dają 404.
+## Panel admina
 
-## Dopisywanie nowych sprawdzeń
-
-Wiersz: slug, wartości DPA/UE po sprawdzeniu, URL strony producenta + co na niej jest, data (RRRR-MM-DD). Jeśli sprawdzona strona nie mówi nic o polu, wpisz NULL i napisz to w dowodzie.
+Panel jeszcze nie pokazuje ani nie zapisuje tych kolumn (to osobny krok). Do tego czasu edycja pól compliance w panelu **nie aktualizuje dowodu** — po takiej zmianie uruchom zapytanie kontrolne o rozjazd.
