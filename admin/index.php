@@ -5,6 +5,7 @@ require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/openai.php';
 
 require_once __DIR__ . '/supabase.php'; // SUPABASE_KEY (service_role z db.php, fallback anon) + helpery sb_*
+require_once __DIR__ . '/compliance_evidence.php'; // dowody RODO/DPA/hosting UE (zmiana pola wymaga dowodu)
 
 function favicon_from_url(string $url): ?string {
     $domain = parse_url($url, PHP_URL_HOST);
@@ -148,8 +149,32 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
         // string nigdy nie ciął się cicho do 0.
         $priceFromPln = trim($_POST['price_from_pln'] ?? '');
         $priceFromPln = ($priceFromPln !== '' && is_numeric($priceFromPln)) ? (float) $priceFromPln : null;
+
+        // Nowy wpis z RODO/DPA/Hostingiem różnym od "Nie zweryfikowano" wymaga dowodu
+        // (to samo prawo co przy edycji w api.php — compliance_apply()).
+        $complianceNew = [];
+        $evidenceIn = [];
+        foreach (COMPLIANCE_FIELDS as $cf) {
+            $complianceNew[$cf] = tri_state_from_post($cf);
+            $evidenceIn[$cf] = [
+                'url'  => $_POST['ev_url_' . $cf]  ?? '',
+                'note' => $_POST['ev_note_' . $cf] ?? '',
+            ];
+        }
+        $complianceRes = compliance_apply([], $complianceNew, $evidenceIn);
+        if (!$complianceRes['ok']) {
+            header('Location: /admin/index.php?tab=add&err=' . rawurlencode($complianceRes['error']));
+            exit;
+        }
+        $complianceExtra = [];
+        if (!empty($complianceRes['touched'])) {
+            $complianceExtra = [
+                'compliance_evidence'   => compliance_evidence_for_json($complianceRes['evidence']),
+                'compliance_checked_at' => $complianceRes['checked_at'],
+            ];
+        }
         try {
-        sb_post('tools', [
+        sb_post('tools', $complianceExtra + [
             'slug'          => slugify($_POST['name']),
             'name'          => $_POST['name'],
             'tagline_pl'    => $_POST['tagline_pl'] ?: null,
@@ -457,7 +482,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
         '&order=' . $tools_order .
         '&limit=' . $tools_page_size .
         '&offset=' . $tools_offset .
-        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,description_pl,best_for_pl,rodo_compliant,dpa_available,eu_data_hosting,has_pl_ui,has_pl_support,ai_act_risk,status,ai_verified_at,categories(name_pl)'
+        '&select=id,slug,name,website_url,logo_url,category_id,pricing_model,description_pl,best_for_pl,rodo_compliant,dpa_available,eu_data_hosting,has_pl_ui,has_pl_support,ai_act_risk,status,ai_verified_at,compliance_evidence,compliance_checked_at,categories(name_pl)'
     );
     $tools_categories = sb_get('categories?order=sort_order&select=id,name_pl');
     ?>
@@ -553,6 +578,8 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                             'eu_data_hosting' => $tool['eu_data_hosting'],
                             'has_pl_ui'       => $tool['has_pl_ui'],
                             'has_pl_support'  => $tool['has_pl_support'],
+                            // pusty jsonb {} dekoduje się w PHP do [] — JS dostaje zawsze obiekt
+                            'compliance_evidence' => empty($tool['compliance_evidence']) ? new stdClass() : $tool['compliance_evidence'],
                         ]), ENT_QUOTES) ?>'
                         onclick="openEditModalFromButton(this)"
                     >✏️ Edytuj</button>
@@ -647,6 +674,9 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                         </select>
                     </div>
                 </div>
+                <!-- Dowody RODO/DPA/Hosting UE — budowane w JS (renderEditEvidence); zmiana
+                     pola wymaga adresu/notatki, serwer (api.php) egzekwuje to samo. -->
+                <div id="edit-evidence" style="display:flex;flex-direction:column;gap:8px"></div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                     <div>
                         <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Interfejs PL</label>
@@ -758,6 +788,16 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                     </select>
                 </div>
             </div>
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px">
+                <div style="font-size:12px;color:#6b7280">Dowód weryfikacji — wymagany, gdy RODO, DPA lub Hosting UE jest inne niż „Nie zweryfikowano" (adres strony producenta + co mówi o tym polu). Reguły: docs/COMPLIANCE-EVIDENCE.md</div>
+                <?php foreach (COMPLIANCE_FIELDS as $cf): ?>
+                <div style="display:grid;grid-template-columns:140px 1fr 2fr;gap:8px;align-items:center">
+                    <span style="font-size:12px;font-weight:500"><?= htmlspecialchars(COMPLIANCE_LABELS[$cf]) ?></span>
+                    <input type="url" name="ev_url_<?= $cf ?>" placeholder="Adres strony (opcjonalnie)" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+                    <input type="text" name="ev_note_<?= $cf ?>" maxlength="1000" placeholder="Notatka dowodu (np. „DPA do pobrania w stopce")" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+                </div>
+                <?php endforeach; ?>
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div>
                     <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Interfejs PL</label>
@@ -832,10 +872,10 @@ function softDelete(id, table, row) {
 // saveCategory/saveLogo powtarzały ten sam blok trzykrotnie). Używany
 // zarówno przez istniejące pojedyncze inline-save, jak i nowy modal
 // edycji (jeden PATCH na wszystkie 6 pól naraz zamiast sześciu osobnych).
-function patchTool(id, fields, onSuccess) {
-    adminApi('tool_update', { id: id, fields: fields }).then(function(res) {
+function patchTool(id, fields, onSuccess, extra) {
+    adminApi('tool_update', Object.assign({ id: id, fields: fields }, extra || {})).then(function(res) {
         if (res.ok) {
-            if (onSuccess) onSuccess();
+            if (onSuccess) onSuccess(res.data);
         } else {
             alert(res.data.error || 'Nie udało się zapisać zmian.');
         }
@@ -887,12 +927,166 @@ function openEditModal(id, tool) {
     document.getElementById('edit-eu_data_hosting').value = triStateToSelectValue(tool.eu_data_hosting);
     document.getElementById('edit-has_pl_ui').value = triStateToSelectValue(tool.has_pl_ui);
     document.getElementById('edit-has_pl_support').value = triStateToSelectValue(tool.has_pl_support);
+    editToolCurrent = tool;
+    renderEditEvidence(tool);
     document.getElementById('edit-modal').style.display = 'flex';
 }
 
 function closeEditModal() {
     document.getElementById('edit-modal').style.display = 'none';
     editTargetId = null;
+    editToolCurrent = null;
+}
+
+// ---------- Dowody RODO / DPA / Hosting UE w oknie edycji ----------
+// Dane: tools.compliance_evidence (docs/COMPLIANCE-EVIDENCE.md). Zmiana wartości pola
+// wymaga adresu/notatki dowodu; serwer (api.php → compliance_apply) egzekwuje to samo.
+// Treści dowodów pochodzą ze stron zewnętrznych/notatek — wyłącznie textContent.
+
+var EDIT_COMPLIANCE_FIELDS = [
+    ['rodo_compliant',  'RODO zgodny'],
+    ['dpa_available',   'Umowa DPA'],
+    ['eu_data_hosting', 'Hosting UE']
+];
+var editToolCurrent = null;
+
+function evidenceStatusFor(tool, field) {
+    var ev = (tool.compliance_evidence || {})[field];
+    var val = (tool[field] === undefined) ? null : tool[field];
+    if (!ev) {
+        return val === null
+            ? { cls: 'gray', text: 'Nie zweryfikowano.' }
+            : { cls: 'warn', text: '⚠ Wartość bez dowodu (starszy wpis) — dodaj dowód po sprawdzeniu strony producenta.' };
+    }
+    var evVal = (ev.value === undefined) ? null : ev.value;
+    if (evVal !== val) {
+        return { cls: 'warn', text: '⚠ Dowód nieważny — dotyczy innej wartości niż obecna.', ev: ev };
+    }
+    return { cls: 'ok', text: '✓ Sprawdzono ' + (ev.checked || '?'), ev: ev };
+}
+
+function editEvidenceChanged(field) {
+    var original = (editToolCurrent && editToolCurrent[field] !== undefined) ? editToolCurrent[field] : null;
+    return triStateFromSelect(document.getElementById('edit-' + field).value) !== original;
+}
+
+function syncEvidenceInputs(field) {
+    var box = document.getElementById('ev-inputs-' + field);
+    var hint = document.getElementById('ev-hint-' + field);
+    if (!box) return;
+    var changed = editEvidenceChanged(field);
+    if (changed) box.style.display = 'grid';
+    hint.textContent = changed
+        ? 'Zmiana wartości — dowód wymagany: adres strony producenta i notatka (co mówi o tym polu; przy „Nie zweryfikowano" dlaczego cofasz).'
+        : '';
+}
+
+function renderEditEvidence(tool) {
+    var container = document.getElementById('edit-evidence');
+    container.textContent = '';
+    EDIT_COMPLIANCE_FIELDS.forEach(function(def) {
+        var field = def[0];
+        var st = evidenceStatusFor(tool, field);
+
+        var block = document.createElement('div');
+        block.style.cssText = 'border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:12px;background:#f9fafb';
+
+        var head = document.createElement('div');
+        head.style.cssText = 'display:flex;gap:8px;align-items:baseline;flex-wrap:wrap';
+        var label = document.createElement('strong');
+        label.textContent = def[1] + ':';
+        var status = document.createElement('span');
+        status.textContent = st.text;
+        status.style.color = st.cls === 'ok' ? '#047857' : (st.cls === 'warn' ? '#b45309' : '#6b7280');
+        head.appendChild(label);
+        head.appendChild(status);
+        block.appendChild(head);
+
+        if (st.ev && (st.ev.note || st.ev.url)) {
+            var detail = document.createElement('div');
+            detail.style.cssText = 'color:#374151;margin-top:4px';
+            if (st.ev.note) detail.appendChild(document.createTextNode(st.ev.note + ' '));
+            if (st.ev.url && /^https?:\/\//i.test(st.ev.url)) {
+                var a = document.createElement('a');
+                a.href = st.ev.url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.textContent = '[źródło]';
+                detail.appendChild(a);
+            }
+            block.appendChild(detail);
+        }
+
+        var hint = document.createElement('div');
+        hint.id = 'ev-hint-' + field;
+        hint.style.cssText = 'color:#b45309;margin-top:4px';
+        block.appendChild(hint);
+
+        var toggle = document.createElement('a');
+        toggle.href = '#';
+        toggle.textContent = 'Zapisz nowy dowód';
+        toggle.style.cssText = 'display:inline-block;margin-top:4px;color:#4f46e5';
+        toggle.onclick = function(e) {
+            e.preventDefault();
+            var b = document.getElementById('ev-inputs-' + field);
+            b.style.display = b.style.display === 'none' ? 'grid' : 'none';
+        };
+        block.appendChild(toggle);
+
+        var inputs = document.createElement('div');
+        inputs.id = 'ev-inputs-' + field;
+        inputs.style.cssText = 'display:none;grid-template-columns:1fr 2fr;gap:8px;margin-top:6px';
+        var url = document.createElement('input');
+        url.type = 'url';
+        url.id = 'ev-url-' + field;
+        url.placeholder = 'Adres strony (opcjonalnie)';
+        url.style.cssText = 'padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px';
+        var note = document.createElement('input');
+        note.type = 'text';
+        note.id = 'ev-note-' + field;
+        note.maxLength = 1000;
+        note.placeholder = 'Notatka dowodu (wymagana)';
+        note.style.cssText = 'padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px';
+        inputs.appendChild(url);
+        inputs.appendChild(note);
+        block.appendChild(inputs);
+
+        container.appendChild(block);
+        document.getElementById('edit-' + field).onchange = function() { syncEvidenceInputs(field); };
+    });
+}
+
+// Zbiera dowody z okna edycji. Zwraca {evidence} albo {error} (zmiana wartości bez notatki).
+function collectEditEvidence() {
+    var evidence = {};
+    for (var i = 0; i < EDIT_COMPLIANCE_FIELDS.length; i++) {
+        var field = EDIT_COMPLIANCE_FIELDS[i][0];
+        var label = EDIT_COMPLIANCE_FIELDS[i][1];
+        var urlEl = document.getElementById('ev-url-' + field);
+        var noteEl = document.getElementById('ev-note-' + field);
+        var url = urlEl ? urlEl.value.trim() : '';
+        var note = noteEl ? noteEl.value.trim() : '';
+        if (editEvidenceChanged(field) && note === '') {
+            return { error: label + ': zmiana wartości wymaga dowodu — podaj notatkę (i najlepiej adres strony producenta).' };
+        }
+        if (note === '' && url !== '') {
+            return { error: label + ': do adresu dodaj notatkę dowodu.' };
+        }
+        if (note !== '') evidence[field] = { url: url, note: note };
+    }
+    return { evidence: evidence };
+}
+
+// Po udanym zapisie odświeża dane w data-tool przycisku „Edytuj" — bez tego kolejne
+// otwarcie okna (bez przeładowania strony) pokazywałoby stare wartości i stary dowód.
+function refreshEditButtonData(id, fields, data) {
+    var btn = document.querySelector('button[data-tool-id="' + id + '"]');
+    if (!btn) return;
+    var tool;
+    try { tool = JSON.parse(btn.dataset.tool); } catch (e) { return; }
+    Object.keys(fields).forEach(function(k) { tool[k] = fields[k]; });
+    if (data && data.compliance_evidence) tool.compliance_evidence = data.compliance_evidence;
+    btn.dataset.tool = JSON.stringify(tool);
 }
 
 // Kolory/etykiety plakietki 3-stanowej w JS — musi zostać zsynchronizowane
@@ -969,10 +1163,14 @@ function saveEditModal() {
         has_pl_ui:       triStateFromSelect(document.getElementById('edit-has_pl_ui').value),
         has_pl_support:  triStateFromSelect(document.getElementById('edit-has_pl_support').value),
     };
-    patchTool(id, fields, function() {
+    var collected = collectEditEvidence();
+    if (collected.error) { alert(collected.error); return; }
+    var extra = Object.keys(collected.evidence).length ? { evidence: collected.evidence } : {};
+    patchTool(id, fields, function(data) {
         updateRowAfterEdit(id, fields);
+        refreshEditButtonData(id, fields, data);
         closeEditModal();
-    });
+    }, extra);
 }
 
 // ---------- Weryfikacja narzędzia przez AI ----------

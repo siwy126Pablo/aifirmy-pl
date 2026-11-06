@@ -13,7 +13,9 @@ declare(strict_types=1);
  * Zapisy, które nic nie zmieniły (0 wierszy), zwracają błąd zamiast cichego "ok".
  *
  * Operacje (pole "op"):
- *   tool_update      {id, fields{...}, mark_verified?}  — PATCH tools
+ *   tool_update      {id, fields{...}, evidence?{pole:{url,note}}, mark_verified?}  — PATCH tools.
+ *                    Zmiana rodo_compliant/dpa_available/eu_data_hosting WYMAGA evidence dla tego
+ *                    pola (compliance_evidence nie jest zapisywalne przez fields — tylko tą drogą).
  *   soft_delete      {table: tools|scrape_queue, id}    — status/stage = 'rejected'
  *   affiliate_active {id, active}                       — PATCH affiliate_links
  *
@@ -24,6 +26,7 @@ require_once __DIR__ . '/session_init.php'; // flagi ciasteczka sesji (HttpOnly,
 admin_session_start();
 require_once '/home/siwy126/domains/aifirmy.pl/private_html/config/db.php';
 require_once __DIR__ . '/supabase.php';
+require_once __DIR__ . '/compliance_evidence.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -117,6 +120,32 @@ try {
                 $patch[$key] = $r['value'];
             }
 
+            // Dowody RODO/DPA/hosting UE: zmiana któregokolwiek z trzech pól wymaga
+            // dowodu w tym samym żądaniu (admin/compliance_evidence.php). Dowód zapisuje
+            // się razem z polem, więc nie może się z nim rozjechać.
+            $complianceNew = [];
+            foreach (COMPLIANCE_FIELDS as $cf) {
+                if (array_key_exists($cf, $patch)) $complianceNew[$cf] = $patch[$cf];
+            }
+            $evidenceIn = $in['evidence'] ?? [];
+            if (!is_array($evidenceIn)) api_fail(400, 'Nieprawidłowe dowody.');
+            $evidenceOut = null;
+            $checkedOut  = null;
+            if ($complianceNew !== [] || $evidenceIn !== []) {
+                $cur = sb_get('tools?id=eq.' . rawurlencode($id) . '&select=rodo_compliant,dpa_available,eu_data_hosting,compliance_evidence');
+                if (!isset($cur[0]) || !is_array($cur[0])) {
+                    api_fail(502, 'Nie udało się odczytać bieżących danych narzędzia — zapis przerwany.');
+                }
+                $res = compliance_apply($cur[0], $complianceNew, $evidenceIn);
+                if (!$res['ok']) api_fail(400, $res['error']);
+                if (!empty($res['touched'])) {
+                    $evidenceOut = $res['evidence'];
+                    $checkedOut  = $res['checked_at'];
+                    $patch['compliance_evidence']   = compliance_evidence_for_json($evidenceOut);
+                    $patch['compliance_checked_at'] = $checkedOut;
+                }
+            }
+
             $verifiedAt = null;
             if (!empty($in['mark_verified'])) {
                 $verifiedAt = gmdate('Y-m-d\TH:i:s\Z');
@@ -125,7 +154,12 @@ try {
             if ($patch === []) api_fail(400, 'Brak pól do zapisu.');
 
             sb_patch('tools', $id, $patch);
-            echo json_encode(['ok' => true, 'ai_verified_at' => $verifiedAt]);
+            echo json_encode([
+                'ok' => true,
+                'ai_verified_at' => $verifiedAt,
+                'compliance_evidence' => $evidenceOut === null ? null : compliance_evidence_for_json($evidenceOut),
+                'compliance_checked_at' => $checkedOut,
+            ], JSON_UNESCAPED_UNICODE);
             break;
 
         case 'soft_delete':

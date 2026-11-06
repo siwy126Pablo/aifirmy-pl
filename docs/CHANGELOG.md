@@ -1165,6 +1165,28 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.41] — 2026-11-06
+
+### Zrobione
+- Wieczorny przegląd RODO/DPA/hostingu UE w starszych wpisach ręcznych (strony producentów sprawdzane w Chrome): ok. 50 narzędzi sprawdzonych, 19 tagów zmienionych, `fieldguide` dostał poprawiony `website_url`/logo, `deepl` poprawiony opis. Reguła A dla `eu_data_hosting`: ✓ gdy region UE jest do wyboru przy zakładaniu konta lub domyślny; ✗ gdy UE to płatny dodatek/enterprise albo domyślnie poza UE; NULL bez informacji. Zmiany tylko w bazie (bez deployu nie ma ich na stronie).
+- Migracja `012_compliance_evidence.sql` (zastosowana w Supabase): `tools.compliance_evidence` (jsonb: klucz = nazwa kolumny, wartość `{value, url, note, checked}`) i `tools.compliance_checked_at`; `COMMENT ON COLUMN` na trzech polach zgodności i na nowych kolumnach. Backfill: 41 narzędzi, 57 pól z dowodem z tego przeglądu. Kontrola spójności (`evidence.value` = kolumna): 0 rozjazdów.
+- Reguły i zapytania kontrolne: `docs/COMPLIANCE-EVIDENCE.md` (linkowany z `CLAUDE.md`). Dowody są w bazie, nie w pliku — jedno źródło prawdy.
+- Panel admina: zmiana `rodo_compliant`/`dpa_available`/`eu_data_hosting` wymaga dowodu (adres + notatka) w tej samej operacji. Egzekwuje to serwer (`admin/compliance_evidence.php`, używany przez `admin/api.php` i formularz „Dodaj wpis"), okno „Edytuj" pokazuje status dowodu (sprawdzone / bez dowodu / nieważny) i pola na nowy dowód. `compliance_evidence` nie jest zapisywalne przez zwykłe `fields` — tylko tą drogą.
+
+### Odkrycia / problemy
+- Przed przeglądem żaden z tagów RODO/DPA/UE nie miał zapisanego źródła ani daty; nie dało się odróżnić wpisu sprawdzonego od ustawionego z głowy. Zostają bez dowodu: ok. 175 × `rodo_compliant` ✓, 23 × `dpa_available` ✓ i 21 × `eu_data_hosting` ≠ NULL (część sprawdzana wcześniej, bez zapisanego adresu).
+- Okno edycji w panelu nie odświeżało `data-tool` przycisku po zapisie (kolejne otwarcie bez przeładowania pokazywało stare wartości) — naprawione przy okazji, bo dowód porównuje się ze stanem początkowym.
+- Pułapka w zapytaniach kontrolnych: jsonb `null` to nie SQL `NULL` — porównanie wymaga `nullif(…, 'null'::jsonb)` (opisane w `docs/COMPLIANCE-EVIDENCE.md`).
+
+### Zmieniam podejście do
+- Dowód weryfikacji trzymam razem z danymi (kolumna + komentarz schematu), a nie w pliku md, Notion ani pamięci czatu — tylko baza jest czytana przez każdego, kto czyta dane.
+
+### Następny krok
+- Deploy (`deploy.yml` → Run workflow): zmiany tagów z 6.11 oraz nowy panel pojawiają się dopiero po nim. Panel jest nieprzetestowany na serwerze (lokalnie: PHP lint, 14 testów logiki, test okna edycji w przeglądarce na atrapie) — po deployu sprawdzić zapis w oknie „Edytuj" na jednym narzędziu.
+- Decyzja o definicji `rodo_compliant` ✓ (ok. 175 wpisów bez dowodu); dokończenie weryfikacji: SentiOne, Senuto, Lex Expert AI, UiPath, Weaviate, Parloa, Brand24, Grammarly, humai.
+
+---
+
 ```
 ## [v0.X] — [data]
 

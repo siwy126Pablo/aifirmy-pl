@@ -61,4 +61,7 @@ Niedokończone sprawdzenia i decyzja o definicji RODO ✓ są w Notion (zadania 
 
 ## Panel admina
 
-Panel jeszcze nie pokazuje ani nie zapisuje tych kolumn (to osobny krok). Do tego czasu edycja pól compliance w panelu **nie aktualizuje dowodu** — po takiej zmianie uruchom zapytanie kontrolne o rozjazd.
+- **Edycja (`✏️ Edytuj`):** przy RODO / DPA / Hosting UE widać status dowodu (✓ sprawdzono RRRR-MM-DD + notatka i link / ⚠ wartość bez dowodu / ⚠ dowód nieważny). Zmiana wartości pola otwiera pola adresu i notatki; **bez notatki zapis jest odrzucony** (po stronie serwera: `admin/compliance_evidence.php` wywoływane z `admin/api.php`, więc obchodzi się to tylko przez bezpośredni SQL). „Zapisz nowy dowód" odświeża dowód bez zmiany wartości. Dowód zapisuje się w tej samej operacji co pole.
+- **„Dodaj wpis":** RODO / DPA / Hosting inne niż „Nie zweryfikowano" wymaga notatki dowodu.
+- **Poza panelem** (SQL, MCP): sam pilnuj zapisu dowodu razem z polem (zob. „Zasada dla każdej sesji"); serwer nie ma tam jak tego wymusić.
+- Dowód nie jest zapisywalny przez zwykły `fields` w `tool_update` — wyłącznie przez `evidence`.
