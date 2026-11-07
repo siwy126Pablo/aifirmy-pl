@@ -28,8 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
 $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
 
 // Token CSRF dla zapisów z JS przez admin/api.php (patrz ADMIN_CSRF niżej).
-if ($logged_in && empty($_SESSION['csrf'])) {
-    $_SESSION['csrf'] = bin2hex(random_bytes(32));
+if ($logged_in) {
+    admin_csrf_token();
 }
 
 // ---------- akcje POST (tylko gdy zalogowany) ----------
@@ -37,6 +37,7 @@ if ($logged_in && empty($_SESSION['csrf'])) {
 // zamiast cichego "zapisano" — patrz admin/supabase.php.
 
 if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    admin_csrf_require_form(); // ADR-012 krok 2: token w każdym formularzu POST
 
     if (isset($_POST['add_link'])) {
         try {
@@ -201,6 +202,7 @@ $tab = $_GET['tab'] ?? 'list';
     <div class="form-box">
         <h2>Dodaj link afiliacyjny</h2>
         <form method="POST">
+            <?= admin_csrf_field() ?>
             <div>
                 <label>Narzędzie *</label>
                 <select name="tool_id" required>
@@ -243,6 +245,7 @@ $tab = $_GET['tab'] ?? 'list';
     <div class="form-box">
         <h2>Edytuj link afiliacyjny</h2>
         <form method="POST">
+            <?= admin_csrf_field() ?>
             <input type="hidden" name="link_id" value="<?= htmlspecialchars($record['id']) ?>">
             <div>
                 <label>Narzędzie *</label>

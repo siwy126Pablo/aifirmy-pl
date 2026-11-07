@@ -91,6 +91,13 @@ if (!$logged_in) {
     exit;
 }
 
+// ADR-012 krok 2: token CSRF w nagłówku (panel wysyła go w fetch, patrz verifyTool() w index.php).
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !admin_csrf_valid($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Nieprawidłowy token — odśwież stronę panelu.']);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['tool_id'])) {
     http_response_code(400);
     echo json_encode(['error' => 'Brak tool_id.']);

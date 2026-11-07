@@ -105,8 +105,8 @@ $logged_in = isset($_SESSION['admin']) && $_SESSION['admin'] === true;
 
 // Token CSRF dla zapisów z JS przez admin/api.php (wstrzykiwany do strony
 // wyłącznie po zalogowaniu — patrz ADMIN_CSRF w skrypcie na dole).
-if ($logged_in && empty($_SESSION['csrf'])) {
-    $_SESSION['csrf'] = bin2hex(random_bytes(32));
+if ($logged_in) {
+    admin_csrf_token();
 }
 
 // ---------- akcje POST (tylko gdy zalogowany) ----------
@@ -115,6 +115,7 @@ if ($logged_in && empty($_SESSION['csrf'])) {
 // z komunikatem w ?err=.
 
 if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    admin_csrf_require_form(); // ADR-012 krok 2: token w każdym formularzu POST
     $tab = $_GET['tab'] ?? 'queue';
 
     if (isset($_POST['action'], $_POST['id'])) {
@@ -371,11 +372,13 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             <td>
                 <div class="actions">
                     <form method="POST">
+                        <?= admin_csrf_field() ?>
                         <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
                         <input type="hidden" name="action" value="publish">
                         <button class="btn btn-success">✓</button>
                     </form>
                     <form method="POST">
+                        <?= admin_csrf_field() ?>
                         <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
                         <input type="hidden" name="action" value="reject">
                         <button class="btn btn-danger">✗</button>
@@ -417,11 +420,13 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
             <td>
                 <div class="actions">
                     <form method="POST" onsubmit="return confirm('Usunąć trwale? Tej operacji nie można cofnąć.');">
+                        <?= admin_csrf_field() ?>
                         <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
                         <input type="hidden" name="action" value="hard_delete">
                         <button class="btn btn-danger">Usuń trwale</button>
                     </form>
                     <form method="POST">
+                        <?= admin_csrf_field() ?>
                         <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
                         <input type="hidden" name="action" value="restore_to_queue">
                         <button class="btn btn-secondary">To jednak produkt — przenieś do kolejki</button>
@@ -710,6 +715,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
     <div style="background:white;padding:32px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);max-width:700px">
         <h2 style="margin-bottom:24px;font-size:18px">Dodaj narzędzie ręcznie</h2>
         <form method="POST" style="display:flex;flex-direction:column;gap:16px">
+            <?= admin_csrf_field() ?>
             <div>
                 <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Nazwa *</label>
                 <input type="text" name="name" required style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
@@ -1202,7 +1208,8 @@ function verifyTool(id, btn) {
 
     fetch('verify_tool.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': ADMIN_CSRF },
         body: 'tool_id=' + encodeURIComponent(id)
     })
     .then(function(r) {
