@@ -1209,6 +1209,21 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.43] — 2026-11-07 (wieczór)
+
+### Zrobione
+- ✅ **CSRF krok 2 sprawdzony na produkcji** po deployu `c204e2e`: Zatwierdź, Odrzuć, Usuń trwale, Przenieś do kolejki, Dodaj wpis (wpis testowy), „Zweryfikuj przez AI", edycja linku afiliacyjnego — bez 403. Wpis testowy „Test CSRF krok 2" ma w bazie `status = rejected` (przycisk „Usuń" w panelu zmienia status, nie kasuje wiersza).
+- ✅ **Definicja `rodo_compliant` ✓ — ADR-013, wariant 2** (decyzja Pabla): własny DPA producenta albo polityka/trust page z podstawami prawnymi, prawami osób, nazwanym podmiotem odpowiedzialnym i transferami poza EOG z mechanizmem. Sama deklaracja „zgodni z RODO" = NULL. Reguła w `docs/COMPLIANCE-EVIDENCE.md`.
+
+### Odkrycia / problemy
+- Na 7.11: 163 zatwierdzone narzędzia z `rodo_compliant = true`, 0 z dowodem (149 `manual`, 7 `hacker_news`, 3 `yc_ai`, 2 `yc_ai_pilot`, po 1 `betalist` i `product_hunt`); 181 z NULL, 1 z false. 43 z tych ✓ ma też `dpa_available = true`, 22 `eu_data_hosting = true` (też bez dowodu).
+
+### Następny krok
+- Partie weryfikacji ✓ bez dowodu (15–20 narzędzi na raz, sprawdzone → ✓ albo NULL z dowodem); przed pierwszą partią ustalić kolejność (np. najpierw wpisy z `dpa_available`/`eu_data_hosting` bez dowodu).
+- Dokończyć weryfikację DPA/hostingu: SentiOne, Senuto, Lex Expert AI, UiPath, Weaviate, Parloa, Brand24, Grammarly, humai (12.11).
+
+---
+
 ```
 ## [v0.X] — [data]
 

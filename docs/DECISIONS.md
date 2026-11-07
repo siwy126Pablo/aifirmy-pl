@@ -293,6 +293,19 @@ Po dodaniu klucza panel, webhook i scraper nie zależą od RLS i można je włą
 
 **Uzupełnienie 7.11 (CSRF, krok 2):** formularze POST panelu (`index.php`: Zatwierdź, Odrzuć, Usuń trwale, „To jednak produkt", Dodaj wpis; `affiliate.php`: dodaj i edytuj link) niosą pole ukryte `csrf_token`, a `verify_tool.php` nagłówek `X-CSRF-Token`; wspólne funkcje `admin_csrf_*` w `admin/session_init.php`, jeden token na sesję (ten sam co dla `api.php`). Błędny token = 403 przed jakimkolwiek zapisem. Bez tokenu zostają formularze logowania (świadomie: login CSRF nic tu nie daje atakującemu, a `SameSite=Lax` z kroku 1 i tak ogranicza cross-site POST) oraz publiczny `checkout.php`. Dług z „Konsekwencji" spłacony.
 
+## ADR-013 — Definicja „RODO zgodny" (`rodo_compliant` ✓)
+**Data:** 7.11.2026
+**Status:** ✅ Przyjęte (wariant 2); weryfikacja starszych wpisów w toku, partiami
+
+**Kontekst:**
+Na 7.11 163 z 345 zatwierdzonych narzędzi ma `rodo_compliant = true`, a żadne nie ma dowodu w `compliance_evidence` (149 to starsze wpisy ręczne). Dla `dpa_available` i `eu_data_hosting` reguły były ustalone 6.11, dla `rodo_compliant` nie — a to główny wyróżnik katalogu i twierdzenie o zgodności z prawem.
+
+**Rozważone warianty:** (1) ✓ tylko przy własnym DPA producenta — ścisły, ale pole dublowałoby `dpa_available`; (2) DPA albo polityka prywatności/trust page jawnie opisująca przetwarzanie w kontekście RODO; (3) sama deklaracja „zgodni z RODO" — najsłabsze twierdzenie, ✓ prawie wszędzie.
+
+**Decyzja:** wariant 2. ✓, gdy oficjalna strona producenta ma własny DPA albo politykę zawierającą naraz: podstawy prawne, prawa osób, podmiot odpowiedzialny z nazwy oraz transfery poza EOG z mechanizmem (SCC/DPF) lub informację o ich braku. Sama deklaracja zgodności, brak informacji → NULL. Treść reguły i zapytania: `docs/COMPLIANCE-EVIDENCE.md`.
+
+**Konsekwencje:** ✓ bez dowodu sprawdzamy partiami po 15–20 narzędzi (sprawdzone → ✓ albo NULL, w obu przypadkach z dowodem; niesprawdzone bez zmian do swojej partii). W trakcie liczba widocznych ✓ spadnie, bo część wpisów wróci do „nie zweryfikowano" — świadomie, uczciwszy stan niż ✓ bez pokrycia. Reguła nie zmienia schematu ani kodu panelu.
+
 ---
 
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

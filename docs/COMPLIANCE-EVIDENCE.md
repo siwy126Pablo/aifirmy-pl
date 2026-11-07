@@ -27,7 +27,13 @@ Klucze to nazwy kolumn. `url` może być `null`, gdy adres nie został zapisany 
 
 - **`dpa_available` ✓** — strona producenta (Legal / Trust / Security) zawiera własny dokument DPA. Samo „zgodni z RODO" to za mało → NULL.
 - **`eu_data_hosting` (reguła A, decyzja Pabla)** — ✓, gdy region UE można wybrać przy zakładaniu konta lub jest domyślny. ✗, gdy UE to płatny dodatek / tylko enterprise albo domyślnie dane są poza UE. NULL, gdy strona nic o hostingu nie mówi.
-- **`rodo_compliant` ✓** — definicja czeka na decyzję (zadanie w Notion: „zdecydować definicję RODO ✓"). Obecne ✓ w starszych wpisach ręcznych (ok. 175 w bazie) nie ma dowodu.
+- **`rodo_compliant` ✓ (reguła B, decyzja Pabla 7.11.2026, wariant 2)** — ✓, gdy oficjalna strona producenta (privacy policy, trust/security center, DPA) spełnia JEDNO z dwóch:
+  1. producent publikuje własny dokument DPA, albo
+  2. polityka prywatności / trust page jawnie opisuje przetwarzanie w kontekście RODO, czyli zawiera WSZYSTKO naraz: podstawy prawne, prawa osób, podmiot odpowiedzialny/procesor wskazany z nazwy (i adresu) oraz transfery poza EOG z mechanizmem (SCC/DPF) albo informację, że danych nie przekazuje.
+
+  Samo „jesteśmy zgodni z RODO" / „GDPR compliant" bez powyższego → NULL. Brak informacji → NULL, nigdy ✓. ✗ tylko przy jawnej deklaracji producenta, że nie spełnia (rzadkie). W `note` dowodu wpisz, który z dwóch warunków był spełniony (DPA albo elementy polityki) i gdzie. Pole nie pokrywa się z `dpa_available`: ✓ może wynikać z warunku 2 bez DPA.
+
+  **Przejście dla starszych wpisów:** ✓ bez dowodu (163 zatwierdzonych na 7.11) sprawdzamy partiami po 15–20 narzędzi. Sprawdzone → ✓ z dowodem albo NULL z dowodem (`value: null`, notatka co zabrakło). Niesprawdzone zostają bez zmian aż do swojej partii — nie zerujemy hurtem.
 - Brak informacji = NULL, nigdy ✓. Oficjalne strony producenta (privacy, security, trust center, DPA), nie blogi ani katalogi.
 
 ## Zapytania kontrolne
@@ -57,7 +63,7 @@ Uwaga: `value: null` w jsonb to nie SQL NULL, stąd `nullif(…,'null'::jsonb)`;
 
 41 narzędzi, 57 pól z dowodem (przegląd z 6.11.2026 na stronach producentów). Bez dowodu zostają: ok. 175 × `rodo_compliant` ✓, 23 × `dpa_available` ✓ i 21 × `eu_data_hosting` ≠ NULL (m.in. Dust, ElevenLabs, tl;dv, Weaviate, UiPath, Grammarly Business, Brand24, Parloa, SentiOne, Senuto, Lex Expert AI, humai — część sprawdzana wcześniej, ale bez zapisanego adresu). Brak dowodu nie znaczy, że wartość jest błędna, tylko że nie ma jak tego odróżnić.
 
-Niedokończone sprawdzenia i decyzja o definicji RODO ✓ są w Notion (zadania P001).
+Niedokończone sprawdzenia i partie `rodo_compliant` są w Notion (zadania P001). Definicja ✓ rozstrzygnięta 7.11 (reguła B wyżej, ADR-013).
 
 ## Panel admina
 
