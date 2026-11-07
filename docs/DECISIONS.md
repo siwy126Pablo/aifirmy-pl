@@ -291,6 +291,8 @@ Po dodaniu klucza panel, webhook i scraper nie zależą od RLS i można je włą
 
 **Uzupełnienie 31.10 (sesja admina):** flagi ciasteczka sesji ustawia jawnie `admin/session_init.php` (`admin_session_start()` zamiast `session_start()` w 5 plikach panelu): `HttpOnly`, `Secure`, `SameSite=Lax`, `path=/`. Powód: produkcyjny `PHPSESSID` nie miał `HttpOnly`, a stoi na całym hoście `aifirmy.pl`, więc był czytelny dla każdego skryptu na publicznej stronie. `Lax`, nie `Strict` (wejście z zewnętrznego linku nie wylogowuje); `path` zostaje `/` (zawężenie do `/admin/` dałoby dwa ciasteczka `PHPSESSID` obok siebie). Przy logowaniu `session_regenerate_id(true)`. Tokeny CSRF w formularzach POST (krok 2) osobno, po obserwacji kroku 1; do tego czasu dług opisany w „Konsekwencjach” pozostaje.
 
+**Uzupełnienie 7.11 (CSRF, krok 2):** formularze POST panelu (`index.php`: Zatwierdź, Odrzuć, Usuń trwale, „To jednak produkt", Dodaj wpis; `affiliate.php`: dodaj i edytuj link) niosą pole ukryte `csrf_token`, a `verify_tool.php` nagłówek `X-CSRF-Token`; wspólne funkcje `admin_csrf_*` w `admin/session_init.php`, jeden token na sesję (ten sam co dla `api.php`). Błędny token = 403 przed jakimkolwiek zapisem. Bez tokenu zostają formularze logowania (świadomie: login CSRF nic tu nie daje atakującemu, a `SameSite=Lax` z kroku 1 i tak ogranicza cross-site POST) oraz publiczny `checkout.php`. Dług z „Konsekwencji" spłacony.
+
 ---
 
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

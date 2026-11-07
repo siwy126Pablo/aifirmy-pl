@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-11-02
+> Ostatnia aktualizacja: 2026-11-07
 
 ---
 
@@ -447,7 +447,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] 🆕 (28.10, uzupełnione 29.10) RLS — w panelu sprawdzone licznik (338 zatwierdzonych), lista Narzędzia i zapis `tool_update`; zostaje: lista i przełącznik linków afiliacyjnych oraz „Zatwierdź” na pierwszym realnym wpisie ze scrapera (kolejka pusta)
 - [ ] 🆕 (29.10) RLS — opcjonalnie zawęzić kolumny `tools` dla `anon` (dziś `GRANT SELECT` na całą tabelę, bo build robi `select('*')` w 4 plikach `.astro`; wpisy `rejected` są już ukryte polityką `status = 'approved'`)
 - [ ] 🆕 (28.10) Żywy test webhooka Stripe przed pierwszą sprzedażą (np. najtańszy plan + zwrot): `webhook.php` przy błędzie zapisu zwraca 200 i tylko loguje, więc zgubiony zakup nie wróci z ponowieniem Stripe
-- [ ] (27.10, zaktualizowane 31.10) Tokeny CSRF dla formularzy POST panelu (Zatwierdź / Odrzuć / Usuń trwale / Przenieś do kolejki / Dodaj wpis / afiliacja: dodaj i edytuj) oraz dla `verify_tool.php` — dziś tylko `api.php` je ma. Plan w 2 krokach: krok 1 zrobiony 31.10 (`71c14d2`, flagi ciasteczka sesji — patrz niżej), krok 2 (tokeny, wspólny helper w `admin/`) po kilku dniach obserwacji kroku 1. Najgroźniejszy formularz: Dodaj wpis (bez UUID, od razu `approved`)
+- [x] (27.10, zamknięte 7.11 — v0.42) Tokeny CSRF dla formularzy POST panelu (Zatwierdź / Odrzuć / Usuń trwale / Przenieś do kolejki / Dodaj wpis / afiliacja: dodaj i edytuj) oraz dla `verify_tool.php` — dziś tylko `api.php` je ma. Plan w 2 krokach: krok 1 zrobiony 31.10 (`71c14d2`, flagi ciasteczka sesji — patrz niżej), krok 2 (tokeny, wspólny helper w `admin/`) po kilku dniach obserwacji kroku 1. Najgroźniejszy formularz: Dodaj wpis (bez UUID, od razu `approved`)
 - [x] (31.10) Flagi ciasteczka sesji na produkcji sprawdzone po ponownym zalogowaniu Pabla: `PHPSESSID` nie jest już widoczny w `document.cookie` (przed zmianą był), panel działa, więc `HttpOnly` działa. `Secure` i `SameSite=Lax` potwierdzone tylko testem lokalnym (JS nie widzi atrybutów ciasteczka `HttpOnly`) — opcjonalnie podejrzeć w DevTools → Application → Cookies
 - [ ] Pozostałe ~37 oflagowanych URL-i z audytu `website_url` (głównie HTTP 403 / konsolidacje domen, niska pilność)
 - [ ] Kwartalny audyt URL (`url-audit.yml`): skrypt nie powiadamia o flagowanych wpisach (job kończy się zielono) — po każdym przebiegu przejrzeć wyniki w `admin/logs.php` (source=`url_audit`) lub w artefakcie CSV. Skrypt nie odróżnia nowych flag od znanych, więc ~37 obecnych będzie wracać co kwartał; rozważyć dedup/`last_checked` dopiero gdy to zacznie przeszkadzać

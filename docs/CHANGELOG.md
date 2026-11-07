@@ -1187,6 +1187,28 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.42] — 2026-11-07
+
+### Zrobione
+- ✅ **Tokeny CSRF w formularzach POST panelu i w `verify_tool.php`** (ADR-012, krok 2). Wspólne funkcje w `admin/session_init.php`:
+  `admin_csrf_token()`, `admin_csrf_field()`, `admin_csrf_valid()`, `admin_csrf_require_form()`. Ten sam token sesji (`$_SESSION['csrf']`)
+  co dla `api.php`.
+  - 7 formularzy z polem ukrytym `csrf_token`: Zatwierdź, Odrzuć, Usuń trwale, „To jednak produkt" (`index.php`), Dodaj wpis (`index.php`),
+    dodaj i edytuj link afiliacyjny (`affiliate.php`). Serwer sprawdza token na początku obsługi POST; brak lub zły token → 403 i nic się nie zapisuje.
+  - `verify_tool.php`: token w nagłówku `X-CSRF-Token` (fetch z `verifyTool()` w `index.php`), 403 przy braku/złym tokenie.
+  - Poza zakresem (świadomie): formularze logowania (3 pliki; atak „login CSRF" ma tu niski wpływ), `checkout.php` (publiczny, bez sesji admina).
+- Test lokalny (PHP wbudowany serwer, atrapa Supabase): bez tokena i ze złym tokenem 403 i 0 zapisów; z dobrym tokenem 302 i zapis; wszystkie
+  zakładki panelu renderują pole tokenu; `api.php` bez zmian.
+
+### Odkrycia / problemy
+- Nieprzetestowane na produkcji: przy pierwszym wejściu po deployu sprawdzić Zatwierdź/Odrzuć w Kolejce, Dodaj wpis, link afiliacyjny i „Zweryfikuj przez AI".
+  Strona otwarta przed deployem (stary HTML bez tokenu) da 403 do odświeżenia — to oczekiwane.
+
+### Następny krok
+- Po deployu przejść ręcznie 7 akcji z listy wyżej na produkcji.
+
+---
+
 ```
 ## [v0.X] — [data]
 

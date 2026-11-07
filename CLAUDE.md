@@ -71,6 +71,7 @@ aifirmy-pl/
 │   ├── index.php            ← main panel: Kolejka / Odrzucone przez AI / Narzędzia / Dodaj wpis
 │   ├── affiliate.php        ← affiliate links CRUD
 │   ├── verify_tool.php      ← "Zweryfikuj przez AI" endpoint
+│   ├── session_init.php     ← include: admin_session_start() (flagi ciasteczka) + admin_csrf_*() (token CSRF: pole `csrf_token` w formularzach POST, nagłówek `X-CSRF-Token` dla fetch)
 │   ├── api.php              ← JSON endpoint zapisów z JS (sesja + CSRF + whitelista); jedyna droga zapisu z przeglądarki
 │   ├── supabase.php         ← include: SUPABASE_KEY (service_role z db.php, fallback anon) + helpery sb_*; zapis z 0 wierszy = błąd
 │   ├── compliance_evidence.php ← include: dowody RODO/DPA/hosting UE (compliance_apply(): zmiana pola wymaga dowodu; używane przez api.php i „Dodaj wpis")
