@@ -308,4 +308,21 @@ Na 7.11 163 z 345 zatwierdzonych narzędzi ma `rodo_compliant = true`, a żadne 
 
 ---
 
+## ADR-014 — Tagowanie `ai_act_risk` dla narzędzi oceniających osoby (analiza rozmów, coaching handlowców)
+**Data:** 12.11.2026
+**Status:** ✅ Przyjęte (decyzja Pabla); dotyczy narzędzi analizy rozmów, przegląd pozostałych w toku
+
+**Kontekst:**
+Narzędzia analizy rozmów (Modjo, Leexi, tl;dv, Insight7 i podobne) miały `ai_act_risk` `minimal` albo `limited`, choć część z nich ocenia i rankinguje handlowców lub konsultantów. To przypadek z załącznika III pkt 4 AI Act (zatrudnienie: monitorowanie i ocena osób w relacji pracy, motyw 57). Podział według kategorii (`$CATEGORY_AI_ACT_HINTS` w `admin/verify_tool.php`) tego nie widzi, bo transkrypcja i ocena pracownika lądują w jednej kategorii. Obowiązki dla systemów wysokiego ryzyka z załącznika III są odroczone do 2.12.2027 (Digital Omnibus on AI, zatwierdzony przez Radę 29.06.2026).
+
+**Decyzja:** trzy poziomy, oceniane według funkcji narzędzia, nie kategorii:
+1. `minimal` — transkrypcja, notatki, streszczenia, uzupełnianie CRM, bez oceny osób.
+2. `limited` — samo narzędzie prowadzi rozmowy z ludźmi (agent głosowy lub czatowy); obowiązek przejrzystości z art. 50.
+3. `high` — narzędzie ocenia, porównuje lub rankinguje pojedynczych pracowników (scoring jakości per osoba, rankingi zespołu, metryki zachowania per osoba) albo wnioskuje o ich emocjach. Do `high` zawsze `ai_act_notes`: jedno zdanie, która funkcja za tym stoi, i że ostateczna klasyfikacja zależy od sposobu użycia.
+Przypadek wątpliwy zostaje na niższym poziomie z notką, dopóki strona producenta nie potwierdzi funkcji oceny.
+
+**Konsekwencje:** 12.11 ustawione na `high` z notką: Insight7 (scoring i coaching konsultantów), Modjo (AI Call Scoring), Leexi (moduł Leexi Coach), tl;dv (coaching sprzedaży). To pierwsze użycie `ai_act_notes` dla zatwierdzonych narzędzi. Zmiany tylko w bazie, na stronie widoczne po deployu. Strona narzędzia pokazuje dla `high` stały tekst edukacyjny (rekrutacja, scoring kredytowy, ocena zgodności), szerszy niż pojedynczy moduł; notka w FAQ to zawęża, ale tekst można doprecyzować osobną decyzją (frontend bez zmian w tym kroku). Reszta narzędzi analizy rozmów (np. Gong, Chorus, Fireflies) do sprawdzenia tą samą regułą, zapis dopiero po przeglądzie.
+
+---
+
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

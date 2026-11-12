@@ -1224,6 +1224,24 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.44] — 2026-11-12
+
+### Zrobione
+- ✅ **Reguła `ai_act_risk` dla narzędzi oceniających osoby — ADR-014** (decyzja Pabla): `minimal` (transkrypcja, notatki), `limited` (agent rozmawia z ludźmi), `high` (ocena lub ranking pojedynczych pracowników, załącznik III pkt 4) z jednozdaniową notką w `ai_act_notes`.
+- ✅ **Insight7, Modjo, Leexi, tl;dv ustawione na `high`** z notką (tylko baza, bez commita kodu; na stronie po deployu).
+- ✅ **Weryfikacja RODO ✓ (ADR-013), partie B, A1, A2 z 11.11**: 10 ✓ z dowodem, 6 NULL, 2 do ręki (Qonto, Rossum: potrzebne PDF). Poprawione niespójności codility i luminance (wartość kolumny = wartość dowodu).
+
+### Odkrycia / problemy
+- Rozkład `ai_act_risk` wśród zatwierdzonych na 12.11 przed zmianą: minimal 271, limited 71, high 7, NULL 4.
+- Stały tekst edukacyjny dla `high` na stronie narzędzia mówi o rekrutacji i scoringu kredytowym, więc dla narzędzi sprzedażowych jest szerszy niż notka; do osobnej decyzji.
+
+### Następny krok
+- Przegląd pozostałych narzędzi analizy rozmów tą samą regułą (zapis po „ok").
+- Partia A3 weryfikacji RODO (SaldeoSMART, Salto, Stonly, Workday AI, Zendesk QA), re-weryfikacja Teamtailor, DPA Caveman; PDF-y Qonto i Rossum od Pabla.
+- Deploy (workflow_dispatch) po „ok", żeby zmiany z bazy były widoczne na stronie.
+
+---
+
 ```
 ## [v0.X] — [data]
 
