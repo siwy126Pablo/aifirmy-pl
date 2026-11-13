@@ -1228,7 +1228,8 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ### Zrobione
 - ✅ **Reguła `ai_act_risk` dla narzędzi oceniających osoby — ADR-014** (decyzja Pabla): `minimal` (transkrypcja, notatki), `limited` (agent rozmawia z ludźmi), `high` (ocena lub ranking pojedynczych pracowników, załącznik III pkt 4) z jednozdaniową notką w `ai_act_notes`.
-- ✅ **Insight7, Modjo, Leexi, tl;dv ustawione na `high`** z notką (tylko baza, bez commita kodu; na stronie po deployu).
+- ✅ **Insight7, Modjo, Leexi, tl;dv, a po przeglądzie także Gong, Zendesk QA, Grain i Outreach ustawione na `high`** z notką (8 narzędzi, tylko baza, bez commita kodu; na stronie po deployu).
+- ✅ **SEO: 11 opisów bez superlatywów** (FeyNoBg, Poth Labs, Bullet, Palisade, Reclip, Eddie AI, Conifer, ngrok AI Gateway, Tiptap AI Toolkit, Familiar, VulnHunter); meta description to `description_pl`, gdy brak `tagline_pl`. Tylko baza. Pięć opisów z „wiodąca platforma” zostaje do przeglądu „wśród polskich…”.
 - ✅ **Weryfikacja RODO ✓ (ADR-013), partie B, A1, A2 z 11.11**: 10 ✓ z dowodem, 6 NULL, 2 do ręki (Qonto, Rossum: potrzebne PDF). Poprawione niespójności codility i luminance (wartość kolumny = wartość dowodu).
 
 ### Odkrycia / problemy
