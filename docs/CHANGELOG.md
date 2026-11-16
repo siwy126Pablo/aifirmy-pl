@@ -1243,6 +1243,29 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.45] — 2026-11-16
+
+### Zrobione
+- ✅ **Domknięta partia A3 weryfikacji RODO (ADR-013)**: Zendesk QA, Workday AI, Teamtailor (re-weryfikacja), SaldeoSMART, Stonly, Salto, Caveman (DPA), Qonto, Rossum (PDF-y od Pabla, budżet 15 min/narzędzie) + 6 dodatkowych zatwierdzonych narzędzi znalezionych przy przeglądzie bez dowodu.
+- ✅ **12 odrzuconych wpisów (`status = rejected`) zweryfikowanych tą samą regułą B** — rozszerzenie zakresu ADR-013 (decyzja Pabla, patrz DECISIONS.md): causal, clay, comply-ai, drift, fello-ai, hirequest-ai, hotjar-ai, klarna-ai-assistant, legora, mailadept, rewatch, rows. Każdy z dowodem w `compliance_evidence`, niezależnie od wyniku.
+- ✅ **3 wartości bez dowodu poprawione po realnej weryfikacji** (nie tylko dowód dopisany, ale wynik zmieniony): `fello-ai` rodo_compliant true→false (czysta polityka CCPA, brak elementów reguły B); `mailadept` rodo_compliant/dpa_available true→null (brak własnej polityki, polityka firmy-matki nie wystarcza); `rewatch` rodo_compliant true→null (brakuje adresu administratora).
+- ✅ Kontrole zgodności czyste: „wartość bez dowodu" (zatwierdzone + odrzucone) — 0 wierszy; „dowód ≠ kolumna" (kanoniczne zapytanie z COMPLIANCE-EVIDENCE.md, z poprawką na `null` jsonb vs. SQL NULL) — 0 wierszy.
+- ✅ Dopisana do ADR-013 (DECISIONS.md) decyzja o rozszerzeniu reguły B na wpisy odrzucone.
+
+### Odkrycia / problemy
+- **`legora.pl` (website_url w katalogu) to zaparkowana domena na sprzedaż (Nameshift.com)** — realny, działający produkt (Legora AB, Szwecja, RODO ✓/DPA ✓/EU hosting ✓) jest na `legora.com`. Nie poprawione w tej sesji (poza zakresem dowodów zgodności) — do korekty `website_url`.
+- `hirequest-ai` — domena zaparkowana u Namecheap (jak wcześniej `comply-ai` i `causal`) — produkt nieaktywny, wszystkie pola NULL.
+- Rozkład `rodo_compliant` wśród zatwierdzonych po tej partii: `null: 223, true: 137, false: 1`; 186 zatwierdzonych narzędzi wciąż bez `compliance_checked_at` — zgodnie z zakresem (partia celowana, nie pełny audyt katalogu).
+- Oryginalne definicje wariantów A/B/C dla odrzuconych wpisów nie są zapisane w żadnym dokumencie — zastosowana interpretacja „wariant B" (pełna reguła B + dowód niezależnie od wyniku) wymaga potwierdzenia przez Pabla.
+
+### Następny krok
+- Pablo: potwierdzić interpretację „wariant B" dla odrzuconych wpisów.
+- Rozważyć korektę `website_url` dla `legora` (`legora.pl` → `legora.com`).
+- Deploy (workflow_dispatch) i smoke test 2 stron narzędzi (np. `rows`, `hotjar-ai`) po „ok".
+- Kolejna partia ~186 zatwierdzonych narzędzi bez `compliance_checked_at`, gdy Pablo zdecyduje o kontynuacji.
+
+---
+
 ```
 ## [v0.X] — [data]
 

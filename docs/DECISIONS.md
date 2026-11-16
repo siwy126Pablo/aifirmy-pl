@@ -306,6 +306,8 @@ Na 7.11 163 z 345 zatwierdzonych narzędzi ma `rodo_compliant = true`, a żadne 
 
 **Konsekwencje:** ✓ bez dowodu sprawdzamy partiami po 15–20 narzędzi (sprawdzone → ✓ albo NULL, w obu przypadkach z dowodem; niesprawdzone bez zmian do swojej partii). W trakcie liczba widocznych ✓ spadnie, bo część wpisów wróci do „nie zweryfikowano" — świadomie, uczciwszy stan niż ✓ bez pokrycia. Reguła nie zmienia schematu ani kodu panelu.
 
+**Rozszerzenie zakresu (16.11.2026, decyzja Pabla „wariant B"):** reguła B obejmuje też wpisy `status = rejected` — nie są pominięte przy weryfikacji partiami tylko dlatego, że odrzucone. Dla każdego sprawdzamy to samo co dla zatwierdzonych (DPA albo pełna polityka wg reguły B) i zapisujemy dowód niezależnie od wyniku. Przy tej partii (12 odrzuconych, 16.11) kilka okazało się nieaktywnych/przejętych (np. domena zaparkowana na sprzedaż, produkt wchłonięty przez inną firmę) — tam `value: null` z notatką o stanie domeny, bez zgadywania.
+
 ---
 
 ## ADR-014 — Tagowanie `ai_act_risk` dla narzędzi oceniających osoby (analiza rozmów, coaching handlowców)
