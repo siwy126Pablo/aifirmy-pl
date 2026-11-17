@@ -1266,6 +1266,28 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.46] — 2026-11-17
+
+### Zrobione
+- ✅ **Poprawiony `website_url` dla `legora`**: `legora.pl` (domena zaparkowana na sprzedaż) → `legora.com` (realny produkt, Legora AB). Wpis ma `status = rejected`, więc zmiana jest higieną danych, nie wpływa na stronę na żywo.
+- ✅ **Kolejna partia weryfikacji RODO/DPA/hostingu UE (ADR-013)**: 11 zatwierdzonych narzędzi z nieudokumentowanym ✓ (priorytet wg konwencji — najpierw wartości bez dowodu): Abnormal Security, Ballet, Beamery, Decagon, Eightfold AI, Harvey, Legartis, Recall.ai, Sierra, Vectra AI, wFirma. Każde z dowodem w `compliance_evidence` niezależnie od wyniku.
+- ✅ **6 korekt `rodo_compliant` true→NULL** (reguła B nie spełniona — najczęściej: podstawa prawna z art. 6 GDPR podana ogólnie/częściowo, nie przypisana do każdego celu przetwarzania): `legartis`, `recall-ai`, `sierra-ai`, `vectra-ai`, `wfirma`, `ballet`.
+- ✅ **1 korekta `dpa_available` true→NULL**: `decagon` — DPA tylko na żądanie/w umowie, brak publicznie dostępnego samodzielnego dokumentu.
+- ✅ **5 nowych uzupełnień `eu_data_hosting`** (poprzednio NULL, teraz z dowodem): `eightfold-ai` → true, `harvey` → true (region EU/Szwajcaria), `vectra-ai` → true (region Dublin, oficjalny dokument), `decagon` → false (dane w USA), `recall-ai` → false, `sierra-ai` → false ("anywhere in the world", brak opcji UE).
+- ✅ **3 wartości potwierdzone bez zmian**: `abnormal-security` (✓/✓/✗), `beamery` (✓/✓, hosting UE zostaje NULL — brak informacji), `legartis.eu_data_hosting` (true potwierdzone: "Switzerland and Europe" na stronie głównej).
+- ✅ Kontrola zgodności czysta: „dowód ≠ kolumna" (zapytanie kanoniczne) — 0 wierszy; wszystkie 11 narzędzi z partii mają dowód dla każdego z 3 pól.
+
+### Odkrycia / problemy
+- **Wzorzec tej partii: 6 z 10 wpisów z nieudokumentowanym `rodo_compliant` ✓ nie przeszło reguły B** po realnej weryfikacji — najczęstsza przyczyna to ogólna lista podstaw prawnych (art. 6) bez przypisania do konkretnych celów przetwarzania w polityce prywatności. To nie błąd pipeline'u — te wartości były ustawiane ręcznie przed wdrożeniem dowodów (6.11). Wysoki odsetek korekt w tej partii może się nie powtórzyć w kolejnych — zależy od tego, które narzędzia wylądowały w priorytecie „nieudokumentowane ✓".
+- `legartis` i `wfirma` mają teraz `eu_data_hosting = true` z dowodem, ale `rodo_compliant = NULL` — przykład, że pola nie są skorelowane (firma może dobrze hostować dane i mieć niekompletną politykę prywatności).
+
+### Następny krok
+- Rozkład `rodo_compliant` wśród zatwierdzonych po tej partii będzie trzeba przeliczyć przy następnej sesji (spadek `true` o 6 w tej partii).
+- Deploy (workflow_dispatch) — zmiany `eu_data_hosting`/`rodo_compliant`/`dpa_available` dla 11 zatwierdzonych narzędzi są widoczne na frontendzie (badge'y + FAQ), wymaga rebuildu SSG.
+- Kolejna partia z ~186 zatwierdzonych narzędzi bez `compliance_checked_at`, gdy Pablo zdecyduje o kontynuacji.
+
+---
+
 ```
 ## [v0.X] — [data]
 
