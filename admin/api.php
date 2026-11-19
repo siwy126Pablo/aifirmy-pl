@@ -16,6 +16,7 @@ declare(strict_types=1);
  *   tool_update      {id, fields{...}, evidence?{pole:{url,note}}, mark_verified?}  — PATCH tools.
  *                    Zmiana rodo_compliant/dpa_available/eu_data_hosting WYMAGA evidence dla tego
  *                    pola (compliance_evidence nie jest zapisywalne przez fields — tylko tą drogą).
+ *                    Zmiana ai_act_risk bez evidence przechodzi, ale odpowiedź ma "warnings" (ADR-015).
  *   soft_delete      {table: tools|scrape_queue, id}    — status/stage = 'rejected'
  *   affiliate_active {id, active}                       — PATCH affiliate_links
  *
@@ -124,20 +125,22 @@ try {
             // dowodu w tym samym żądaniu (admin/compliance_evidence.php). Dowód zapisuje
             // się razem z polem, więc nie może się z nim rozjechać.
             $complianceNew = [];
-            foreach (COMPLIANCE_FIELDS as $cf) {
+            foreach (compliance_all_fields() as $cf) {
                 if (array_key_exists($cf, $patch)) $complianceNew[$cf] = $patch[$cf];
             }
             $evidenceIn = $in['evidence'] ?? [];
             if (!is_array($evidenceIn)) api_fail(400, 'Nieprawidłowe dowody.');
             $evidenceOut = null;
             $checkedOut  = null;
+            $warningsOut = [];
             if ($complianceNew !== [] || $evidenceIn !== []) {
-                $cur = sb_get('tools?id=eq.' . rawurlencode($id) . '&select=rodo_compliant,dpa_available,eu_data_hosting,compliance_evidence');
+                $cur = sb_get('tools?id=eq.' . rawurlencode($id) . '&select=rodo_compliant,dpa_available,eu_data_hosting,ai_act_risk,compliance_evidence');
                 if (!isset($cur[0]) || !is_array($cur[0])) {
                     api_fail(502, 'Nie udało się odczytać bieżących danych narzędzia — zapis przerwany.');
                 }
                 $res = compliance_apply($cur[0], $complianceNew, $evidenceIn);
                 if (!$res['ok']) api_fail(400, $res['error']);
+                $warningsOut = isset($res['warnings']) ? $res['warnings'] : [];
                 if (!empty($res['touched'])) {
                     $evidenceOut = $res['evidence'];
                     $checkedOut  = $res['checked_at'];
@@ -159,6 +162,7 @@ try {
                 'ai_verified_at' => $verifiedAt,
                 'compliance_evidence' => $evidenceOut === null ? null : compliance_evidence_for_json($evidenceOut),
                 'compliance_checked_at' => $checkedOut,
+                'warnings' => $warningsOut,
             ], JSON_UNESCAPED_UNICODE);
             break;
 

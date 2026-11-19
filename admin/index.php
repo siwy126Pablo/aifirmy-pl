@@ -162,6 +162,15 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 'note' => $_POST['ev_note_' . $cf] ?? '',
             ];
         }
+        // ai_act_risk (ADR-015, pole miękkie): pusty wybór = NULL („Nie oceniono"), nie 'minimal'.
+        // Dowód opcjonalny — bez niego wpis przechodzi z ostrzeżeniem i zostaje w kolejce przeglądu.
+        $aiActRisk = in_array($_POST['ai_act_risk'] ?? '', ['minimal', 'limited', 'high'], true)
+            ? $_POST['ai_act_risk'] : null;
+        $complianceNew['ai_act_risk'] = $aiActRisk;
+        $evidenceIn['ai_act_risk'] = [
+            'url'  => $_POST['ev_url_ai_act_risk']  ?? '',
+            'note' => $_POST['ev_note_ai_act_risk'] ?? '',
+        ];
         $complianceRes = compliance_apply([], $complianceNew, $evidenceIn);
         if (!$complianceRes['ok']) {
             header('Location: /admin/index.php?tab=add&err=' . rawurlencode($complianceRes['error']));
@@ -190,7 +199,7 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'eu_data_hosting' => tri_state_from_post('eu_data_hosting'),
             'has_pl_ui'       => tri_state_from_post('has_pl_ui'),
             'has_pl_support'  => tri_state_from_post('has_pl_support'),
-            'ai_act_risk'   => $_POST['ai_act_risk'],
+            'ai_act_risk'   => $aiActRisk,
             'status'        => 'approved',
         ]);
         } catch (RuntimeException $e) {
@@ -198,7 +207,11 @@ if ($logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: /admin/index.php?tab=add&err=' . rawurlencode($e->getMessage()));
             exit;
         }
-        header('Location: /admin/index.php?tab=tools');
+        $warnQs = '';
+        if (!empty($complianceRes['warnings'])) {
+            $warnQs = '&warn=' . rawurlencode(implode(' ', $complianceRes['warnings']));
+        }
+        header('Location: /admin/index.php?tab=tools' . $warnQs);
         exit;
     }
 }
@@ -307,6 +320,9 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
 
     <?php if (!empty($_GET['err'])): ?>
     <div class="notice" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b">⚠️ Zapis się nie powiódł: <?= htmlspecialchars((string) $_GET['err']) ?></div>
+    <?php endif; ?>
+    <?php if (!empty($_GET['warn'])): ?>
+    <div class="notice" style="background:#fffbeb;border-color:#fcd34d;color:#92400e">⚠️ Zapisano z ostrzeżeniem: <?= htmlspecialchars((string) $_GET['warn']) ?></div>
     <?php endif; ?>
     <?php if ($GLOBALS['sb_last_error'] !== null): ?>
     <div class="notice" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b">⚠️ Odczyt z Supabase nie powiódł się (<?= htmlspecialchars($GLOBALS['sb_last_error']) ?>) — sprawdź klucz w db.php; listy poniżej mogą być puste.</div>
@@ -762,7 +778,8 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                 <div>
                     <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">AI Act ryzyko</label>
                     <select name="ai_act_risk" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
-                        <option value="minimal" selected>Minimalne</option>
+                        <option value="" selected>Nie oceniono</option>
+                        <option value="minimal">Minimalne</option>
                         <option value="limited">Ograniczone</option>
                         <option value="high">Wysokie</option>
                     </select>
@@ -795,7 +812,7 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                 </div>
             </div>
             <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px">
-                <div style="font-size:12px;color:#6b7280">Dowód weryfikacji — wymagany, gdy RODO, DPA lub Hosting UE jest inne niż „Nie zweryfikowano" (adres strony producenta + co mówi o tym polu). Reguły: docs/COMPLIANCE-EVIDENCE.md</div>
+                <div style="font-size:12px;color:#6b7280">Dowód weryfikacji — wymagany, gdy RODO, DPA lub Hosting UE jest inne niż „Nie zweryfikowano" (adres strony producenta + co mówi o tym polu). Ryzyko AI Act: uzasadnienie zalecane, ale niewymagane (bez niego wpis zostaje w kolejce przeglądu). Reguły: docs/COMPLIANCE-EVIDENCE.md</div>
                 <?php foreach (COMPLIANCE_FIELDS as $cf): ?>
                 <div style="display:grid;grid-template-columns:140px 1fr 2fr;gap:8px;align-items:center">
                     <span style="font-size:12px;font-weight:500"><?= htmlspecialchars(COMPLIANCE_LABELS[$cf]) ?></span>
@@ -803,6 +820,11 @@ $odrzucone_ai  = sb_count('scrape_queue', 'stage=eq.ai_rejected');
                     <input type="text" name="ev_note_<?= $cf ?>" maxlength="1000" placeholder="Notatka dowodu (np. „DPA do pobrania w stopce")" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px">
                 </div>
                 <?php endforeach; ?>
+                <div style="display:grid;grid-template-columns:140px 1fr 2fr;gap:8px;align-items:center">
+                    <span style="font-size:12px;font-weight:500"><?= htmlspecialchars(COMPLIANCE_LABELS['ai_act_risk']) ?></span>
+                    <input type="url" name="ev_url_ai_act_risk" placeholder="Adres strony (opcjonalnie)" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+                    <input type="text" name="ev_note_ai_act_risk" maxlength="1000" placeholder="Uzasadnienie oceny (zalecane; bez niego wpis zostaje w kolejce przeglądu)" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+                </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div>
@@ -1433,6 +1455,10 @@ function applyVerifiedChanges() {
             var verifiedEl = document.getElementById('verified-' + targetId);
             if (verifiedEl) verifiedEl.textContent = 'Sprawdzono: ' + formatPlDate(res.data.ai_verified_at);
             closeVerifyModal();
+            // Pole miękkie (ai_act_risk, ADR-015): zapis przeszedł, ale bez uzasadnienia.
+            if (res.data.warnings && res.data.warnings.length) {
+                alert('Zapisano, ale: ' + res.data.warnings.join(' '));
+            }
         } else {
             alert(res.data.error || 'Nie udało się zapisać zmian.');
         }

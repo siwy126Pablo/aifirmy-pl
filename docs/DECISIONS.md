@@ -327,4 +327,25 @@ Przypadek wątpliwy zostaje na niższym poziomie z notką, dopóki strona produc
 
 ---
 
+## ADR-015 — `ai_act_risk`: rubryka oceny i uzasadnienie w rekordzie
+**Data:** 19.11.2026
+**Status:** ✅ Przyjęte (decyzja Pabla); przegląd wpisów z potoku zakończony 19.11
+
+**Kontekst:**
+Do 31.10.2026 trigger `promote_scrape_to_tools()` wstawiał `ai_act_risk = 'minimal'` na sztywno, więc ok. 185 zatwierdzonych wpisów z potoku miało publiczną etykietę (plakietka i FAQ) bez żadnej oceny. Migracja `011` zmieniła wstawianie na NULL, ale istniejących wierszy nie ruszyła (decyzja: nie zerować hurtem, tylko przejrzeć). Wymaganie Pabla: przy każdym przeglądzie hurtowym powód i uzasadnienie zmiany mają trafić do samego rekordu (jak przy RODO), żeby nie powtarzać tej samej pracy.
+
+**Decyzja:**
+1. **Rubryka** (rozszerza ADR-014; ocena wg funkcji produktu głównego, nie kategorii):
+   - `high` — ADR-014 oraz inne obszary z załącznika III, gdy są rdzeniem produktu.
+   - `limited` — rdzeń produktu rozmawia z osobami spoza firmy użytkownika, generuje treści syntetyczne (art. 50 ust. 1, 2, 4), wykrywa emocje z tekstu albo kategoryzuje emocje lub biometrycznie (art. 50 ust. 3).
+   - `minimal` — reszta, w tym asystenci, z którymi użytkownik rozmawia świadomie, narzędzia deweloperskie, infrastruktura i testowanie.
+   - Precyzja ponad kompletność. Wątpliwe: NULL albo `limited` z zapisaną decyzją redakcji. Wpisy, których nie da się ocenić (np. platforma obejmująca zastosowania od minimalnych po wysokie, wpis możliwy do odrzucenia z katalogu): NULL z dowodem `value: null`.
+2. **Uzasadnienie w rekordzie:** `compliance_evidence.ai_act_risk` = `{value, url, note, checked}` plus `compliance_checked_at`, tak jak dla RODO/DPA/hostingu UE. `note` zawiera, co sprawdzono na stronie producenta i dlaczego taka ocena (przy przypadkach granicznych: „Decyzja redakcji RRRR-MM-DD"). Wpis z `value: null` = sprawdzono, ocena niemożliwa.
+3. **Notka publiczna:** `ai_act_notes` zaczyna się od „Wstępna ocena redakcji: …" i jest ustawiana przy każdej wartości ≠ NULL (strona pokazuje ją w FAQ tylko gdy `ai_act_risk` nie jest NULL). To ocena redakcyjna, nie potwierdzona klasyfikacja prawna.
+4. **Panel: pole miękkie.** `ai_act_risk` korzysta z mechanizmu dowodów, ale w odróżnieniu od RODO/DPA/hostingu zapis bez dowodu nie jest blokowany: przechodzi z ostrzeżeniem, a wpis (wartość bez dowodu) zostaje w kolejce przeglądu. Powód: część zapisów (sugestia „Zweryfikuj przez AI") nie ma w oknie miejsca na uzasadnienie, a blokada utrudniłaby korektę oczywistych pomyłek. „Dodaj wpis" ma domyślnie „Nie oceniono" (NULL), nie „Minimalne".
+
+**Konsekwencje:** 19.11 przejrzane 185 wpisów z potoku (pilot 10 + 8 partii), każdy z dowodem. Stan zatwierdzonych po przeglądzie: NULL 18, high 21, limited 93, minimal 238; 182 wpisy z dowodem `ai_act_risk`. Sześć wpisów celowo bez zapisu (kandydaci do odrzucenia lub wyjaśnienia). Poza kodem panelu zapis dowodu przy SQL/MCP zostaje po stronie osoby zmieniającej (serwer nie ma tam jak go wymusić). Znane: `compliance_evidence` jest czytelne publicznie przez REST (`anon`, wiersze `approved`), więc `note` nie może zawierać niczego, czego nie chcemy upublicznić; ewentualne ograniczenie kolumny to osobna decyzja. Kontekst prawny z przeglądu: art. 50 stosowany od 2.08.2026 (obowiązek oznaczania z ust. 2 z okresem przejściowym do 2.12.2026), obowiązki dla systemów wysokiego ryzyka z załącznika III odroczone do 2.12.2027.
+
+---
+
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

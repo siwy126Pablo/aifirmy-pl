@@ -1288,6 +1288,26 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.47] — 2026-11-19
+
+### Zrobione
+- ✅ **Przegląd 185 wpisów z potoku z niezweryfikowanym `ai_act_risk = 'minimal'`** (do 31.10 trigger wstawiał `minimal` na sztywno): pilot 10 + 8 partii. Każdy wpis ma teraz ocenę wg rubryki z ADR-014 i dowód `compliance_evidence.ai_act_risk` (`value`, `url`, `note`, `checked`); przy wartości ≠ NULL także publiczną notkę „Wstępna ocena redakcji: …" w `ai_act_notes`.
+- ✅ **Stan po przeglądzie (zatwierdzone):** NULL 18 / high 21 / limited 93 / minimal 238; 182 wpisy z dowodem `ai_act_risk`; kontrola „dowód ≠ kolumna" — 0 wierszy.
+- ✅ **6 wpisów z potoku celowo bez zapisu** (artifex, front-end-skill-pack-for-ai-agents, vehla, vim, airdows, amorphic-labs): kandydaci do odrzucenia lub wyjaśnienia, zadania w Notion.
+- ✅ **Panel admina: `ai_act_risk` jako pole „miękkie"** (`admin/compliance_evidence.php`: `COMPLIANCE_SOFT_FIELDS`): zapis bez dowodu nie jest odrzucany, `compliance_apply()` zwraca `warnings`; `admin/api.php` przekazuje je w odpowiedzi `tool_update`, okno „Zweryfikuj przez AI" pokazuje alert, „Dodaj wpis" bursztynowy komunikat. Pola RODO/DPA/hosting UE nadal wymagają dowodu (twarda blokada).
+- ✅ **„Dodaj wpis": domyślnie „Nie oceniono" (NULL)** zamiast `minimal` + wiersz uzasadnienia oceny w bloku dowodów.
+- ✅ **Migracja `013_ai_act_risk_evidence.sql`** (tylko `COMMENT ON COLUMN` dla `ai_act_risk`, `ai_act_notes`, `compliance_evidence`) + **ADR-015** + aktualizacja `docs/COMPLIANCE-EVIDENCE.md` (reguły, zapytanie o `ai_act_risk` bez dowodu, poprawione zapytanie „dowód ≠ kolumna").
+
+### Odkrycia / problemy
+- Okno „Edytuj" w panelu nie ma pól `ai_act_risk` ani `ai_act_notes`: ocenę da się zmienić tylko przez „Zweryfikuj przez AI" lub SQL. Osobne zadanie w Notion.
+- `compliance_evidence` i `ai_act_notes` są czytelne publicznie przez REST (anon, wiersze `approved`) — frontend ich nie używa, ale `note` nie powinna zawierać niczego niepublicznego. Do decyzji: zawężenie uprawnień kolumn (zadanie w Notion).
+
+### Następny krok
+- Deploy (workflow_dispatch): panel PHP wdrażany jest krokiem SCP, a zmiany `ai_act_risk`/`ai_act_notes` w danych wymagają rebuildu SSG.
+- Test dymny w panelu produkcyjnym (wpis testowy): „Dodaj wpis" → NULL; zapis `ai_act_risk` bez dowodu → ostrzeżenie; zmiana RODO bez dowodu → nadal odrzucona.
+
+---
+
 ```
 ## [v0.X] — [data]
 
