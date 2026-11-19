@@ -123,6 +123,9 @@ const aiActRiskEducation: Record<string, string> = {
   unacceptable: 'Systemy tej kategorii są w Unii Europejskiej całkowicie zakazane — np. scoring społeczny przez władze publiczne, manipulacyjne techniki wykorzystujące podatności ludzi, czy nieukierunkowane zbieranie wizerunków twarzy do baz rozpoznawania. Żadne narzędzie w tym katalogu nie powinno mieć tej klasyfikacji.',
 };
 
+const aiActNoteRaw = (tool.ai_act_notes ?? '').replace(/^\s*Wstępna ocena redakcji:\s*/i, '').trim();
+const aiActNote = aiActNoteRaw ? aiActNoteRaw.charAt(0).toUpperCase() + aiActNoteRaw.slice(1) : '';
+
 const faqs = [
   {
     question: `Czy ${tool.name} jest zgodne z RODO?`,
@@ -157,7 +160,8 @@ const faqs = [
   ...(tool.ai_act_risk
     ? [{
         question: `Jaki poziom ryzyka według unijnego AI Act ma ${tool.name}?`,
-        answer: `${tool.name} klasyfikowane jest jako ryzyko ${aiActExplanation[tool.ai_act_risk] ?? tool.ai_act_risk} zgodnie z unijnym AI Act.${tool.ai_act_notes ? ' ' + tool.ai_act_notes : ''} ${aiActRiskEducation[tool.ai_act_risk] ?? ''}`,
+        // Ocena redakcyjna (ADR-015): zdanie o charakterze oceny dla każdego wpisu; prefiks notki usuwany, żeby się nie dublował.
+        answer: `${tool.name} klasyfikowane jest jako ryzyko ${aiActExplanation[tool.ai_act_risk] ?? tool.ai_act_risk} zgodnie z unijnym AI Act (wstępna ocena redakcji, nie potwierdzona klasyfikacja prawna).${aiActNote ? ' ' + aiActNote : ''} ${aiActRiskEducation[tool.ai_act_risk] ?? ''}`,
       }]
     : []),
   {

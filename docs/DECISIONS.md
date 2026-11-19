@@ -346,6 +346,8 @@ Do 31.10.2026 trigger `promote_scrape_to_tools()` wstawiał `ai_act_risk = 'mini
 
 **Konsekwencje:** 19.11 przejrzane 185 wpisów z potoku (pilot 10 + 8 partii), każdy z dowodem. Stan zatwierdzonych po przeglądzie: NULL 18, high 21, limited 93, minimal 238; 182 wpisy z dowodem `ai_act_risk`. Sześć wpisów celowo bez zapisu (kandydaci do odrzucenia lub wyjaśnienia). Poza kodem panelu zapis dowodu przy SQL/MCP zostaje po stronie osoby zmieniającej (serwer nie ma tam jak go wymusić). Znane: `compliance_evidence` jest czytelne publicznie przez REST (`anon`, wiersze `approved`), więc `note` nie może zawierać niczego, czego nie chcemy upublicznić; ewentualne ograniczenie kolumny to osobna decyzja. Kontekst prawny z przeglądu: art. 50 stosowany od 2.08.2026 (obowiązek oznaczania z ust. 2 z okresem przejściowym do 2.12.2026), obowiązki dla systemów wysokiego ryzyka z załącznika III odroczone do 2.12.2027.
 
+**Dopisek 19.11.2026 (wieczór), korekta pkt 3:** prefiks „Wstępna ocena redakcji: …" ma w bazie tylko standardowa notka (93 z 142 wpisów `minimal`); notki `limited` (18 z 23) i `high` (4 z 4) oraz część `minimal` (49) są pisane osobno i prefiksu nie mają. Zamiast ujednolicać 169 notek w bazie, charakter oceny pokazuje szablon FAQ w `[slug].astro`: zdanie „(wstępna ocena redakcji, nie potwierdzona klasyfikacja prawna)" jest doklejane do każdej wartości `ai_act_risk` ≠ NULL, a ewentualny prefiks notki jest przy wyświetlaniu obcinany, żeby się nie dublował. Konwencja dla nowych notek: samo uzasadnienie, bez prefiksu.
+
 ---
 
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

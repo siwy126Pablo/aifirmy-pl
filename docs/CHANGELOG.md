@@ -1308,6 +1308,17 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.48] — 2026-11-19 (wieczór)
+
+### Zrobione
+- ✅ **Test dymny panelu po v0.47 (produkcja, wpisy testowe usunięte):** „Dodaj wpis" z „Nie oceniono" → `ai_act_risk = NULL`; „Ograniczone" bez dowodu → zapis z ostrzeżeniem; RODO „Tak" bez dowodu → odrzucone. Alert w oknie „Zweryfikuj przez AI" nie sprawdzany w przeglądarce.
+- ✅ **FAQ „Jaki poziom ryzyka według AI Act" (`[slug].astro`):** do każdej oceny ≠ NULL dołączone zdanie „(wstępna ocena redakcji, nie potwierdzona klasyfikacja prawna)"; prefiks „Wstępna ocena redakcji:" w `ai_act_notes` jest przy wyświetlaniu obcinany, żeby się nie dublował. Powód: prefiks mają w bazie tylko 93 z 142 notek `minimal` i 5 z 23 `limited`, notki `high` go nie mają (dopisek do ADR-015). `astro check`: bez nowych błędów (6 istniejących w `Layout.astro`).
+
+### Następny krok
+- Deploy uruchamia push; po nim sprawdzić FAQ na stronie narzędzia z oceną `limited`/`high`.
+
+---
+
 ```
 ## [v0.X] — [data]
 
