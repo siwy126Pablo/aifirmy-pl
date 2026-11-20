@@ -1319,6 +1319,20 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.49] — 2026-11-20
+
+### Zrobione
+- ✅ **Dane (SQL, bez commita):** 9 wpisów `high` bez noty uzupełnionych o `ai_act_notes` i dowód w `compliance_evidence` (rubryka ADR-014/015, strony producentów): Ashby, Beamery, Eightfold, Paradox, Recruitis, Teamtailor, Infermedica zostają `high`; Docplanner `high` → `limited`; Discourse AI `high` → NULL (dowód `value:null`). Stan: NULL 19 / high 19 / limited 94 / minimal 239; 191 wpisów z dowodem, rozjazd 0. Zostaje 8 wpisów `high` z notą i bez dowodu oraz błędne kategorie Docplannera, Discourse AI i Infermedici (wiersze w Notion).
+- ✅ **FAQ AI Act (`[slug].astro`):** do odpowiedzi dopisane „To ogólna informacja, nie porada prawna."; tekst edukacyjny dla `minimal` poprawiony — zamiast „nie nakłada żadnych obowiązkowych wymogów": brak obowiązków właściwych dla wysokiego ryzyka i przejrzystości (art. 50), nadal art. 4 (kompetencje w zakresie AI, w brzmieniu po Omnibusie z 27.07.2026) i RODO.
+
+### Decyzje
+- Wpisy z `ai_act_risk = NULL` nadal nie pokazują ani etykiety AI Act, ani pytania FAQ (stan „Nie oceniono" na froncie odrzucony, decyzja Pabla 20.11).
+
+### Następny krok
+- Po deployu sprawdzić FAQ na stronie z oceną `minimal`.
+
+---
+
 ```
 ## [v0.X] — [data]
 

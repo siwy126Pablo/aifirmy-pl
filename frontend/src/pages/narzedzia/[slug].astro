@@ -117,7 +117,7 @@ const euHostingPill = triStatePill(tool.eu_data_hosting);
 const uiPill = triStatePill(tool.has_pl_ui);
 
 const aiActRiskEducation: Record<string, string> = {
-  minimal: 'Większość narzędzi AI należy do tej kategorii — np. chatboty obsługi klienta bez wpływu na ważne decyzje, filtry spamu, systemy rekomendacji. AI Act nie nakłada tu żadnych obowiązkowych wymogów, jedynie zachęca do dobrowolnych kodeksów postępowania.',
+  minimal: 'Większość narzędzi AI należy do tej kategorii — np. chatboty obsługi klienta bez wpływu na ważne decyzje, filtry spamu, systemy rekomendacji. AI Act nie nakłada na nie dodatkowych obowiązków właściwych dla systemów wysokiego ryzyka ani obowiązków przejrzystości (art. 50) i jedynie zachęca do dobrowolnych kodeksów postępowania. Nadal obowiązuje art. 4 (wspieranie kompetencji w zakresie AI wśród osób obsługujących system) oraz inne przepisy, w tym RODO.',
   limited: 'Narzędzia tej kategorii podlegają obowiązkom przejrzystości (art. 50 AI Act) — musisz poinformować użytkowników, że wchodzą w interakcję z systemem AI lub że treść została wygenerowana bądź zmodyfikowana przez AI. Nie wymaga to certyfikacji, tylko jasnej informacji dla odbiorców.',
   high: 'Narzędzia z tej kategorii (np. rekrutacja, ocena zdolności kredytowej, systemy edukacyjne) podlegają rygorystycznym wymogom: zarządzanie ryzykiem, dokumentacja techniczna, nadzór człowieka, ocena zgodności przed wdrożeniem i wpis do unijnej bazy systemów wysokiego ryzyka. Wdrożenie takiego narzędzia wymaga starannego przygotowania zgodności.',
   unacceptable: 'Systemy tej kategorii są w Unii Europejskiej całkowicie zakazane — np. scoring społeczny przez władze publiczne, manipulacyjne techniki wykorzystujące podatności ludzi, czy nieukierunkowane zbieranie wizerunków twarzy do baz rozpoznawania. Żadne narzędzie w tym katalogu nie powinno mieć tej klasyfikacji.',
@@ -161,7 +161,7 @@ const faqs = [
     ? [{
         question: `Jaki poziom ryzyka według unijnego AI Act ma ${tool.name}?`,
         // Ocena redakcyjna (ADR-015): zdanie o charakterze oceny dla każdego wpisu; prefiks notki usuwany, żeby się nie dublował.
-        answer: `${tool.name} klasyfikowane jest jako ryzyko ${aiActExplanation[tool.ai_act_risk] ?? tool.ai_act_risk} zgodnie z unijnym AI Act (wstępna ocena redakcji, nie potwierdzona klasyfikacja prawna).${aiActNote ? ' ' + aiActNote : ''} ${aiActRiskEducation[tool.ai_act_risk] ?? ''}`,
+        answer: `${tool.name} klasyfikowane jest jako ryzyko ${aiActExplanation[tool.ai_act_risk] ?? tool.ai_act_risk} zgodnie z unijnym AI Act (wstępna ocena redakcji, nie potwierdzona klasyfikacja prawna).${aiActNote ? ' ' + aiActNote : ''} ${aiActRiskEducation[tool.ai_act_risk] ?? ''} To ogólna informacja, nie porada prawna.`,
       }]
     : []),
   {
