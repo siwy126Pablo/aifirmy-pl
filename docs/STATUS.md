@@ -10,7 +10,7 @@
 | **Faza** | Projekt live, infrastruktura monetyzacji działa (Stripe + affiliate), przychód = 0 (stan na 20.09.2026). Katalog urósł z ~90 do **284 zatwierdzonych narzędzi** (stan bazy 20.09, po usunięciu 7 martwych/rebrandowanych wpisów w tygodniu 13–19.09); **309 zatwierdzonych na 11.10**. Ruch organiczny: wyświetlenia spadły od połowy września, kliknięcia płaskie (patrz "Trend ruchu" niżej). 4. źródło danych (YC-OSS) + 10. kategoria wdrożone. **Pipeline ETL w pełni zmigrowany z NiFi na GitHub Actions (PHP), NiFi zatrzymany (20.09).** |
 | **Domena** | ✅ aifirmy.pl (Cyberfolks) + www→apex redirect (Cloudflare) |
 | **Hosting** | ✅ Aktywny — Cyberfolks + Cloudflare |
-| **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 10 kategorii. ✅ RLS włączone na wszystkich tabelach `public` (od 29.10, ADR-012; patrz „RLS w Supabase”) |
+| **Baza danych** | ✅ Supabase PostgreSQL (eu-central-1), 12 kategorii (od 20.11, ADR-016). ✅ RLS włączone na wszystkich tabelach `public` (od 29.10, ADR-012; patrz „RLS w Supabase”) |
 | **Pipeline (scraping)** | ✅ 4 źródła: HN + BetaList + Product Hunt + YC-OSS API — **PHP + GitHub Actions** (`scraper/`), dwuwarstwowy filtr jakości. NiFi (lokalnie, Windows) zdecommissionowany 20.09, flow zachowany w repo jako historyczny fallback |
 | **Frontend** | ✅ Kafle kategorii (10), ikony, trust badge'e, rozszerzone FAQ (RODO/DPA/EU/AI Act), AI-content disclosure, redesign karty i hero strony detalu (09.09), hero z wyróżnikiem RODO/AI Act/UE (13.09), tri-state RODO/DPA/EU hosting (14.09) i "Interfejs PL" (23.09), wyszukiwanie tekstowe na `/narzedzia/` (15.09), font Inter (19.09) |
 | **Cloudflare** | ✅ SSL Full, CDN, DNS, Redirect Rules (www→apex) |

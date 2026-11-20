@@ -1331,6 +1331,22 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 ### Następny krok
 - Po deployu sprawdzić FAQ na stronie z oceną `minimal`.
 
+## [v0.50] — 2026-11-20 (wieczór)
+
+### Zrobione
+- ✅ **Dwie nowe kategorie (ADR-016):** „Narzędzia dla programistów i agentów AI" (73 wpisy) i „Spotkania i rozmowy" (11); Infermedica i Docplanner do „Obsługi klienta" (2). Razem 86 zatwierdzonych wpisów przeniesionych migracją `014_new_categories_dev_meetings.sql` (asercje liczb w bloku `DO`, zastosowana przez Supabase MCP; kontrola po: Automatyzacja procesów 36, Zarządzanie projektami 29, Obsługa klienta 29, Sprzedaż i CRM 22, HR 19, reszta bez zmian; razem 371).
+- ✅ **Potok:** nowe nazwy w `PIPELINE_CATEGORIES` (`pipeline.php`) i w prompcie `openai.php` (z jednozdaniowym opisem, co wchodzi do każdej z nich). Normalizator kategorii przetestowany na nowych nazwach (pełne, bez diakrytyków, prefiks).
+- ✅ **Frontend:** ikony, kolory (indigo i fuchsia, w największych lukach koła barw) i ramki hover kafli na stronie głównej (12 kafli, siatka 3 kolumn = 4 pełne rzędy). `astro check`: te same 6 błędów `gtag` w `Layout.astro` co przed zmianą, nic nowego.
+
+### Decyzje
+- ADR-016. Zdrowie i edukacja bez własnej kategorii.
+
+### Następny krok
+- Po deployu sprawdzić stronę główną (12 kafli), `/kategoria/programisci-agenci-ai/` i `/kategoria/spotkania-rozmowy/` oraz sitemapę (+2 URL-e).
+- Rozważyć w ADR-011/przy checkpoincie, czy kategoria dla programistów to docelowy odbiorca portalu.
+
+---
+
 ---
 
 ```

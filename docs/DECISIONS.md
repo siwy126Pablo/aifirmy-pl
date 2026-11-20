@@ -348,6 +348,23 @@ Do 31.10.2026 trigger `promote_scrape_to_tools()` wstawiał `ai_act_risk = 'mini
 
 **Dopisek 19.11.2026 (wieczór), korekta pkt 3:** prefiks „Wstępna ocena redakcji: …" ma w bazie tylko standardowa notka (93 z 142 wpisów `minimal`); notki `limited` (18 z 23) i `high` (4 z 4) oraz część `minimal` (49) są pisane osobno i prefiksu nie mają. Zamiast ujednolicać 169 notek w bazie, charakter oceny pokazuje szablon FAQ w `[slug].astro`: zdanie „(wstępna ocena redakcji, nie potwierdzona klasyfikacja prawna)" jest doklejane do każdej wartości `ai_act_risk` ≠ NULL, a ewentualny prefiks notki jest przy wyświetlaniu obcinany, żeby się nie dublował. Konwencja dla nowych notek: samo uzasadnienie, bez prefiksu.
 
+## ADR-016 — Dwie nowe kategorie: „Narzędzia dla programistów i agentów AI" oraz „Spotkania i rozmowy"
+**Data:** 20.11.2026
+**Status:** ✅ Przyjęte (decyzja Pabla); wdrożone 20.11 (migracja `014`, v0.50)
+
+**Kontekst:**
+„Automatyzacja procesów" (83 wpisy) i „Zarządzanie projektami" (62) działały jak worki na wszystko, co nie pasowało gdzie indziej. Przegląd nazw i opisów pokazał w nich około 70 narzędzi dla zespołów technicznych (agenci kodujący, testowanie i przegląd kodu, monitoring, bazy wektorowe, infrastruktura dla agentów) oraz kilkanaście narzędzi do spotkań i rozmów (notatki, transkrypcja, analiza rozmów sprzedażowych), rozproszonych po pięciu kategoriach. Źródła potoku (YC, HN) dowożą głównie narzędzia z pierwszej grupy. ADR-011 (katalog bez nowych funkcji) nie obejmuje zmian struktury kategorii, stąd ta decyzja.
+
+**Decyzja:**
+1. Dwie nowe kategorie (sort_order 11 i 12): „Narzędzia dla programistów i agentów AI" (slug `programisci-agenci-ai`) i „Spotkania i rozmowy" (slug `spotkania-rozmowy`).
+2. Zdrowie (4 wpisy) i edukacja (2) nie dostają własnej kategorii: za mało wpisów. Infermedica i Docplanner przechodzą do „Obsługi klienta" (są tam CONUS i Elite), Discourse AI i Perfectum AI zostają w „HR i rekrutacji".
+3. Przypisanie wg funkcji produktu, na podstawie nazwy i opisu z bazy (stron nie otwierano). Graniczne przypadki: Gladia i Recall.ai (API dla developerów) trafiły do „Spotkań i rozmów" ze względu na temat; Vendo, viso.ai, ContextVault, Assemble i Architecture Diagram AI do kategorii dla programistów; Dock, Easyspecs.ai, Segue, Retool AI, Floot, Salto, Zendesk QA, Loom, Wispr Flow, Speak i Dovetail zostają bez zmian.
+4. Obie nowe kategorie, jak Finanse, Prawo i Cyberbezpieczeństwo AI, nie mają domyślnej sugestii w `$CATEGORY_AI_ACT_HINTS` (zbyt zróżnicowane: w „Spotkaniach i rozmowach" są np. narzędzia `high` z ADR-014). Ocena `ai_act_risk` dalej wg funkcji (ADR-014/015).
+
+**Konsekwencje:** przeniesiono 86 zatwierdzonych wpisów (73 + 11 + 2); stan po zmianie: Automatyzacja procesów 83→36, Zarządzanie projektami 62→29, Obsługa klienta 28→29, Sprzedaż i CRM 25→22, HR i rekrutacja 21→19, nowe 73 i 11. Adresy `/narzedzia/slug/` bez zmian; przybywają `/kategoria/programisci-agenci-ai/` i `/kategoria/spotkania-rozmowy/`. Lista kategorii w potoku (`scraper/lib/openai.php`, `pipeline.php`) rozszerzona o nowe nazwy; `verify_tool.php` pobiera kategorie z bazy, więc bez zmian. Wpisy niezatwierdzone (pending/rejected) zostają w starych kategoriach. Otwarte: w nowej kategorii dla programistów część wpisów może trafić do odrzucenia przy ADR-011 (to narzędzia dla developerów, nie dla polskich firm); pozycjonowanie portalu pozostaje decyzją do przeglądu przy checkpoincie 25.01.2027.
+
+---
+
 ---
 
 *Aktualizuj przy każdej ważnej decyzji technicznej.*

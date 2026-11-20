@@ -34,6 +34,12 @@ export const categoryColors: Record<string, { bg: string; text: string }> = {
   // bez zmian.
   'Zarządzanie projektami': { bg: 'bg-[oklch(97.7%_0.014_217)]', text: 'text-[oklch(56%_0.1_217)]' },
   'Cyberbezpieczeństwo AI': { bg: 'bg-[oklch(98.3%_0.021_130)]', text: 'text-[oklch(62%_0.16_130)]' },
+  // Kategorie z 20.11.2026 (ADR-016). Hue tła (-50) dobrane w największych wolnych
+  // lukach koła barw: indigo 272° (luka blue 254.6° - violet 293.8°) i fuchsia 320°
+  // (luka violet 293.8° - pink 343.2°). Standardowe kolory Tailwind, bez wartości
+  // arbitralnych, więc poza gamutem sRGB nie wychodzą.
+  'Narzędzia dla programistów i agentów AI': { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+  'Spotkania i rozmowy': { bg: 'bg-fuchsia-50', text: 'text-fuchsia-600' },
 };
 
 export const categoryColorFallback = { bg: 'bg-gray-100', text: 'text-gray-600' };

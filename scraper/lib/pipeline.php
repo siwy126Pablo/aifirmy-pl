@@ -17,7 +17,8 @@ const PIPELINE_CATEGORIES = [
     'Automatyzacja procesów', 'Analityka i BI', 'Finanse i księgowość',
     'HR i rekrutacja', 'Marketing i content', 'Obsługa klienta',
     'Prawo i compliance', 'Sprzedaż i CRM', 'Zarządzanie projektami',
-    'Cyberbezpieczeństwo AI',
+    'Cyberbezpieczeństwo AI', 'Narzędzia dla programistów i agentów AI',
+    'Spotkania i rozmowy',
 ];
 
 // Zwraca kanoniczną nazwę kategorii albo null. Etap 1: dopasowanie bez wielkości liter
