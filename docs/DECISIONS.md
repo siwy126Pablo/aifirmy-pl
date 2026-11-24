@@ -365,6 +365,34 @@ Do 31.10.2026 trigger `promote_scrape_to_tools()` wstawiał `ai_act_risk = 'mini
 
 ---
 
+## ADR-017 — Moderacja: znaleziska żyją w bazie zadań, wpis katalogu ma najwyżej jeden otwarty wiersz
+**Data:** 24.11.2026
+**Status:** 🧪 Próba (wariant A + rytm partii); przegląd po dwóch partiach, najpóźniej 6.12.2026 (zadanie #6 w bazie Centrum)
+
+**Kontekst:**
+Moderacja i przeglądy z 19–20.11 (ai_act_risk, kategorie) dały ok. 27 nowych wierszy zadań P001. Wiersze były nazwane od partii przeglądu, a nie od wpisu katalogu, więc ten sam wpis siedział w kilku wierszach naraz (Resin EDA w 4, FeyNoBg i Airdows w 3, Vorelios w 2). Jeden wiersz mieszał poprawki do wykonania, pytania „odrzucić czy zostawić?" i reguły potoku. ADR-016 (20.11) przeniósł ok. 70 wpisów do nowych kategorii i część wierszy o kategoriach straciła sens, a z samych wierszy nie dało się tego zobaczyć. Pomysł „jeden wiersz-kolejka" (21.11) cofnięto: zmniejsza liczbę wierszy, ale nie naprawia przypisania znalezisk do partii.
+
+Rozważone: **A)** baza zadań z regułami zapisu; **B)** osobna tabela znalezisk przy rekordzie w Supabase (migracja + zmiany w panelu, koliduje z ADR-011); **C)** jednoznaczne poprawki robione od razu w sesji moderacji, wiersze tylko dla decyzji.
+
+**Decyzja (wariant A, na próbę):**
+1. Znaleziska z moderacji i przeglądów katalogu zostają w bazie zadań (projekt P001). Bez nowej tabeli, kolumn i funkcji w panelu.
+2. Wiersz = jedna decyzja albo jedna paczka poprawek jednego rodzaju, nigdy partia przeglądu. Trzy rodzaje, widoczne w nazwie: „Decyzja:" (czeka na Pabla, np. odrzucić czy zostawić), „Poprawki:" (jednoznaczne, do wykonania), „Potok:" (reguła albo błąd procesu).
+3. Wpis katalogu ma najwyżej jeden otwarty wiersz. Przed zapisem szukaj po nazwie wpisu (`zadania_lista`, widok `szukaj`); jeśli wiersz jest, dopisz do niego zamiast tworzyć nowy.
+4. Lista wpisów w polu `tresc` jako checklista: `- [ ] Nazwa (slug) — co jest nie tak i skąd to wiemy`. `notatka` max 1 zdanie. Wiersz zamykamy, gdy checklista jest odhaczona.
+5. Uzasadnienie zmiany danych zostaje w rekordzie (np. `compliance_evidence`, ADR-013/015); wiersz tylko na nie wskazuje.
+6. Wykonanie „Poprawek" w osobnej sesji, po jednym wpisie, z kontrolą w katalogu; zapis do bazy po „ok" Pabla.
+7. Zapis wierszy z moderacji nadal dopiero po „ok" (zasada „zamknij" w instrukcjach projektu).
+8. Wiersz uznajemy za nieaktualny dopiero po sprawdzeniu, co się zmieniło w samym wpisie: porównać bieżący stan (kategoria, opis, adres, slug, `ai_act_risk`, status) z tym, o co wiersz pytał. Data zmiany rekordu nie wystarcza (19–20.11 wpisy zmieniano przy zapisie dowodów `ai_act_risk`, bez poprawy tego, co zgłaszały wiersze). Wynik sprawdzenia zapisać w wierszu przed jego zamknięciem.
+9. Rytm: raz w tygodniu jedna partia 10–15 wpisów (na start 10), razem z cyklicznym przeglądem „Odrzucone przez AI". Kolejkę wyznaczają zapytania kontrolne z `COMPLIANCE-EVIDENCE.md` (np. `ai_act_risk` bez dowodu), a nie notatki w wierszach. Wynik sprawdzenia zapisujemy w rekordzie jako dowód; wiersz „Decyzja:" albo „Poprawki:" powstaje tylko wtedy, gdy trzeba coś zdecydować lub poprawić.
+10. Sprawdzenie przy dodawaniu: nowy wpis (z potoku lub ręczny) sprawdzamy już przy zatwierdzaniu. Pola z ADR-013/015 dostają dowód w tej samej operacji; jeśli nie ma czasu na sprawdzenie, pole zostaje NULL („Nie oceniono"), a nie wartością bez dowodu. Powód: od 19.11 do 24.11 przybyło 8 wpisów z `ai_act_risk` bez dowodu, co zjadłoby całą tygodniową partię.
+11. Decyzje „odrzucić czy zostawić" podejmujemy klasami, nie pojedynczo: po dwóch pierwszych partiach Pablo ustala, które klasy odpadają z katalogu (kandydaci z przeglądu 19–20.11: sprzęt, B2C, usługi doradcze, dostawcy danych, produkt wycofany, „nie produkt"), a wpisy dopasowujemy do reguł. To jakość katalogu w rozumieniu ADR-011, nie nowa funkcja.
+
+**Przegląd próby:** po dwóch partiach (najpóźniej 6.12) sprawdzić: (a) czy 10 wpisów mieści się w jeden wieczór (czas rzeczywisty z wiersza cyklicznego), (b) ile wierszy powstało, (c) czy któryś wpis jest w więcej niż jednym otwartym wierszu, (d) czy checklisty zgadzają się ze stanem katalogu, (e) ile nowych wpisów bez dowodu doszło mimo punktu 10. Jeśli reguły nie trzymają, następny krok to wariant C (jednoznaczne poprawki od razu w sesji), dopiero potem B. B = osobna zamknięta tabela znalezisk (RLS bez dostępu `anon`), a nie kolumna w `tools`: `anon` czyta dziś wszystkie kolumny zatwierdzonych wpisów, więc notatka typu „kandydat do odrzucenia" byłaby publiczna (por. ostrzeżenie w `COMPLIANCE-EVIDENCE.md`).
+
+**Konsekwencje:** istniejące wiersze (rodzina „Katalog: …" z 19–20.11) nie zmieniają się same; ich scalenie to osobna zmiana w bazie, tylko po liście zmian i „ok". Instrukcje projektu w Claude.ai (sekcja „Moderacja") zmienia Pablo sam; do wklejenia: reguły 2–4 powyżej.
+
+---
+
 ---
 
 *Aktualizuj przy każdej ważnej decyzji technicznej.*
