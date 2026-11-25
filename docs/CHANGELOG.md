@@ -1347,6 +1347,21 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.51] — 2026-11-25
+
+### Zrobione
+- ✅ **Odrzucone dwa wpisy (decyzja Pabla, zadanie #24):** Otis (`otis`) i Marker (`marker`), `status = 'rejected'` przez Supabase MCP. `ai_act_risk` zostaje NULL; powód i data dopisane do `compliance_evidence.ai_act_risk.note` (`value` i `checked` bez zmian). Zatwierdzonych po zmianie: 378 (przed: 380).
+  - **Otis:** agent ogólnego użytku (research, pisanie, dokumenty, kod) dla pojedynczej osoby. Na stronie producenta i w pobranej treści repo nie znaleziono oferty dla firm ani cennika. Przypadek graniczny: przykłady na stronie są i służbowe, i prywatne.
+  - **Marker:** usługa wdrożeniowa (zespół dostawcy buduje agentów u klienta). Marker Manager jest opisany jako część tej usługi. Na stronie głównej tylko „Book a call”, bez cennika; `pricing_model = freemium` nie miał potwierdzenia.
+
+### Odkrycia / problemy
+- Indeks wyszukiwarki pokazywał starsze hasło Otisa („Your personal AI agent…”) niż obecna strona („The agent for everyday work.”). Treść strony sprawdzona w przeglądarce; proste pobranie `triangllabs.ai/otis` zwraca tylko metadane.
+
+### Decyzje
+- Dwie decyzje jednostkowe, **nie** reguła dla całych klas (usługi wdrożeniowe, narzędzia dla pojedynczych osób). Klasy zostają na przegląd próby z ADR-017 pkt 11.
+
+---
+
 ---
 
 ```

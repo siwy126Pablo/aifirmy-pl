@@ -1,5 +1,5 @@
 # 📊 STATUS.md — aifirmy.pl
-> Ostatnia aktualizacja: 2026-11-07
+> Ostatnia aktualizacja: 2026-11-25
 
 ---
 
@@ -467,7 +467,7 @@ homepage/`/narzedzia/`, "Podobne narzędzia" tylko wg kategorii (social proof "N
 - [ ] 🆕 (20.10) Sprawdzić 2–3 kolejne wpisy BetaList/PH po nocnych przebiegach — opis zgodny z feedem, poprawna domena (test 20.10 dał tylko 1 wpis, PH 0)
 - [ ] 🆕 (30.10) Test promptu scrapera po zmianie reguł jakości: po pierwszych nowych wpisach z potoku sprawdzić, czy łamią reguły. Zapytanie kontrolne: `SELECT COALESCE(name, raw_name), source_name, best_for_pl, left(ai_description, 200) FROM scrape_queue WHERE scraped_at > '2026-10-30 20:00+00' ORDER BY scraped_at;` — oczekiwane: `best_for_pl` bez „Dla/Idealne dla”, opis w 3. osobie, bez „Twój/Nasz”, bez „innowacyjny/najlepszy”. Przed zmianą (100 ostatnich wpisów): 4 w 1./2. osobie, 5 z marketingiem, 1 z „Dla”
 - [ ] 🆕 (30.10) Istniejące wpisy z „Idealne dla…/Dla…” w `best_for_pl` (strona pokazuje „Dla: Idealne dla…”; co najmniej 12 z `hacker_news`, m.in. Otis, ngrok AI Gateway, TraceLLM, FeyNoBg, Reclip) — decyzja, czy regenerować przez „Zweryfikuj przez AI” (po jednym wpisie, wynik trzeba zatwierdzać ręcznie), czy poprawić zbiorczo
-- [ ] 🆕 (30.10) Otis (`bc08e35c-2eeb-4ea8-b037-c22716fdb199`): `website_url` prawdopodobnie wskazuje inny produkt (weryfikacja opisała „Triangl Labs”, logo z `triangllabs.ai`, a opis w bazie mówi o lokalnym agencie AI) — sprawdzić adres i opis
+- [x] (30.10) Otis (`bc08e35c-2eeb-4ea8-b037-c22716fdb199`): podejrzenie błędnego `website_url` — adres był poprawny (potwierdzone 1.11, Triangl Labs to twórca). 25.11 wpis odrzucony razem z Markerem (CHANGELOG v0.51)
 - [ ] 🆕 (20.10, zaktualizowane 04.11) Product Hunt: `source_url` = domena produktu — resolver `/r/p/ID` (`0d8bfd2`) wycofany 04.11 (CHANGELOG v0.40): z GitHub Actions 403 `cf-mitigated: challenge` także na stronie produktu, z domowego IP 301. Wyzwania nie obchodzimy. Zostaje: ręczna korekta linku przy moderacji; osobna decyzja, czy pytać PH o zgodę na API (hello@producthunt.com; bez niej API tylko niekomercyjnie). Stan w bazie: 25 zatwierdzonych wpisów ma `source_url` na `producthunt.com` (21 z poprawnym `website_url`), a 4 miały też `website_url` i logo z Product Hunt — te 4 poprawione 31.10 (AI Spend Console, Troopr AI Scrum Master, Clara AI SDR, ReWeaver AI DriftDetector; strony sprawdzone w Chrome). Trigger nadal kopiuje `source_url` do `website_url`, więc dla każdego nowego wpisu z PH link trzeba poprawić ręcznie. Logo 2 pozostałych wpisów z faviconem `producthunt.com` (Albato AI, AI Media Buyer By Creatify) poprawione 31.10
 - [ ] 🆕 (31.10) Sprawdzić ręcznie wpisy z potoku z niezweryfikowanym `ai_act_risk = 'minimal'`: 185 z 191 zatwierdzonych z potoku (stan 31.10). Etykieta jest publiczna (plakietka + zdanie w FAQ JSON-LD). Decyzja Pabla: **nie** zerować ich hurtem, tylko przejrzeć; nowe wpisy od migracji `011` mają `NULL`. Przy przeglądzie pomaga `$CATEGORY_AI_ACT_HINTS` w `verify_tool.php`
 - [ ] 🆕 (20.10) `yc_oss.php`: przenieść reguły z `9744d62` (kategoria spoza listy, obcinanie prefiksu) — najprościej razem z konsolidacją do `pipeline.php`
