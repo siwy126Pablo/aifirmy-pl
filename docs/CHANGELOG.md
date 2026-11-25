@@ -1362,6 +1362,18 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.52] — 2026-11-25
+
+### Zrobione
+- ✅ **Odrzucony wpis Airdows (`airdows`, decyzja Pabla, zadanie #29):** `status = 'rejected'` przez Supabase MCP. `ai_act_risk`: `minimal` → NULL (wartość sprzed migracji `011`, bez dowodu); w `compliance_evidence.ai_act_risk` zapisane `value: null`, adres, powód i data, `compliance_checked_at = 2026-11-25`. Zatwierdzonych po zmianie: 377 (przed: 378); kontrola „dowód ≠ kolumna”: 0 wierszy.
+  - **Powód:** przesyłanie plików między urządzeniami z przeglądarki. W przeczytanej treści brak wzmianki o AI, a na stronie głównej brak oferty dla firm i cennika. Sprawdzone: strona główna; `/app`, `/en/android-to-pc` i README na GitHubie tylko z fragmentów wyszukiwarki. Polityka prywatności niesprawdzona.
+  - Wiersz w `scrape_queue` bez zmian (`published`).
+
+### Decyzje
+- Decyzja jednostkowa, **nie** reguła dla klasy. Sam brak AI nie przesądzał (katalog obejmuje też SaaS). Klasy zostają na przegląd próby z ADR-017 pkt 11.
+
+---
+
 ---
 
 ```
