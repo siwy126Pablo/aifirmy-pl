@@ -1401,6 +1401,11 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 ### Odkrycia / problemy
 - noa.ai/pl i noa.ai/pl/cennik oznaczają Noa Booking jako „wkrótce”, a centrum pomocy i cennik ZnanyLekarz Pro opisują go jako dostępny w płatnych planach. Opis go uwzględnia.
 
+### Uzupełnienie (zadanie #16, decyzje Pabla)
+- ✅ `website_url`: `docplanner.com` → `https://pro.znanylekarz.pl/` (polska strona dla lekarzy i placówek); logo bez zmian.
+- `pricing_model` zostaje `paid`: darmowy profil podstawowy placówki w cenniku nie obejmuje rezerwacji online, przypomnień, grafiku ani Noa (niedostępność odczytana z tabeli porównania). Cennika dla pojedynczych lekarzy nie pobierano.
+- Nowy tagline i opis sprawdzone przez Pabla na produkcji.
+
 ---
 
 ---
