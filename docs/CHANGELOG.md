@@ -1374,6 +1374,24 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.53] — 2026-11-26
+
+### Zrobione
+- ✅ **Partia katalogu (zadanie #385): 15 wpisów sprawdzonych, zapis po „ok” Pabla przez Supabase MCP.** 10 z kolejki `ai_act_risk` bez dowodu (heygen, veryfi, replit, finseo, flank, legalfly, hornetsecurity, sosafe, make-integromat, rossum) i 5 z moderacji 18–25.11 pod reguły B (microsoft-365-copilot, wispr-flow, tellent-recruitee, agicap, yokoy).
+- **Zmiany wartości:** `rodo_compliant` ✓ → NULL: veryfi, legalfly (podstawy prawne nieprzypisane do celów, brak publicznego DPA). `dpa_available` ✓ → NULL: agicap (DPA opisane, nieudostępnione; jak decagon). `eu_data_hosting` NULL → ✓: flank (hosting w UE wg DPA; podprzetwarzający modeli także poza UE, opisane w dowodzie). `ai_act_risk` `minimal` → `high`: sosafe (wskaźniki ryzyka pojedynczych osób, ADR-014).
+- **Replit:** `pricing_model` freemium → paid (darmowy Starter niedostępny dla nowych użytkowników), poprawiony opis; DPA dotyczy planów Pro i Enterprise, nie Teams.
+- **Yokoy → „Perk (dawniej Yokoy)”:** yokoy.io przekierowuje na perk.com. Zmienione: nazwa, `website_url`, logo (favicon perk.com), tagline, opis; slug i `best_for_pl` bez zmian. Dowody RODO i DPA oparte na publicznym DPA Perk; hosting UE zostaje NULL (Szwajcaria i możliwe przetwarzanie globalne); `paid` (decyzja Pabla; Starter tylko do podróży opisany w tekście).
+- **Dowody i notki:** dowód `ai_act_risk` i publiczna notka dla 13 wpisów; tellent-recruitee dostał brakującą notkę przy `high` (oceny nie sprawdzano ponownie); wispr-flow tylko odświeżony dowód RODO. Dowody RODO ✓ wskazują warunek reguły B.
+- **Kontrole po zapisie:** „dowód ≠ kolumna” 0, DPA/hosting UE bez dowodu 0, kolejka `ai_act_risk` bez dowodu 174 → 161; zatwierdzonych 378.
+
+### Decyzje
+- sosafe `high`; hornetsecurity `minimal` z notką (ocena wg produktu głównego; moduł szkoleniowy ma Employee Security Index); flank i rossum `minimal` jako przypadki graniczne; microsoft-365-copilot `minimal` (ogólny asystent).
+
+### Nie sprawdzone ponownie
+- Hosting UE: legalfly, make-integromat, microsoft-365-copilot, wispr-flow, tellent-recruitee. Rossum i hornetsecurity: tylko `ai_act_risk`. PDF DPA Make i Tellent: treści nie czytano.
+
+---
+
 ---
 
 ```
