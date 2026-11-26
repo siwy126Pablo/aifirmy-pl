@@ -1392,6 +1392,17 @@ Naprawa `deploy.yml` — mirror/`--delete` dla `public_html/narzedzia/` i innych
 
 ---
 
+## [v0.54] — 2026-11-26
+
+### Zrobione
+- ✅ **Docplanner (ZnanyLekarz): tagline i opis zgodne z funkcjami Noa (zadanie #16, po „ok” Pabla).** Zmiana w Supabase (`tagline_pl`, `description_pl`). Poprzedni opis przypisywał AI przypomnienia, grafik i analizę opinii; w sprawdzonych źródłach AI dotyczy notatek z wizyt i obsługi telefonów (Noa Booking). Usunięte też „polska”, bo pochodzenia firmy nie sprawdzano. `best_for_pl`, `ai_act_risk` i dowody bez zmian.
+- **Sprawdzone:** pro.znanylekarz.pl/cennik/znanylekarz-dla-placowek, pro.znanylekarz.pl/rozwiazania/placowki, help.docplanner.com (artykuł o Noa Booking), noa.ai/pl i noa.ai/pl/cennik.
+
+### Odkrycia / problemy
+- noa.ai/pl i noa.ai/pl/cennik oznaczają Noa Booking jako „wkrótce”, a centrum pomocy i cennik ZnanyLekarz Pro opisują go jako dostępny w płatnych planach. Opis go uwzględnia.
+
+---
+
 ---
 
 ```
